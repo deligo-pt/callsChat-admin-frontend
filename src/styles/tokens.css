@@ -1,0 +1,281 @@
+/**
+ * CallChat Admin Panel — Design Tokens
+ *
+ * Source: Figma "Chats Project" (pages: color, Typography, Componant)
+ * See plan.md §5 for the full specification.
+ *
+ * RULE: components consume SEMANTIC tokens (--color-primary, --color-success,
+ * --color-foreground-muted, ...). Raw ramp steps exist for charts, badge tones,
+ * and data visualisation only. Never hard-code a hex value in a component.
+ *
+ * Light theme only for MVP. Every value is a CSS variable so a dark theme can
+ * be added later without touching a single component.
+ */
+
+@theme {
+  /* ---------------------------------------------------------------------
+   * 1. Color ramps (Figma 50-900)
+   * ------------------------------------------------------------------- */
+
+  /* Primary Blue — actions, focus, active navigation */
+  --color-primary-50: #e9effd;
+  --color-primary-100: #bbcff9;
+  --color-primary-200: #9bb7f6;
+  --color-primary-300: #6d96f2;
+  --color-primary-400: #5182ef;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #225ad6;
+  --color-primary-700: #1a46a7;
+  --color-primary-800: #143681;
+  --color-primary-900: #102a63;
+
+  /* Dark Navy — sidebar, headings, body text */
+  --color-navy-50: #e7e8ea;
+  --color-navy-100: #b5b7bd;
+  --color-navy-200: #91949d;
+  --color-navy-300: #5e6470;
+  --color-navy-400: #3f4555;
+  --color-navy-500: #0f172a;
+  --color-navy-600: #0e1526;
+  --color-navy-700: #0b101e;
+  --color-navy-800: #080d17;
+  --color-navy-900: #060a12;
+
+  /* Light Blue Accent — highlights, chart accents, in-review states */
+  --color-accent-50: #ebf8fe;
+  --color-accent-100: #c1ebfd;
+  --color-accent-200: #a3e1fc;
+  --color-accent-300: #7ad3fa;
+  --color-accent-400: #60caf9;
+  --color-accent-500: #38bdf8;
+  --color-accent-600: #33ace2;
+  --color-accent-700: #2886b0;
+  --color-accent-800: #1f6888;
+  --color-accent-900: #184f68;
+
+  /* Green — ACTIVE / APPROVED / COMPLETED / available balance */
+  --color-green-50: #e6f7ef;
+  --color-green-100: #b0e7cf;
+  --color-green-200: #8adcb7;
+  --color-green-300: #54cc96;
+  --color-green-400: #33c282;
+  --color-green-500: #00b363;
+  --color-green-600: #00a35a;
+  --color-green-700: #007f46;
+  --color-green-800: #006236;
+  --color-green-900: #004b2a;
+
+  /* Red — BANNED / REJECTED / FAILED / destructive actions */
+  --color-red-50: #ffede8;
+  --color-red-100: #ffc7b7;
+  --color-red-200: #ffac95;
+  --color-red-300: #fe8664;
+  --color-red-400: #fe6f46;
+  --color-red-500: #fe4b18;
+  --color-red-600: #e74416;
+  --color-red-700: #b43511;
+  --color-red-800: #8c290d;
+  --color-red-900: #6b200a;
+
+  /* Violet — locked Diamonds, capability restrictions */
+  --color-violet-50: #f9effb;
+  --color-violet-100: #ebcdf2;
+  --color-violet-200: #e2b4ec;
+  --color-violet-300: #d592e4;
+  --color-violet-400: #cd7dde;
+  --color-violet-500: #c05dd6;
+  --color-violet-600: #af55c3;
+  --color-violet-700: #884298;
+  --color-violet-800: #6a3376;
+  --color-violet-900: #51275a;
+
+  /* Orange — PENDING / UNDER_REVIEW / SUBMITTED / warnings */
+  --color-orange-50: #fff4e6;
+  --color-orange-100: #fedbb0;
+  --color-orange-200: #feca8a;
+  --color-orange-300: #fdb254;
+  --color-orange-400: #fda333;
+  --color-orange-500: #fc8c00;
+  --color-orange-600: #e57f00;
+  --color-orange-700: #b36300;
+  --color-orange-800: #8b4d00;
+  --color-orange-900: #6a3b00;
+
+  /* Neutral greys (Figma "white" ramp) */
+  --color-grey-50: #ffffff;
+  --color-grey-100: #f6f8fb;
+  --color-grey-200: #eef1f6;
+  --color-grey-300: #e8e8e8;
+  --color-grey-400: #b5b5b5;
+  --color-grey-500: #8c8c8c;
+  --color-grey-600: #6b6b6b;
+
+  /* ---------------------------------------------------------------------
+   * 2. Semantic aliases — THIS is the component API
+   * ------------------------------------------------------------------- */
+
+  /* Surfaces */
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f8fb;
+  --color-surface-sunken: #eef1f6;
+  --color-overlay: rgb(15 23 42 / 0.55);
+
+  /* Text */
+  --color-foreground: var(--color-navy-500);
+  --color-foreground-muted: var(--color-navy-300);
+  --color-foreground-subtle: var(--color-navy-200);
+  --color-foreground-inverse: #ffffff;
+
+  /* Borders */
+  --color-border: #e4e8ef;
+  --color-border-strong: #cdd4e0;
+  --color-border-focus: var(--color-primary-500);
+
+  /* Primary action */
+  --color-primary: var(--color-primary-500);
+  --color-primary-hover: var(--color-primary-600);
+  --color-primary-active: var(--color-primary-700);
+  --color-primary-soft: var(--color-primary-50);
+  --color-primary-foreground: #ffffff;
+
+  /* Accent */
+  --color-accent: var(--color-accent-500);
+  --color-accent-soft: var(--color-accent-50);
+  --color-accent-foreground: var(--color-navy-500);
+
+  /* Status tones — consumed through lib/status.ts, never directly */
+  --color-success: var(--color-green-500);
+  --color-success-soft: var(--color-green-50);
+  --color-success-foreground: var(--color-green-800);
+
+  --color-warning: var(--color-orange-500);
+  --color-warning-soft: var(--color-orange-50);
+  --color-warning-foreground: var(--color-orange-800);
+
+  --color-danger: var(--color-red-500);
+  --color-danger-hover: var(--color-red-600);
+  --color-danger-soft: var(--color-red-50);
+  --color-danger-foreground: var(--color-red-800);
+
+  --color-info: var(--color-accent-500);
+  --color-info-soft: var(--color-accent-50);
+  --color-info-foreground: var(--color-accent-800);
+
+  --color-locked: var(--color-violet-500);
+  --color-locked-soft: var(--color-violet-50);
+  --color-locked-foreground: var(--color-violet-800);
+
+  --color-neutral: var(--color-navy-200);
+  --color-neutral-soft: var(--color-grey-200);
+  --color-neutral-foreground: var(--color-navy-400);
+
+  /* ---------------------------------------------------------------------
+   * 2b. shadcn/ui compatibility layer
+   *
+   * shadcn primitives are generated against a fixed set of token names.
+   * Mapping them onto the CallChat semantics above means every copied
+   * component is themed correctly on arrival — we never hand-edit colors
+   * inside components/ui/.
+   * ------------------------------------------------------------------- */
+  --color-foreground-DEFAULT: var(--color-foreground);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-foreground);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-foreground);
+  --color-muted: var(--color-surface-muted);
+  --color-muted-foreground: var(--color-foreground-muted);
+  --color-secondary: var(--color-surface-muted);
+  --color-secondary-foreground: var(--color-foreground);
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: var(--color-foreground-inverse);
+  --color-input: var(--color-border);
+  --radius: var(--radius-md);
+
+  /* Application shell */
+  --color-sidebar: var(--color-navy-500);
+  --color-sidebar-foreground: var(--color-navy-50);
+  --color-sidebar-muted: var(--color-navy-200);
+  --color-sidebar-active: var(--color-primary-500);
+  --color-sidebar-active-foreground: #ffffff;
+  --color-sidebar-hover: var(--color-navy-400);
+  --color-sidebar-border: var(--color-navy-400);
+
+  /* Focus ring */
+  --color-ring: var(--color-primary-500);
+
+  /* ---------------------------------------------------------------------
+   * 3. Typography (plan.md §5.2) — Roboto
+   * ------------------------------------------------------------------- */
+  --font-sans:
+    'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Admin density scale — deliberately capped at 28px (see plan.md §5.2) */
+  --text-overline: 0.625rem; /* 10 */
+  --text-overline--line-height: 0.75rem; /* 12 */
+  --text-overline--letter-spacing: 0.06em;
+  --text-overline--font-weight: 500;
+
+  --text-caption: 0.75rem; /* 12 */
+  --text-caption--line-height: 1rem; /* 16 */
+
+  --text-body: 0.875rem; /* 14 */
+  --text-body--line-height: 1.25rem; /* 20 */
+
+  --text-h4: 1rem; /* 16 */
+  --text-h4--line-height: 1.1875rem; /* 19 */
+  --text-h4--font-weight: 600;
+
+  --text-h3: 1.25rem; /* 20 */
+  --text-h3--line-height: 1.5rem; /* 24 */
+  --text-h3--font-weight: 600;
+
+  --text-h2: 1.5rem; /* 24 */
+  --text-h2--line-height: 1.8125rem; /* 29 */
+  --text-h2--font-weight: 600;
+
+  --text-h1: 1.75rem; /* 28 */
+  --text-h1--line-height: 2.125rem; /* 34 */
+  --text-h1--font-weight: 600;
+
+  --text-display: 2.5rem; /* 40 */
+  --text-display--line-height: 3rem; /* 48 */
+  --text-display--font-weight: 600;
+
+  /* ---------------------------------------------------------------------
+   * 4. Radius (Figma: 16 / 24)
+   * ------------------------------------------------------------------- */
+  --radius-sm: 0.5rem; /* 8  — inputs, badges */
+  --radius-md: 0.75rem; /* 12 — buttons, table container */
+  --radius-lg: 1rem; /* 16 — cards, dialogs */
+  --radius-xl: 1.5rem; /* 24 — feature panels, login card */
+
+  /* ---------------------------------------------------------------------
+   * 5. Elevation — flat by default, no decorative shadows on data surfaces
+   * ------------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+  --shadow-lg:
+    0 12px 20px -4px rgb(15 23 42 / 0.12), 0 4px 8px -4px rgb(15 23 42 / 0.08);
+
+  /* ---------------------------------------------------------------------
+   * 6. Layout — breakpoints match plan.md §6.1 (Tailwind defaults)
+   * ------------------------------------------------------------------- */
+  --container-page: 1600px; /* max content width */
+  --spacing-sidebar: 16.5rem; /* 264 — expanded sidebar */
+  --spacing-sidebar-rail: 4.5rem; /* 72  — icon rail */
+  --spacing-topbar: 4rem; /* 64  — top bar height */
+  --spacing-touch: 2.75rem; /* 44  — min touch target below lg */
+}
+
+/* -----------------------------------------------------------------------
+ * 7. Non-@theme variables (not utility-generating)
+ * --------------------------------------------------------------------- */
+:root {
+  --z-dropdown: 40;
+  --z-sticky: 50;
+  --z-drawer: 60;
+  --z-dialog: 70;
+  --z-toast: 80;
+}
