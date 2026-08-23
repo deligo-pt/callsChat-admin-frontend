@@ -26,16 +26,17 @@ ESLint 10 rejects it. Run `nvm use` before any npm command.
 git clone <repo-url>
 cd callschat-admin-frontend
 
-nvm use                 # switches to Node 20.19.5
+nvm use        # switches to Node 20.19.5
 npm install
-cp .env.example .env    # defaults work as-is
 npm run dev
 ```
 
 Open **http://localhost:5173** — you land on `/login`.
 
-The default `.env` runs against the in-browser mock backend, so **no backend,
-database or network access is required** to run the app.
+No `.env` setup is needed for local work: `.env.development` is committed with
+localhost defaults and runs against the in-browser mock backend, so **no
+backend, database or network access is required**. To override a value, create
+`.env.local` (git-ignored) — see `.env.example`.
 
 Feature modules are still being built; those routes currently render a
 placeholder. The shell, authentication, RBAC, global search and the component
@@ -45,8 +46,9 @@ library are live.
 
 ## Environment variables
 
-All variables are validated at boot by `src/env.ts` — a missing or malformed
-value fails immediately with a readable error instead of an `undefined` later.
+Validated at build time by `vite.config.ts` and again at boot by `src/env.ts`, so
+a missing or malformed value fails the build with a readable error instead of
+white-screening in the browser.
 
 | Variable            | Required | Default                 | Purpose                                                                                             |
 | ------------------- | -------- | ----------------------- | --------------------------------------------------------------------------------------------------- |
@@ -159,3 +161,42 @@ tests/         Test helpers, a11y assertions, e2e specs
 
 ESLint enforces the boundaries: shared components cannot import from
 `features/`, and features cannot import each other.
+
+---
+
+## Deploying to Vercel
+
+Push to GitHub, import the repository in Vercel, and accept the detected Vite
+preset — `vercel.json` already sets the build command, output directory, SPA
+routing and cache/security headers.
+
+Set **Node.js Version → 20.x** in Project Settings → General, matching `.nvmrc`.
+
+### Environment variables to add in Vercel
+
+Add these under Project Settings → Environment Variables for every environment
+you deploy (Production / Preview / Development):
+
+| Variable            | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL` | Backend origin, e.g. `https://api.callchat.app` — no trailing slash, no `/api/v1` |
+| `VITE_ENV_LABEL`    | `production`, `staging` or `development`                                          |
+| `VITE_USE_MOCKS`    | `false` against a real backend, `true` for a mock-data preview                    |
+| `VITE_RELEASE`      | optional, e.g. the commit SHA                                                     |
+
+These are read at **build** time, not runtime — changing one requires a
+redeploy. The build fails with a readable error if any are missing or invalid,
+so a misconfigured deploy never reaches users.
+
+Nothing secret belongs here: every `VITE_` value is embedded in the JavaScript
+bundle and readable by anyone who opens the site.
+
+### Before making a deployment public
+
+- `VITE_USE_MOCKS=true` ships the mock backend, where **any password signs you
+  in as Super Admin**. Only use it behind Vercel's Deployment Protection.
+- With `VITE_USE_MOCKS=false`, MSW and the mock service worker are stripped from
+  the build entirely, and the app talks only to `VITE_API_BASE_URL`.
+- The backend must allow the Vercel domain via CORS and accept the session
+  cookie (`SameSite=None; Secure` for a cross-origin API).
+- `VITE_ENV_LABEL=production` also hides the `/_design` component gallery.
