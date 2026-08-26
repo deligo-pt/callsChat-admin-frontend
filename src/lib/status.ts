@@ -4,6 +4,11 @@
  * plan.md §3.7 / §9: backend enums drive labels. No page invents its own
  * label, colour or state name, and no component ever receives a raw colour.
  *
+ * The `user` and `restriction` families were corrected against the live API on
+ * 2026-08-25 (plan.md §10.4) — `INACTIVE`/`PENDING_VERIFICATION` are real
+ * account states, the club capabilities are prefixed `SOCIAL_CLUB_`, and
+ * `HOSTING` does not exist. Remaining families are still unverified.
+ *
  * An unrecognised enum value degrades gracefully to a neutral badge with a
  * humanised label — a backend adding a state must never crash the UI.
  */
@@ -25,12 +30,15 @@ export type StatusDomain =
   | 'withdrawal'
   | 'payment'
   | 'balance'
+  | 'accountType'
   | 'notification'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
 const USER: DomainMap = {
   ACTIVE: { label: 'Active', tone: 'success' },
+  INACTIVE: { label: 'Inactive', tone: 'neutral' },
+  PENDING_VERIFICATION: { label: 'Pending verification', tone: 'info' },
   SUSPENDED: { label: 'Suspended', tone: 'warning' },
   BANNED: { label: 'Banned', tone: 'danger' },
 }
@@ -39,11 +47,10 @@ const RESTRICTION: DomainMap = {
   MESSAGING: { label: 'Messaging blocked', tone: 'locked' },
   VOICE_CALL: { label: 'Voice calls blocked', tone: 'locked' },
   VIDEO_CALL: { label: 'Video calls blocked', tone: 'locked' },
-  CLUB_PARTICIPATION: { label: 'Club participation blocked', tone: 'locked' },
-  CLUB_CREATION: { label: 'Club creation blocked', tone: 'locked' },
+  SOCIAL_CLUB_PARTICIPATION: { label: 'Club participation blocked', tone: 'locked' },
+  SOCIAL_CLUB_CREATION: { label: 'Club creation blocked', tone: 'locked' },
   GIFTING: { label: 'Gifting blocked', tone: 'locked' },
   DIAMOND_PURCHASE: { label: 'Diamond purchase blocked', tone: 'locked' },
-  HOSTING: { label: 'Hosting blocked', tone: 'locked' },
 }
 
 const HOST_APPLICATION: DomainMap = {
@@ -89,6 +96,11 @@ const BALANCE: DomainMap = {
   LOCKED: { label: 'Locked', tone: 'locked' },
 }
 
+const ACCOUNT_TYPE: DomainMap = {
+  PERSONAL: { label: 'Personal', tone: 'neutral' },
+  BUSINESS: { label: 'Business', tone: 'info' },
+}
+
 const NOTIFICATION: DomainMap = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
   SCHEDULED: { label: 'Scheduled', tone: 'info' },
@@ -108,6 +120,7 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   withdrawal: WITHDRAWAL,
   payment: PAYMENT,
   balance: BALANCE,
+  accountType: ACCOUNT_TYPE,
   notification: NOTIFICATION,
 }
 

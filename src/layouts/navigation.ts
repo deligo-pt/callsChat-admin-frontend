@@ -1,19 +1,4 @@
-import {
-  Activity,
-  BadgeCheck,
-  BarChart3,
-  CreditCard,
-  Gem,
-  LayoutDashboard,
-  Megaphone,
-  ScrollText,
-  Settings,
-  ShieldAlert,
-  UserCog,
-  Users,
-  UsersRound,
-  Wallet,
-} from 'lucide-react'
+import { Activity, LayoutDashboard, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import { ROUTES } from '@/app/routes'
@@ -36,15 +21,34 @@ export interface NavSection {
 }
 
 /**
- * The 12 modules from plan.md §2.1, grouped for scanning rather than listed
- * flat. Grouping matters at 12 items — an operator should find "Withdrawals"
- * by category, not by reading every label.
+ * Navigation reflects what the BACKEND actually serves — nothing more.
+ *
+ * Verified against `https://api.callschat.com/api/v1` on 2026-08-25: the only
+ * admin surfaces that exist are auth, users, and dashboard/analytics. Every
+ * other module in plan.md §2.1 — Social Clubs, Hosts, Moderation, Diamonds,
+ * Payments, Withdrawals, Announcements, Admin Users, Audit Logs,
+ * Configuration — returns 404.
+ *
+ * Those entries used to appear here and led to placeholder screens. A menu
+ * item that navigates to "this module is not built" is worse than no menu
+ * item: it looks like a broken product rather than an unfinished one, and it
+ * gives an operator no way to tell the two apart.
+ *
+ * **Add a section back the same day its endpoints ship**, not before.
  */
 export const NAV_SECTIONS: readonly NavSection[] = [
   {
     id: 'overview',
     label: 'Overview',
-    items: [{ label: 'Dashboard', to: ROUTES.dashboard, icon: LayoutDashboard }],
+    items: [
+      {
+        label: 'Dashboard',
+        to: ROUTES.dashboard,
+        icon: LayoutDashboard,
+        // GET /admin/dashboard/snapshot · /trends · /admin/analytics
+        permission: PERMISSIONS.analyticsView,
+      },
+    ],
   },
   {
     id: 'community',
@@ -56,101 +60,6 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Users,
         permission: PERMISSIONS.usersView,
         matchPrefix: '/users',
-      },
-      {
-        label: 'Social Clubs',
-        to: ROUTES.socialClubs,
-        icon: UsersRound,
-        permission: PERMISSIONS.clubsView,
-        matchPrefix: '/social-clubs',
-      },
-      {
-        label: 'Hosts',
-        to: ROUTES.hostApplications,
-        icon: BadgeCheck,
-        permission: PERMISSIONS.hostApplicationsView,
-        matchPrefix: '/host',
-      },
-      {
-        label: 'Moderation',
-        to: ROUTES.moderation,
-        icon: ShieldAlert,
-        permission: PERMISSIONS.reportsView,
-        matchPrefix: '/moderation',
-      },
-    ],
-  },
-  {
-    id: 'finance',
-    label: 'Finance',
-    items: [
-      {
-        label: 'Diamonds',
-        to: ROUTES.diamondTransactions,
-        icon: Gem,
-        permission: PERMISSIONS.ledgerView,
-        matchPrefix: '/diamonds',
-      },
-      {
-        label: 'Payments',
-        to: ROUTES.payments,
-        icon: CreditCard,
-        permission: PERMISSIONS.paymentsView,
-        matchPrefix: '/payments',
-      },
-      {
-        label: 'Withdrawals',
-        to: ROUTES.withdrawals,
-        icon: Wallet,
-        permission: PERMISSIONS.withdrawalsView,
-        matchPrefix: '/withdrawals',
-      },
-    ],
-  },
-  {
-    id: 'insight',
-    label: 'Insight',
-    items: [
-      {
-        label: 'Reports',
-        to: ROUTES.reports,
-        icon: BarChart3,
-        permission: PERMISSIONS.analyticsView,
-        matchPrefix: '/reports',
-      },
-      {
-        label: 'Announcements',
-        to: ROUTES.notifications,
-        icon: Megaphone,
-        permission: PERMISSIONS.notificationsSend,
-        matchPrefix: '/notifications',
-      },
-    ],
-  },
-  {
-    id: 'administration',
-    label: 'Administration',
-    items: [
-      {
-        label: 'Admin Users',
-        to: ROUTES.adminUsers,
-        icon: UserCog,
-        permission: PERMISSIONS.adminUsersManage,
-        matchPrefix: '/admin-users',
-      },
-      {
-        label: 'Audit Logs',
-        to: ROUTES.auditLogs,
-        icon: ScrollText,
-        permission: PERMISSIONS.auditLogsView,
-        matchPrefix: '/audit-logs',
-      },
-      {
-        label: 'Configuration',
-        to: ROUTES.configuration,
-        icon: Settings,
-        permission: PERMISSIONS.configurationView,
-        matchPrefix: '/configuration',
       },
     ],
   },

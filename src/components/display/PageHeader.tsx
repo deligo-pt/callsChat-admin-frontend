@@ -10,7 +10,13 @@ export interface Crumb {
 }
 
 export interface PageHeaderProps {
-  title: string
+  /**
+   * Omit where the page already names its subject — a record page whose card
+   * carries the name would otherwise print it twice, once here and once there.
+   * The page still needs exactly one `<h1>`, so whatever replaces this must be
+   * promoted to `h1` (see `RecordHeader`'s `as` prop).
+   */
+  title?: string
   description?: string
   breadcrumbs?: readonly Crumb[]
   /** Primary action cluster, right-aligned on desktop, full-width on mobile. */
@@ -68,7 +74,7 @@ export function PageHeader({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0 space-y-1">
-          <h1 className="text-h1 break-words">{title}</h1>
+          {title ? <h1 className="text-h1 break-words">{title}</h1> : null}
           {description ? (
             <p className="max-w-2xl text-body text-foreground-muted">{description}</p>
           ) : null}

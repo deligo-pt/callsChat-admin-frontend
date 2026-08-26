@@ -91,7 +91,12 @@ export function DataTable<TRow>({
   }
 
   return (
-    <div className={cn('space-y-3', className)}>
+    /*
+     * `min-w-0` is load-bearing: as a flex or grid child this container would
+     * otherwise size to its content (min-width: auto), letting a wide table push
+     * its ancestors past the viewport instead of scrolling inside `scroll-x`.
+     */
+    <div className={cn('min-w-0 space-y-3', className)}>
       {/* Table controls */}
       <div className="flex items-center justify-end gap-2">
         {onDensityChange ? (
@@ -131,9 +136,26 @@ export function DataTable<TRow>({
       </div>
 
       {/* plan.md §6.3: only this container scrolls horizontally, never the page */}
-      <div className="scroll-x rounded-md border border-border">
+      {/*
+        `relative` matters: an `overflow` container only clips absolutely
+        positioned descendants when it is itself their containing block. Without
+        it the `sr-only` header label (which is `position: absolute`) escaped the
+        clip and widened the document's scroll area, letting the whole page
+        scroll sideways by ~124px.
+      */}
+      <div className="relative w-full max-w-full scroll-x rounded-md border border-border">
         <table className="w-full border-collapse text-left">
-          <thead className="sticky top-0 z-10 bg-surface-muted">
+          {/*
+            Not `sticky`. The wrapper above sets `overflow-x: auto`, which makes
+            it a scroll container on BOTH axes — so a `sticky top-0` header
+            resolves against a box that never scrolls vertically and simply
+            never sticks. It looked deliberate and did nothing.
+
+            A genuinely pinned header needs the table body to own the vertical
+            scroll instead of `<main>`; that is a deliberate layout change, not
+            a class name, so it is left for the Phase 3B detail work.
+          */}
+          <thead className="bg-surface-muted">
             <tr>
               {visibleColumns.map((column) => {
                 const isSorted = sort?.field === column.id
@@ -145,7 +167,7 @@ export function DataTable<TRow>({
                     scope="col"
                     style={column.width ? { width: column.width } : undefined}
                     className={cn(
-                      'border-b border-border text-overline text-foreground-subtle uppercase',
+                      'border-b border-border align-middle text-overline whitespace-nowrap text-foreground-subtle uppercase',
                       cellPadding,
                       alignRight ? 'text-right' : 'text-left',
                       column.sticky ? 'sticky left-0 z-20 bg-surface-muted' : undefined,
@@ -160,6 +182,12 @@ export function DataTable<TRow>({
                           : undefined
                     }
                   >
+                    {/*
+                      Sortable and non-sortable headers both render an inline-flex
+                      row of the same height, so every column label sits on one
+                      baseline. Previously a sortable header rendered a button and
+                      a plain one rendered bare text, and the two did not line up.
+                    */}
                     {column.sortable && onSortChange ? (
                       <button
                         type="button"
@@ -172,19 +200,19 @@ export function DataTable<TRow>({
                         {column.header}
                         {isSorted ? (
                           sort.direction === 'asc' ? (
-                            <ArrowUp className="size-3" aria-hidden="true" />
+                            <ArrowUp className="size-3 shrink-0" aria-hidden="true" />
                           ) : (
-                            <ArrowDown className="size-3" aria-hidden="true" />
+                            <ArrowDown className="size-3 shrink-0" aria-hidden="true" />
                           )
                         ) : (
                           <ArrowUpDown
-                            className="size-3 opacity-40"
+                            className="size-3 shrink-0 opacity-40"
                             aria-hidden="true"
                           />
                         )}
                       </button>
                     ) : (
-                      column.header
+                      <span className="inline-flex items-center">{column.header}</span>
                     )}
                   </th>
                 )
@@ -222,7 +250,9 @@ export function DataTable<TRow>({
                   <td
                     key={column.id}
                     className={cn(
-                      'text-body',
+                      // `align-middle` keeps short and tall cells on one line;
+                      // without it a wrapped badge dragged its neighbours upward.
+                      'align-middle text-body',
                       cellPadding,
                       column.align === 'right' ? 'text-right tabular' : 'text-left',
                       column.sticky ? 'sticky left-0 z-10 bg-surface' : undefined,

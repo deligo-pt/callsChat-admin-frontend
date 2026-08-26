@@ -1,6 +1,13 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const PORT = 5173
+/*
+ * Deliberately NOT 5173.
+ *
+ * The e2e server runs on its own port so it never collides with a developer's
+ * dev server, and so a run can never accidentally reuse one that is pointed at
+ * the real backend.
+ */
+const PORT = 5174
 const BASE_URL = `http://localhost:${PORT}`
 
 export default defineConfig({
@@ -39,9 +46,28 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: `npm run dev -- --port ${PORT} --strictPort`,
     url: BASE_URL,
-    reuseExistingServer: !process.env['CI'],
+    /*
+     * The e2e suite runs against the MOCK backend, always.
+     *
+     * `.env.development` points dev at the real API so a developer signing in
+     * with real credentials gets real behaviour — but these tests assert on
+     * seeded data (500 users) and invented accounts, and running them against
+     * production would be both wrong and destructive: several of them sign out,
+     * and Phase 3C will add suspend/ban.
+     *
+     * Vite's `loadEnv` reads prefixed `process.env` as well as `.env*` files,
+     * and process values win — so this pins the mode regardless of what is on
+     * the developer's machine.
+     */
+    env: {
+      VITE_USE_MOCKS: 'true',
+      VITE_API_BASE_URL: 'http://localhost:4000',
+      VITE_ENV_LABEL: 'local',
+    },
+    // A dev server left running against the real API would silently poison the run.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 })

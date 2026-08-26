@@ -3,9 +3,11 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useEffect, useState } from 'react'
 import { RouterProvider } from 'react-router'
 
-import { setUnauthorizedHandler } from '@/api/client'
+import { setRefreshHandler, setUnauthorizedHandler } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import { AuthProvider } from '@/auth/AuthProvider'
+import { isAuthPath, refreshSession } from '@/auth/session'
+import { clearSession } from '@/auth/tokenStore'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { isProduction } from '@/env'
@@ -33,10 +35,29 @@ export default function App() {
   })
 
   useEffect(() => {
+    /*
+     * A 401 reaches here only after the refresh interceptor has already tried
+     * and failed to renew the session, so at this point the session really is
+     * over.
+     */
     setUnauthorizedHandler(() => {
+      /*
+       * Discard the credentials as well as the cached session. With bearer auth
+       * an expired token would otherwise keep being attached to every
+       * subsequent request, producing a loop of 401s instead of a clean
+       * redirect to sign-in.
+       */
+      clearSession()
       queryClient.setQueryData(queryKeys.session.current, null)
     })
-    return () => setUnauthorizedHandler(null)
+
+    // Lets the client renew an expired token without importing the auth layer.
+    setRefreshHandler(refreshSession, isAuthPath)
+
+    return () => {
+      setUnauthorizedHandler(null)
+      setRefreshHandler(null)
+    }
   }, [queryClient])
 
   return (

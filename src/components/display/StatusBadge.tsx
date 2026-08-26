@@ -33,7 +33,9 @@ export function StatusBadge({
 
   if (variant === 'dot') {
     return (
-      <span className={cn('inline-flex items-center gap-2', className)}>
+      <span
+        className={cn('inline-flex items-center gap-2 whitespace-nowrap', className)}
+      >
         <span
           className={cn('size-2 shrink-0 rounded-full', TONE_DOT_CLASSES[tone])}
           aria-hidden="true"
@@ -46,7 +48,12 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-overline uppercase',
+        /*
+         * `whitespace-nowrap`: a two-word status like "Pending verification"
+         * wrapped onto two lines, which made that row taller than its
+         * neighbours and left the whole table looking ragged.
+         */
+        'inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-overline whitespace-nowrap uppercase',
         TONE_CLASSES[tone],
         className,
       )}

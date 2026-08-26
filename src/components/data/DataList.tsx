@@ -11,6 +11,8 @@ export interface DataListProps<TRow> {
   rows: readonly TRow[]
   columns: readonly AdminColumn<TRow>[]
   rowKey: (row: TRow) => string
+  /** Accessible name for each row's open control on the card layout. */
+  rowLabel?: (row: TRow) => string
 
   /** Remote state — every list surface must handle all of these. */
   loading?: boolean
@@ -46,6 +48,7 @@ export function DataList<TRow>({
   rows,
   columns,
   rowKey,
+  rowLabel,
   loading = false,
   error = null,
   onRetry,
@@ -108,6 +111,7 @@ export function DataList<TRow>({
       rows={rows}
       columns={columns}
       rowKey={rowKey}
+      {...(rowLabel ? { rowLabel } : {})}
       {...(onRowClick ? { onRowClick } : {})}
       {...(rowActions ? { rowActions } : {})}
       {...(className ? { className } : {})}

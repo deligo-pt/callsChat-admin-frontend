@@ -87,10 +87,20 @@ function Button({
       aria-busy={loading || undefined}
       {...props}
     >
-      {loading && !asChild ? (
-        <Loader2Icon className="animate-spin" aria-hidden="true" />
-      ) : null}
-      {children}
+      {/*
+        With `asChild`, Radix's Slot requires EXACTLY one child. Rendering the
+        spinner slot as `null` still counts as a second child, so Slot threw
+        "Expected a single React element child" for every `asChild` caller.
+        Passing `children` straight through is what keeps that contract.
+      */}
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {loading ? <Loader2Icon className="animate-spin" aria-hidden="true" /> : null}
+          {children}
+        </>
+      )}
     </Comp>
   )
 }

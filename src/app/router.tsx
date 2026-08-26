@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 
-import { PERMISSIONS, type Permission } from '@/auth/permissions'
+import { PERMISSIONS } from '@/auth/permissions'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { RequirePermission } from '@/auth/RequirePermission'
 import { RouteFallback } from '@/components/feedback'
@@ -25,71 +25,82 @@ const Placeholder = lazy(() =>
     default: m.ModulePlaceholder,
   })),
 )
+const UsersListPage = lazy(() =>
+  import('@/features/users/UsersListPage').then((m) => ({ default: m.UsersListPage })),
+)
+const UserDetailPage = lazy(() =>
+  import('@/features/users/UserDetailPage').then((m) => ({
+    default: m.UserDetailPage,
+  })),
+)
+const AccountSecurityPage = lazy(() =>
+  import('@/features/auth/AccountSecurityPage').then((m) => ({
+    default: m.AccountSecurityPage,
+  })),
+)
 
 function suspended(node: ReactNode) {
   return <Suspense fallback={<RouteFallback />}>{node}</Suspense>
 }
 
 /**
- * A module route, wrapped in its permission guard.
+ * Routes for the modules the BACKEND actually serves.
  *
- * plan.md §8: the guard renders `ForbiddenState` rather than the page. This is
- * a clarity affordance — the backend rejects the underlying request anyway, so
- * forcing the URL yields no data either way.
+ * Verified 2026-08-25: only auth, users and dashboard/analytics exist. The
+ * previous placeholder routes for Social Clubs, Hosts, Moderation, Diamonds,
+ * Payments, Withdrawals, Announcements, Admin Users, Audit Logs and
+ * Configuration have been removed — every one of them 404s server-side, so the
+ * page could never have shown data.
+ *
+ * Forcing one of those URLs now falls through to the not-found route, which is
+ * the honest answer: the module does not exist yet. A placeholder claiming
+ * "coming in Phase 7" was worse, because it made an unbuilt backend look like a
+ * built-but-broken frontend.
+ *
+ * **Restore a route the same day its endpoints ship**, alongside its nav entry
+ * in `layouts/navigation.ts`.
  */
-function moduleRoute(
-  path: string,
-  module: string,
-  phase: number,
-  permission?: Permission,
-): RouteObject {
-  const page = suspended(<Placeholder module={module} phase={phase} />)
-  return {
-    path,
-    element: permission ? (
-      <RequirePermission permission={permission} resource={module.toLowerCase()}>
-        {page}
-      </RequirePermission>
-    ) : (
-      page
-    ),
-  }
-}
-
 const moduleRoutes: RouteObject[] = [
-  moduleRoute(ROUTES.dashboard, 'Dashboard', 9),
-  moduleRoute(ROUTES.users, 'User Management', 3, PERMISSIONS.usersView),
-  moduleRoute(ROUTES.socialClubs, 'Social Club Management', 4, PERMISSIONS.clubsView),
-  moduleRoute(
-    ROUTES.hostApplications,
-    'Host Management',
-    5,
-    PERMISSIONS.hostApplicationsView,
-  ),
-  moduleRoute(ROUTES.moderation, 'Moderation & Safety', 6, PERMISSIONS.reportsView),
-  moduleRoute(ROUTES.diamondTransactions, 'Diamond Economy', 7, PERMISSIONS.ledgerView),
-  moduleRoute(ROUTES.payments, 'Payments', 8, PERMISSIONS.paymentsView),
-  moduleRoute(ROUTES.withdrawals, 'Withdrawals', 8, PERMISSIONS.withdrawalsView),
-  moduleRoute(ROUTES.reports, 'Reports & Analytics', 9, PERMISSIONS.analyticsView),
-  moduleRoute(
-    ROUTES.notifications,
-    'Notifications & CMS',
-    10,
-    PERMISSIONS.notificationsSend,
-  ),
-  moduleRoute(
-    ROUTES.adminUsers,
-    'Admin Users & RBAC',
-    10,
-    PERMISSIONS.adminUsersManage,
-  ),
-  moduleRoute(ROUTES.auditLogs, 'Audit Logs', 10, PERMISSIONS.auditLogsView),
-  moduleRoute(
-    ROUTES.configuration,
-    'System Configuration',
-    10,
-    PERMISSIONS.configurationView,
-  ),
+  /*
+   * GET /admin/dashboard/snapshot · /trends · /admin/analytics all exist, but
+   * the screen itself is Phase 9 — so this stays a placeholder for now. It is
+   * the one placeholder with a real backend behind it.
+   */
+  {
+    path: ROUTES.dashboard,
+    element: (
+      <RequirePermission permission={PERMISSIONS.analyticsView} resource="dashboard">
+        {suspended(<Placeholder module="Dashboard" phase={9} />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * No permission guard: every signed-in admin may manage their OWN
+   * credentials, regardless of role. Gating this would lock a Moderator out of
+   * changing their own password.
+   */
+  { path: ROUTES.account, element: suspended(<AccountSecurityPage />) },
+
+  /* Phase 3A — the first real module surface. */
+  {
+    path: ROUTES.users,
+    element: (
+      <RequirePermission permission={PERMISSIONS.usersView} resource="users">
+        {suspended(<UsersListPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /* Phase 3B — the six read-only detail tabs. */
+  {
+    path: '/users/:userId',
+    element: (
+      <RequirePermission permission={PERMISSIONS.usersView} resource="users">
+        {suspended(<UserDetailPage />)}
+      </RequirePermission>
+    ),
+  },
 ]
 
 if (!isProduction) {

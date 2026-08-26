@@ -33,14 +33,31 @@ npm run dev
 
 Open **http://localhost:5173** — you land on `/login`.
 
-No `.env` setup is needed for local work: `.env.development` is committed with
-localhost defaults and runs against the in-browser mock backend, so **no
-backend, database or network access is required**. To override a value, create
-`.env.local` (git-ignored) — see `.env.example`.
+**No `.env` setup is needed.** `.env.development` is committed and points at the
+real backend (`https://api.callschat.com`), so sign in with your actual admin
+credentials and you get real data.
 
-Feature modules are still being built; those routes currently render a
-placeholder. The shell, authentication, RBAC, global search and the component
-library are live.
+To work offline against seeded mock data instead, create `.env.local`
+(git-ignored) with `VITE_USE_MOCKS=true` — see `.env.example`.
+
+### What exists today
+
+Navigation shows only what the backend actually serves. Verified against the
+live API:
+
+| Module              | Backend         | Frontend                       |
+| ------------------- | --------------- | ------------------------------ |
+| Sign-in and session | ✅ 6 endpoints  | ✅ live                        |
+| Account & security  | ✅ 2 endpoints  | ✅ live (`/account`)           |
+| Users               | ✅ 20 endpoints | ✅ directory live; detail next |
+| Dashboard           | ✅ 3 endpoints  | placeholder — screen not built |
+
+Social Clubs, Hosts, Moderation, Diamonds, Payments, Withdrawals, Reports,
+Announcements, Admin Users, Audit Logs and Configuration **all 404 server-side**
+and are deliberately absent from the menu and the router. Forcing one of those
+URLs gives a not-found page, which is the honest answer. Restore each one
+alongside its endpoints — nav lives in `src/layouts/navigation.ts`, routes in
+`src/app/router.tsx`.
 
 ---
 
@@ -50,12 +67,15 @@ Validated at build time by `vite.config.ts` and again at boot by `src/env.ts`, s
 a missing or malformed value fails the build with a readable error instead of
 white-screening in the browser.
 
-| Variable            | Required | Default                 | Purpose                                                                                             |
-| ------------------- | -------- | ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `VITE_API_BASE_URL` | yes      | `http://localhost:4000` | Backend origin. **No trailing slash, no `/api/v1` suffix** — the client appends it.                 |
-| `VITE_ENV_LABEL`    | yes      | `local`                 | `local` \| `development` \| `staging` \| `production`. Drives the environment badge in the top bar. |
-| `VITE_USE_MOCKS`    | yes      | `true`                  | `true` boots MSW and serves seeded data. `false` calls the real backend.                            |
-| `VITE_RELEASE`      | no       | —                       | Release identifier attached to error reports.                                                       |
+| Variable            | Required | Dev default                 | Purpose                                                                                             |
+| ------------------- | -------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL` | yes      | `https://api.callschat.com` | Backend origin. **No trailing slash, no `/api/v1` suffix** — the client appends it.                 |
+| `VITE_ENV_LABEL`    | yes      | `development`               | `local` \| `development` \| `staging` \| `production`. Drives the environment badge in the top bar. |
+| `VITE_USE_MOCKS`    | yes      | `false`                     | `true` boots MSW and serves seeded data. `false` calls the real backend.                            |
+| `VITE_RELEASE`      | no       | —                           | Release identifier attached to error reports.                                                       |
+
+`.env.test` is committed and pins the automated suite to mocks, so tests never
+depend on a developer's local settings or hit production.
 
 Only `VITE_`-prefixed, browser-safe values belong in `.env`. Everything in this
 file ships to the browser — **never put API secrets, payment provider keys or
@@ -71,22 +91,35 @@ VITE_USE_MOCKS=false
 
 ---
 
-## Test accounts
+## Signing in
 
-Available when `VITE_USE_MOCKS=true`. **Any non-empty password works** — the mock
-does not enforce a password policy, because that is a backend concern.
+Against the **real backend** (the dev default), use your actual CallChat admin
+credentials in the **Email or phone** field — the API authenticates on an
+`identifier` that accepts either an email or a phone number.
 
-| Email                | Password | Role             | Sees                                            |
-| -------------------- | -------- | ---------------- | ----------------------------------------------- |
-| `nadia@callchat.app` | anything | Super Admin      | Everything                                      |
-| `tomas@callchat.app` | anything | Operations Admin | All except admin-user / RBAC management         |
-| `elena@callchat.app` | anything | Moderator        | Users (read + restrict), clubs, moderation only |
+### Mock accounts
+
+Only when `VITE_USE_MOCKS=true`. **Any non-empty password works** until you
+change it on the account page.
+
+| Email or phone       | Password | Role        | Sees                                            |
+| -------------------- | -------- | ----------- | ----------------------------------------------- |
+| `nadia@callchat.app` | anything | Super Admin | Everything                                      |
+| `tomas@callchat.app` | anything | Admin       | All except admin-user / RBAC management         |
+| `elena@callchat.app` | anything | Moderator   | Users (read + restrict), clubs, moderation only |
 
 Sign in as different roles to see RBAC in action: nav items disappear and direct
 URLs render a forbidden state.
 
-The session lives in `localStorage` under `callchat.mock.session` — clear it to
-force a sign-out.
+The credentials live in `sessionStorage` under `callchat.admin.session` (so
+they die with the tab); the mock backend keeps its own record in
+`localStorage` under `callchat.mock.session`. Clearing the first forces a
+sign-out.
+
+**Account & security** (account menu → Account & security, or `/account`) lets
+the signed-in admin change their own password and email address. Against the
+mock, any password works until you change it — after that only the new one
+does, so the flow is genuinely testable.
 
 ---
 
@@ -126,6 +159,10 @@ cases), so a given URL renders the same rows on every reload.
 | `npm run format` / `format:check` | Prettier                                                        |
 
 The first Playwright run needs browsers: `npx playwright install`.
+
+The e2e suite starts its own dev server on **:5174** pinned to `VITE_USE_MOCKS=true`,
+so it never collides with your dev server on :5173 and never runs against
+production — several specs sign out, and Phase 3C adds suspend/ban.
 
 ---
 

@@ -57,6 +57,23 @@ export interface ConfirmActionDialogProps {
   details?: ReactNode
 
   /**
+   * Interactive inputs the action needs beyond a reason — a suspension
+   * category, an expiry date, a capability to restrict.
+   *
+   * Kept inside this dialog rather than letting features build their own
+   * parameterised forms: plan.md §1D makes this the single gateway for
+   * sensitive actions, and an action that skipped it would also skip the
+   * mandatory reason and the target confirmation.
+   */
+  fields?: ReactNode
+
+  /**
+   * Blocks confirmation while the caller's own `fields` are invalid. The
+   * reason and typed-confirmation checks are always applied on top of this.
+   */
+  confirmDisabled?: boolean
+
+  /**
    * Require the operator to type this exact string before confirming.
    * Reserved for irreversible actions (plan.md §Recommended Screen Pattern).
    */
@@ -88,7 +105,16 @@ export function ConfirmActionDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-[640px]"
+        /*
+         * Constrained height with a scrolling body.
+         *
+         * Since this dialog grew a `fields` slot, its content is variable and
+         * can exceed a phone viewport — a six-field provisioning form at 360px
+         * pushed the confirm button off-screen, and it shifted as validation
+         * messages appeared. The header and footer stay pinned so the confirm
+         * control is always reachable; only the middle scrolls.
+         */
+        className="max-h-[90dvh] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-[640px]"
         onInteractOutside={(event) => {
           // Never lose a typed reason to a stray click.
           if (rest.loading) event.preventDefault()
@@ -116,6 +142,8 @@ function ConfirmActionForm({
   effect,
   severity = 'warning',
   details,
+  fields,
+  confirmDisabled = false,
   typedConfirmation,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
@@ -139,7 +167,7 @@ function ConfirmActionForm({
   const reasonTooShort = trimmedReason.length < MIN_REASON_LENGTH
   const typedMismatch =
     typedConfirmation !== undefined && typed.trim() !== typedConfirmation
-  const canConfirm = !reasonTooShort && !typedMismatch && !loading
+  const canConfirm = !reasonTooShort && !typedMismatch && !confirmDisabled && !loading
 
   function handleConfirm() {
     setTouched(true)
@@ -169,7 +197,7 @@ function ConfirmActionForm({
         </div>
       </DialogHeader>
 
-      <div className="space-y-4">
+      <div className="min-h-0 space-y-4 overflow-y-auto">
         {/* Target — the operator must see exactly what they are acting on. */}
         <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
           <span className="block text-overline text-foreground-subtle uppercase">
@@ -181,6 +209,8 @@ function ConfirmActionForm({
         </div>
 
         {details ? <div>{details}</div> : null}
+
+        {fields ? <div className="space-y-4">{fields}</div> : null}
 
         {/* Mandatory reason — recorded in the audit event. */}
         <div className="space-y-2">
