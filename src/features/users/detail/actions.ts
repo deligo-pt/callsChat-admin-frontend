@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/client'
 import type {
-  AccountStatus,
+  AccountStatusValue,
   Capability,
   SuspensionReason,
   UserRole,
@@ -213,13 +213,32 @@ export type UserAction =
  * server-side and the operator sees the error. This map only decides which
  * buttons are worth showing.
  */
-export function availableStatusActions(status: AccountStatus): readonly UserAction[] {
+export function availableStatusActions(
+  status: AccountStatusValue,
+): readonly UserAction[] {
   switch (status) {
     case 'BANNED':
       return ['restore']
     case 'SUSPENDED':
       return ['unsuspend', 'ban']
-    // ACTIVE, INACTIVE and PENDING_VERIFICATION can all be suspended or banned.
+    /*
+     * A deletion grace period, not a moderation outcome — so the moderation
+     * levers stay available. An account misbehaving on its way out is still
+     * worth suspending, and `restore` would be meaningless: nothing here was
+     * taken away by an administrator.
+     */
+    case 'SCHEDULED_FOR_DELETION':
+      return ['suspend', 'ban']
+    /*
+     * ACTIVE, INACTIVE and PENDING_VERIFICATION can all be suspended or banned
+     * — and so can a status this build has never heard of, which is now a case
+     * that genuinely occurs: the backend grew `SCHEDULED_FOR_DELETION` without
+     * the docs changing. Offering the two universal moderation levers is the
+     * lesser risk, because hiding every control would strand an operator in
+     * front of an account they cannot act on, while an illegal transition is
+     * rejected server-side and surfaces as a plain error. `restore` is
+     * withheld: it would assert a penalty exists to lift.
+     */
     default:
       return ['suspend', 'ban']
   }

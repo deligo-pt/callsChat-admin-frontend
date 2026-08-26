@@ -41,6 +41,12 @@ const USER: DomainMap = {
   PENDING_VERIFICATION: { label: 'Pending verification', tone: 'info' },
   SUSPENDED: { label: 'Suspended', tone: 'warning' },
   BANNED: { label: 'Banned', tone: 'danger' },
+  /*
+   * A deletion grace period. `locked` rather than `danger` or `warning`: it is
+   * not a moderation penalty, and reading as one would misrepresent why the
+   * account is frozen.
+   */
+  SCHEDULED_FOR_DELETION: { label: 'Scheduled for deletion', tone: 'locked' },
 }
 
 const RESTRICTION: DomainMap = {
