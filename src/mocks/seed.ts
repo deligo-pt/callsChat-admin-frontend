@@ -1,4 +1,4 @@
-import { maskEmail, maskPhone, maskReference } from '@/lib/mask'
+import { maskPhone, maskReference } from '@/lib/mask'
 import type {
   AdminUser,
   Announcement,
@@ -15,9 +15,10 @@ import type {
   PayoutRate,
   Report,
   SocialClubDetail,
-  UserDetail,
+  UserSummary,
   WithdrawalDetail,
 } from '@/types'
+import { CAPABILITY_VALUES } from '@/types/identity'
 
 import { createRandom } from './random'
 
@@ -146,52 +147,91 @@ function id(prefix: string, index: number): string {
  * Users — 500
  * ---------------------------------------------------------------------- */
 
-export const users: UserDetail[] = Array.from({ length: 500 }, (_, index) => {
+/**
+ * Seed users.
+ *
+ * The shape matches the VERIFIED `GET /admin/users` row exactly (plan.md
+ * §10.3) so the mock and the live API are interchangeable — that is the whole
+ * point of the mock layer, and a divergence here would mean Phase 3A was built
+ * against a lie.
+ *
+ * `wallet`, `countryCode` and `maskedPhone` are extra fields consumed by
+ * modules whose contracts are NOT yet verified (§10.5). They are stripped by
+ * `userSummarySchema` on parse, so they never reach the user directory — they
+ * exist purely to keep the other seed collections coherent until those phases
+ * verify their own shapes.
+ */
+type SeedUser = UserSummary & {
+  readonly countryCode: string
+  readonly maskedPhone: string
+  readonly wallet: { availableDiamonds: number; lockedDiamonds: number }
+}
+
+/**
+ * Status mix. Weighted towards ACTIVE and PENDING_VERIFICATION because that is
+ * what the live data looks like, while still guaranteeing enough SUSPENDED and
+ * BANNED records to exercise every badge and filter.
+ */
+function seedStatus(): UserSummary['status'] {
+  const roll = rng.int(1, 100)
+  if (roll <= 55) return 'ACTIVE'
+  if (roll <= 80) return 'PENDING_VERIFICATION'
+  if (roll <= 88) return 'INACTIVE'
+  if (roll <= 96) return 'SUSPENDED'
+  return 'BANNED'
+}
+
+/**
+ * Narrow to the three-state status that the still-unverified modules
+ * (§10.5) model. Widening those types on speculation would be inventing a
+ * contract; clamping here keeps this file honest until each phase verifies
+ * its own shapes.
+ */
+function legacyStatus(
+  status: UserSummary['status'],
+): 'ACTIVE' | 'SUSPENDED' | 'BANNED' {
+  return status === 'SUSPENDED' || status === 'BANNED' ? status : 'ACTIVE'
+}
+
+export const users: SeedUser[] = Array.from({ length: 500 }, (_, index) => {
   const country = rng.pick(COUNTRIES)
-  const status = rng.bool(0.86) ? 'ACTIVE' : rng.bool(0.6) ? 'SUSPENDED' : 'BANNED'
+  const status = seedStatus()
   const isHost = rng.bool(0.18)
   const name = fullName()
   const phone = `${DIAL_CODES[country] ?? '+1'}${rng.int(700000000, 799999999)}`
-  const registeredAt = rng.pastDate(540, 1)
+  const handle = name.toLowerCase().replace(/\s+/g, '.')
 
-  const restrictionCount = status === 'ACTIVE' && rng.bool(0.12) ? rng.int(1, 2) : 0
-  const capabilities = ['GIFTING', 'MESSAGING', 'CLUB_CREATION', 'VIDEO_CALL'] as const
+  const restrictionCount = status === 'ACTIVE' && rng.bool(0.14) ? rng.int(1, 3) : 0
+  const capabilities = CAPABILITY_VALUES
 
   return {
     id: id('usr', index),
     displayName: name,
-    maskedPhone: maskPhone(phone),
-    maskedEmail: rng.bool(0.5)
-      ? maskEmail(`${name.toLowerCase().replace(/\s+/g, '.')}@example.com`)
-      : null,
+    username: rng.bool(0.8) ? handle.replace(/\./g, '') : null,
+    avatarUrl: null,
+    email: rng.bool(0.6) ? `${handle}@example.com` : null,
+    /* The API returns both; the UI is expected to render only the masked one. */
+    phone,
+    phoneMasked: maskPhone(phone),
+    role: 'USER',
     status,
+    accountType: rng.bool(0.12) ? 'BUSINESS' : 'PERSONAL',
     isHost,
-    activeRestrictionCount: restrictionCount,
-    registeredAt,
+    activeRestrictions: Array.from(
+      { length: restrictionCount },
+      (_unused, rIndex) => capabilities[(index + rIndex) % capabilities.length]!,
+    ),
+    createdAt: rng.pastDate(540, 1),
     lastActiveAt: status === 'BANNED' ? rng.pastDate(90, 30) : rng.pastDate(14, 0),
+
+    /* Extras for unverified modules — see the note above. */
     countryCode: country,
-    restrictions: Array.from({ length: restrictionCount }, (_, rIndex) => ({
-      id: id(`res_${index}`, rIndex),
-      capability: capabilities[rIndex % capabilities.length] ?? 'GIFTING',
-      reason: 'Repeated reports from other participants.',
-      createdBy: 'Nadia Chowdhury',
-      startsAt: rng.pastDate(60, 1),
-      endsAt: rng.bool(0.5) ? rng.pastDate(-30, -60) : null,
-      active: true,
-    })),
+    maskedPhone: maskPhone(phone),
     wallet: {
       availableDiamonds: rng.int(0, 120000),
       lockedDiamonds: isHost && rng.bool(0.3) ? 10000 : 0,
     },
-    hostApplicationStatus: isHost
-      ? 'APPROVED'
-      : rng.bool(0.08)
-        ? rng.bool(0.5)
-          ? 'SUBMITTED'
-          : 'REJECTED'
-        : 'NONE',
-    reportCount: rng.bool(0.2) ? rng.int(1, 6) : 0,
-  } satisfies UserDetail
+  } satisfies SeedUser
 })
 
 const hostUsers = users.filter((user) => user.isHost)
@@ -279,7 +319,7 @@ export const hostApplications: HostApplication[] = Array.from(
           : status === 'REJECTED'
             ? 'Open moderation case against this account; re-apply after resolution.'
             : null,
-      applicantStatus: user.status,
+      applicantStatus: legacyStatus(user.status),
     } satisfies HostApplication
   },
 )
@@ -533,8 +573,8 @@ export const withdrawals: WithdrawalDetail[] = Array.from(
         maskedReference: maskReference(`acct_${index.toString(36).padStart(14, '0')}`),
         verificationStatus: 'VERIFIED',
       },
-      hostAccountStatus: user?.status ?? 'ACTIVE',
-      hostActiveRestrictionCount: user?.activeRestrictionCount ?? 0,
+      hostAccountStatus: user ? legacyStatus(user.status) : 'ACTIVE',
+      hostActiveRestrictionCount: user?.activeRestrictions.length ?? 0,
       previousWithdrawalCount: rng.int(0, 12),
       payoutReference: ['PROCESSING', 'COMPLETED'].includes(state)
         ? `po_${index.toString(36).padStart(12, '0')}`
@@ -699,32 +739,33 @@ export const auditLogs: AuditLog[] = Array.from({ length: 400 }, (_, index) => {
  * Administration
  * ---------------------------------------------------------------------- */
 
+/** Roles use the VERIFIED enum — `ADMIN`, not the assumed `OPERATIONS_ADMIN`. */
 export const adminUsers: AdminUser[] = [
   {
-    name: 'Nadia Chowdhury',
+    displayName: 'Nadia Chowdhury',
     email: 'nadia@callchat.app',
     role: 'SUPER_ADMIN' as const,
   },
+  { displayName: 'Tomas Ricci', email: 'tomas@callchat.app', role: 'ADMIN' as const },
   {
-    name: 'Tomas Ricci',
-    email: 'tomas@callchat.app',
-    role: 'OPERATIONS_ADMIN' as const,
+    displayName: 'Elena Petrova',
+    email: 'elena@callchat.app',
+    role: 'MODERATOR' as const,
   },
-  { name: 'Elena Petrova', email: 'elena@callchat.app', role: 'MODERATOR' as const },
-  { name: 'Ibrahim Diallo', email: 'ibrahim@callchat.app', role: 'MODERATOR' as const },
   {
-    name: 'Clara Bergman',
-    email: 'clara@callchat.app',
-    role: 'OPERATIONS_ADMIN' as const,
+    displayName: 'Ibrahim Diallo',
+    email: 'ibrahim@callchat.app',
+    role: 'MODERATOR' as const,
   },
+  { displayName: 'Clara Bergman', email: 'clara@callchat.app', role: 'ADMIN' as const },
 ].map((entry, index) => ({
   id: id('adm', index),
-  name: entry.name,
+  displayName: entry.displayName,
   email: entry.email,
   role: entry.role,
-  active: index !== 4,
+  status: index !== 4 ? ('ACTIVE' as const) : ('INACTIVE' as const),
   createdAt: rng.pastDate(500, 100),
-  lastSignInAt: rng.pastDate(10, 0),
+  lastActiveAt: rng.pastDate(10, 0),
 }))
 
 export const announcements: Announcement[] = Array.from({ length: 24 }, (_, index) => {

@@ -21,11 +21,11 @@ afterEach(() => {
 })
 
 describe('apiClient — headers', () => {
-  it('sends a correlation ID on every request', async () => {
+  it('sends a correlation ID as X-Request-ID, the only name CORS allows', async () => {
     let received: string | null = null
     server.use(
       http.get(`${BASE}/probe`, ({ request }) => {
-        received = request.headers.get('X-Correlation-Id')
+        received = request.headers.get('X-Request-ID')
         return HttpResponse.json({ ok: true })
       }),
     )

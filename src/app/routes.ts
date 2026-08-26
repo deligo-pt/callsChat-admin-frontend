@@ -9,6 +9,9 @@ export const ROUTES = {
 
   dashboard: '/dashboard',
 
+  /** Self-service credential management for the signed-in admin. */
+  account: '/account',
+
   users: '/users',
   user: (id: string) => `/users/${id}`,
 

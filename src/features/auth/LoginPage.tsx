@@ -4,16 +4,23 @@ import { useForm } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 
-import { isAppError } from '@/api/errors'
+import { RateLimitedError } from '@/api/errors'
 import { queryKeys } from '@/api/queryKeys'
 import { ROUTES } from '@/app/routes'
-import { signIn } from '@/auth/session'
+import { signIn, signInErrorMessage } from '@/auth/session'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 
+/**
+ * plan.md §10.1: the endpoint takes `identifier`, which accepts an email OR a
+ * phone number — so this is deliberately NOT validated as an email. Rejecting
+ * a valid phone number client-side would lock out accounts the backend
+ * accepts.
+ */
 const loginSchema = z.object({
-  email: z.email('Enter a valid email address.'),
+  identifier: z.string().trim().min(1, 'Enter your email or phone number.'),
   password: z.string().min(1, 'Enter your password.'),
 })
 
@@ -39,21 +46,39 @@ export function LoginPage() {
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { identifier: '', password: '' },
   })
 
   const mutation = useMutation({
     mutationFn: signIn,
+    /*
+     * A failed sign-in must never be retried automatically. Repeating a
+     * password guess is pointless against a correct rejection and actively
+     * harmful against a rate limiter.
+     */
+    retry: false,
     onSuccess: (admin) => {
       queryClient.setQueryData(queryKeys.session.current, admin)
+      // `replace` keeps the login screen out of the back-button history.
       void navigate(from, { replace: true })
+    },
+    onError: () => {
+      // Never leave a password sitting in a form field after a failure.
+      form.resetField('password')
+      form.setFocus('password')
     },
   })
 
+  /*
+   * A rate-limit response is worth stating plainly — otherwise it reads as
+   * "wrong password" and the operator keeps trying, making it worse.
+   * Everything else collapses to one message: see `signInErrorMessage` for why
+   * the API's own two distinct rejections must not be shown verbatim.
+   */
   const serverMessage = mutation.error
-    ? isAppError(mutation.error)
-      ? mutation.error.message
-      : 'Sign-in failed. Try again.'
+    ? mutation.error instanceof RateLimitedError
+      ? 'Too many sign-in attempts. Wait a moment and try again.'
+      : signInErrorMessage(mutation.error)
     : null
 
   return (
@@ -79,28 +104,30 @@ export function LoginPage() {
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="identifier">Email or phone</Label>
         <Input
-          id="email"
-          type="email"
+          id="identifier"
+          type="text"
+          inputMode="email"
           autoComplete="username"
           autoFocus
-          aria-invalid={Boolean(form.formState.errors.email) || undefined}
-          aria-describedby={form.formState.errors.email ? 'email-error' : undefined}
-          {...form.register('email')}
+          aria-invalid={Boolean(form.formState.errors.identifier) || undefined}
+          aria-describedby={
+            form.formState.errors.identifier ? 'identifier-error' : undefined
+          }
+          {...form.register('identifier')}
         />
-        {form.formState.errors.email ? (
-          <p id="email-error" role="alert" className="text-caption text-danger">
-            {form.formState.errors.email.message}
+        {form.formState.errors.identifier ? (
+          <p id="identifier-error" role="alert" className="text-caption text-danger">
+            {form.formState.errors.identifier.message}
           </p>
         ) : null}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="current-password"
           aria-invalid={Boolean(form.formState.errors.password) || undefined}
           aria-describedby={

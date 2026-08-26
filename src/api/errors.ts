@@ -1,4 +1,4 @@
-import type { ErrorCode, FieldError } from '@/types/common'
+import { parseFieldErrors, type ErrorCode, type FieldError } from '@/types/common'
 
 /**
  * Typed application errors parsed from the backend error envelope
@@ -135,6 +135,13 @@ export class NetworkError extends AppError {
   }
 }
 
+/**
+ * Fastify's schema-rejection code. plan.md §10.2: this is what the live API
+ * actually returns for a bad body or query parameter, and its field detail is
+ * embedded in the message string rather than a `details[]` array.
+ */
+const FASTIFY_VALIDATION_CODE = 'FST_ERR_VALIDATION'
+
 const ERROR_BY_CODE: Readonly<
   Record<
     string,
@@ -145,6 +152,8 @@ const ERROR_BY_CODE: Readonly<
     ) => AppError
   >
 > = {
+  [FASTIFY_VALIDATION_CODE]: (m, c, f) =>
+    new ValidationError(m, c, f && f.length > 0 ? f : parseFieldErrors(m)),
   VALIDATION_ERROR: (m, c, f) => new ValidationError(m, c, f),
   UNAUTHORIZED: (m, c) => new UnauthorizedError(m, c),
   FORBIDDEN: (m, c) => new ForbiddenError(m, c),
@@ -158,7 +167,7 @@ const ERROR_BY_CODE: Readonly<
 const ERROR_BY_STATUS: Readonly<
   Record<number, (message: string, correlationId?: string) => AppError>
 > = {
-  400: (m, c) => new ValidationError(m, c),
+  400: (m, c) => new ValidationError(m, c, parseFieldErrors(m)),
   401: (m, c) => new UnauthorizedError(m, c),
   403: (m, c) => new ForbiddenError(m, c),
   404: (m, c) => new NotFoundError(m, c),

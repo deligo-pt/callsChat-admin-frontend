@@ -10,16 +10,36 @@
     border-color: var(--color-border);
   }
 
+  /*
+   * The application owns the viewport; the DOCUMENT never scrolls.
+   *
+   * Scrolling happens inside `<main>` (see AdminLayout) or inside the auth
+   * shell. Locking the document here is what makes that guarantee hold even
+   * when something outside the app adds height to `<body>` — a browser
+   * extension injecting an overlay, for example, previously pushed the page
+   * down and carried the top bar and sidebar off-screen.
+   *
+   * This also covers plan.md §6.3: the page can never scroll horizontally.
+   */
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     font-family: var(--font-sans);
-    /* Never allow horizontal page scroll — plan.md §6.3 */
-    overflow-x: hidden;
+  }
+
+  /* Vite's mount point — the frame measures against this, not the viewport. */
+  #root {
+    height: 100%;
+    isolation: isolate;
   }
 
   body {
     margin: 0;
-    min-height: 100dvh;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-size: var(--text-body);
@@ -28,7 +48,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
   }
 
   h1,

@@ -61,7 +61,14 @@ export function ExportButton({
         severity="info"
         title={`Export ${resource}`}
         target={`${formatCount(rowCount)} ${resource} matching the current filters`}
-        effect="A CSV is generated from the current filters. Fields your role cannot view are excluded. This export is recorded in the audit log."
+        /*
+         * Deliberately does NOT promise that fields the role cannot view are
+         * excluded — that is the backend's decision and it has not been
+         * verified per role. The users export currently contains unmasked
+         * phone numbers and email addresses, so the copy warns instead of
+         * reassuring.
+         */
+        effect="A file is generated from the current filters and downloaded to this device. It may contain unmasked personal data. This export is recorded in the audit log."
         confirmLabel="Generate export"
         loading={loading}
         onConfirm={(reason) => {

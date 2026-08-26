@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { ROUTES } from '@/app/routes'
 import { useAuth } from '@/auth/useAuth'
-import { ADMIN_ROLE_LABELS } from '@/types/identity'
+import { adminDisplayName, ADMIN_ROLE_LABELS } from '@/types/identity'
 import { cn } from '@/lib/cn'
 
 import { Sidebar } from './Sidebar'
@@ -23,6 +24,19 @@ const COLLAPSE_STORAGE_KEY = 'callchat.admin.sidebarCollapsed'
 export function AdminLayout() {
   const { admin, can, signOut } = useAuth()
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  /*
+   * Sign-out navigates deliberately rather than waiting for the auth state to
+   * cascade into a redirect. It is an explicit action with an explicit
+   * destination, and unlike an expired session there is no attempted location
+   * worth preserving — `replace` also keeps the signed-in page out of the back
+   * history.
+   */
+  async function handleSignOut() {
+    await signOut()
+    await navigate(ROUTES.login, { replace: true })
+  }
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -47,9 +61,26 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-dvh bg-surface-muted">
+    /*
+     * A fixed app frame: the shell is exactly one viewport tall and does not
+     * scroll — only `<main>` does.
+     *
+     * This replaces a `sticky` sidebar and top bar, which silently did not
+     * stick: `globals.css` sets `overflow-x: hidden` on `html`, and that makes
+     * the root element a scroll container, which breaks `position: sticky` for
+     * its descendants. The symptom was the top bar and brand scrolling away and
+     * the sidebar stopping short of the bottom of a long page.
+     *
+     * An explicit frame is also the right shape for an operations console: the
+     * navigation and account menu must be reachable at any scroll position.
+     *
+     * `h-full` measures against `#root` (sized in globals.css) rather than
+     * `dvh`. The document is locked from scrolling there, so the frame cannot
+     * be pushed off-screen by anything injected into `<body>`.
+     */
+    <div className="flex h-full overflow-hidden bg-surface-muted">
       {/* Fixed sidebar — lg and up. Rail at lg, expanded at xl. */}
-      <aside className="sticky top-0 hidden h-dvh shrink-0 lg:block">
+      <aside className="hidden h-full shrink-0 lg:block">
         <Sidebar
           collapsed={collapsed}
           onToggleCollapsed={() => setCollapsed((value) => !value)}
@@ -71,15 +102,16 @@ export function AdminLayout() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopBar
           onOpenNav={() => setDrawerOpen(true)}
-          adminName={admin?.name ?? 'Signed-in admin'}
+          adminName={admin ? adminDisplayName(admin) : 'Signed-in admin'}
           adminRole={admin ? ADMIN_ROLE_LABELS[admin.role] : ''}
-          onSignOut={() => void signOut()}
+          onSignOut={() => void handleSignOut()}
         />
 
-        <main className={cn('min-w-0 flex-1 py-6')}>
+        {/* The only vertically scrolling region in the shell. */}
+        <main className={cn('min-w-0 flex-1 overflow-y-auto overscroll-contain py-6')}>
           <div className="page-container">
             <Outlet />
           </div>

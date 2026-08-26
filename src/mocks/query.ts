@@ -1,4 +1,4 @@
-import type { Paginated, PaginationMeta } from '@/types/common'
+import { MAX_PAGE_SIZE, type Paginated, type Pagination } from '@/types/common'
 
 /**
  * Server-side query simulation.
@@ -7,6 +7,9 @@ import type { Paginated, PaginationMeta } from '@/types/common'
  * UI is exercised the way it will behave against the backend. If the mock
  * returned everything and let the browser slice it, every list page would be
  * built against a lie.
+ *
+ * Parameter names match the VERIFIED wire format (plan.md §10.2): `limit`,
+ * `sortBy`, `sortOrder`. The envelope is `{ success, data, pagination }`.
  */
 
 export interface QueryConfig<TRow> {
@@ -60,8 +63,8 @@ export function queryCollection<TRow extends object>(
   }
 
   // Sorting — restricted to the allowlist, exactly as the API does
-  const sort = url.searchParams.get('sort')
-  const direction = url.searchParams.get('direction') === 'desc' ? -1 : 1
+  const sort = url.searchParams.get('sortBy')
+  const direction = url.searchParams.get('sortOrder') === 'desc' ? -1 : 1
   if (sort && (config.sortFields ?? []).includes(sort)) {
     result.sort(
       (a, b) =>
@@ -74,12 +77,12 @@ export function queryCollection<TRow extends object>(
 
   // Pagination
   const total = result.length
-  const pageSize = Math.min(readNumber(url, 'pageSize', 25), 100)
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const limit = Math.min(readNumber(url, 'limit', 25), MAX_PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(total / limit))
   const page = Math.min(readNumber(url, 'page', 1), totalPages)
-  const start = (page - 1) * pageSize
+  const start = (page - 1) * limit
 
-  const meta: PaginationMeta = { page, pageSize, total, totalPages }
+  const pagination: Pagination = { page, limit, total, totalPages }
 
-  return { data: result.slice(start, start + pageSize), meta }
+  return { success: true, data: result.slice(start, start + limit), pagination }
 }

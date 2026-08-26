@@ -5,6 +5,13 @@ import { cn } from '@/lib/cn'
 export interface RecordHeaderProps {
   /** Primary human-readable identifier, e.g. a display name or club title. */
   title: string
+  /**
+   * Heading level for `title`. Defaults to `h2`, which is right when a
+   * `PageHeader` above supplies the `h1`. Pass `'h1'` where this card is the
+   * page's only name for its subject, so the document still has exactly one
+   * top-level heading.
+   */
+  as?: 'h1' | 'h2' 
   /** Secondary identifiers — IDs, masked contact, created date. */
   identifiers?: ReactNode
   /** Status and restriction badges. */
@@ -23,6 +30,7 @@ export interface RecordHeaderProps {
  */
 export function RecordHeader({
   title,
+  as: Heading = 'h2',
   identifiers,
   badges,
   actions,
@@ -35,7 +43,7 @@ export function RecordHeader({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h2 className="text-h2 break-words">{title}</h2>
+            <Heading className="text-h2 break-words">{title}</Heading>
             {badges ? (
               <div className="flex flex-wrap items-center gap-1.5">{badges}</div>
             ) : null}

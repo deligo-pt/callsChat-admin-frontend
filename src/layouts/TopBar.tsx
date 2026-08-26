@@ -1,4 +1,5 @@
-import { Bell, LogOut, Menu, User } from 'lucide-react'
+import { Bell, LogOut, Menu, ShieldCheck, User } from 'lucide-react'
+import { Link } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -9,10 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ROUTES } from '@/app/routes'
 import { cn } from '@/lib/cn'
 import { env } from '@/env'
-
-import { GlobalSearch } from './GlobalSearch'
 
 export interface TopBarProps {
   onOpenNav: () => void
@@ -45,7 +45,8 @@ export function TopBar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 flex h-topbar shrink-0 items-center gap-3 border-b border-border bg-surface px-4 lg:px-6',
+        // No longer sticky: the shell is a fixed frame and only <main> scrolls.
+        'z-50 flex h-topbar shrink-0 items-center gap-3 border-b border-border bg-surface px-4 lg:px-6',
         className,
       )}
     >
@@ -60,7 +61,14 @@ export function TopBar({
         <Menu />
       </Button>
 
-      <GlobalSearch className="min-w-0 flex-1 md:max-w-md" />
+      {/*
+        Global search is not rendered: `GET /admin/search` returns 404 — there
+        is no cross-module search endpoint yet, and only Users exists to search
+        anyway. `GlobalSearch.tsx` and its mock handler are kept intact so this
+        is a one-line restore the day the endpoint ships. Per-module search is
+        live on the Users directory.
+      */}
+      <div className="min-w-0 flex-1" />
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
         {label !== 'production' ? (
@@ -100,6 +108,11 @@ export function TopBar({
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to={ROUTES.account}>
+                <ShieldCheck /> Account &amp; security
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem {...(onSignOut ? { onSelect: onSignOut } : {})}>
               <LogOut /> Sign out
             </DropdownMenuItem>

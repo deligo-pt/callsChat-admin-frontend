@@ -9,7 +9,12 @@ import { Outlet } from 'react-router'
  */
 export function AuthLayout() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-sidebar px-4 py-10">
+    /*
+     * `overflow-y-auto`: the document no longer scrolls (globals.css), so this
+     * shell has to scroll itself — otherwise the sign-in card would be
+     * unreachable on a short window or with the keyboard open on a phone.
+     */
+    <div className="flex h-full flex-col items-center justify-center overflow-y-auto bg-sidebar px-4 py-10">
       <div className="w-full max-w-md space-y-6">
         <div className="space-y-1 text-center">
           <p className="text-h2 text-sidebar-foreground">

@@ -22,7 +22,7 @@ export async function startMockBackend(): Promise<void> {
 
   console.warn(
     '[mocks] Mock backend running. Sign in with nadia@callchat.app (Super Admin), ' +
-      'tomas@callchat.app (Operations Admin) or elena@callchat.app (Moderator) and any password. ' +
+      'tomas@callchat.app (Admin) or elena@callchat.app (Moderator) and any password. ' +
       "Toggle failure states with __mockScenario.set('error' | 'empty' | 'forbidden' | 'slow' | 'normal').",
   )
 }
