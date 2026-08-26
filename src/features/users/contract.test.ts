@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { resolveStatus } from '@/lib/status'
+
 import { paginatedSchema, parseFieldErrors } from '@/types/common'
 import {
   currentAdminSchema,
@@ -74,11 +76,43 @@ describe('user list contract', () => {
       'SUSPENDED',
       'BANNED',
       'PENDING_VERIFICATION',
+      // Undocumented deletion grace period; found live, not in any spec.
+      'SCHEDULED_FOR_DELETION',
     ]) {
       expect(userSummarySchema.safeParse({ ...LIVE_USER_ROW, status }).success).toBe(
         true,
       )
     }
+  })
+
+  it('does not reject a whole page over one unfamiliar status', () => {
+    /*
+     * This is the regression. `SCHEDULED_FOR_DELETION` appeared on one account
+     * and the strict enum failed the parse, blanking the entire directory —
+     * including the twenty-odd rows that were perfectly valid.
+     *
+     * A status is a display-only label and `resolveStatus()` already renders an
+     * unknown one as a neutral badge, so refusing the row bought no safety. IDs,
+     * money and permissions stay strict; see `accountStatusValueSchema`.
+     */
+    const result = userSummarySchema.safeParse({
+      ...LIVE_USER_ROW,
+      status: 'SOME_FUTURE_STATE',
+    })
+    expect(result.success).toBe(true)
+    expect(result.data?.status).toBe('SOME_FUTURE_STATE')
+  })
+
+  it('renders an unknown status as a neutral badge rather than crashing', () => {
+    expect(resolveStatus('user', 'SCHEDULED_FOR_DELETION')).toEqual({
+      label: 'Scheduled for deletion',
+      tone: 'locked',
+    })
+    // Humanised, not raw — an operator should not be shown SCREAMING_SNAKE.
+    expect(resolveStatus('user', 'SOME_FUTURE_STATE')).toEqual({
+      label: 'Some future state',
+      tone: 'neutral',
+    })
   })
 
   it('exposes exactly the API’s sortBy allowlist', () => {

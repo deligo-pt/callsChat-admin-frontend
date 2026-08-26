@@ -49,6 +49,27 @@ describe('availableStatusActions', () => {
     }
   })
 
+  it('offers moderation levers on an account scheduled for deletion', () => {
+    const actions = availableStatusActions('SCHEDULED_FOR_DELETION')
+    expect(actions).toContain('suspend')
+    expect(actions).toContain('ban')
+    // Nothing was taken away by an administrator, so there is nothing to lift.
+    expect(actions).not.toContain('restore')
+    expect(actions).not.toContain('unsuspend')
+  })
+
+  it('still offers actions for a status this build has never seen', () => {
+    /*
+     * Not hypothetical: `SCHEDULED_FOR_DELETION` reached production before the
+     * enum knew it. An operator must not be stranded in front of an account
+     * with every control hidden because a label was unfamiliar.
+     */
+    const actions = availableStatusActions('SOME_FUTURE_STATE')
+    expect(actions).toContain('suspend')
+    expect(actions).toContain('ban')
+    expect(actions).not.toContain('restore')
+  })
+
   it('never offers an action and its inverse at the same time', () => {
     for (const status of accountStatusSchema.options) {
       const actions = availableStatusActions(status)

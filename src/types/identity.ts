@@ -24,8 +24,36 @@ export const accountStatusSchema = z.enum([
   'SUSPENDED',
   'BANNED',
   'PENDING_VERIFICATION',
+  /*
+   * A deletion grace period, absent from the docs and the Postman collection.
+   * It surfaced only when a real account entered it — the 22 accounts the enum
+   * was originally verified against happened to include none.
+   */
+  'SCHEDULED_FOR_DELETION',
 ])
 export type AccountStatus = z.infer<typeof accountStatusSchema>
+
+/**
+ * A status as it arrives on the wire.
+ *
+ * The enum above is what the UI *knows*; this is what it *accepts*. The two
+ * differ because a status is a display-only label, and validating it strictly
+ * meant one unrecognised value blanked the entire user directory — including
+ * the twenty-odd rows that parsed perfectly. `SCHEDULED_FOR_DELETION` did
+ * exactly that in production.
+ *
+ * `resolveStatus()` already renders an unknown value as a neutral badge with a
+ * humanised label, so the presentation layer never needed the guarantee that
+ * the schema was enforcing.
+ *
+ * This deliberately does NOT extend to identifiers, money or permissions,
+ * where an unrecognised value must still fail loudly rather than be rendered.
+ *
+ * `(string & {})` keeps editor autocomplete for the known values while still
+ * admitting any string — a plain `| string` would collapse the union.
+ */
+export const accountStatusValueSchema = z.union([accountStatusSchema, z.string()])
+export type AccountStatusValue = AccountStatus | (string & {})
 
 /** Statuses an admin can *set* via `POST /admin/users/:id/status` (plan.md §10.3). */
 export const settableAccountStatusSchema = z.enum(['ACTIVE', 'SUSPENDED', 'BANNED'])
@@ -87,7 +115,7 @@ export const userSummarySchema = z.object({
   phone: z.string().nullable(),
   phoneMasked: z.string().nullable(),
   role: userRoleSchema,
-  status: accountStatusSchema,
+  status: accountStatusValueSchema,
   accountType: accountTypeSchema,
   isHost: z.boolean(),
   activeRestrictions: z.array(capabilitySchema.or(z.string())),
@@ -180,7 +208,7 @@ export const userIdentitySchema = z.object({
   phoneMasked: z.string().nullable(),
   email: z.string().nullable(),
   role: userRoleSchema,
-  status: accountStatusSchema,
+  status: accountStatusValueSchema,
   accountType: accountTypeSchema,
   isHost: z.boolean(),
   activeRestrictionsCount: z.int().nonnegative(),
@@ -222,7 +250,7 @@ export const userDetailSchema = z.object({
   }),
 
   accessAndRestrictions: z.object({
-    currentStatus: accountStatusSchema,
+    currentStatus: accountStatusValueSchema,
     /*
      * Loose on purpose — see `looseRecordSchema`. No live record exists to
      * verify `capabilityRestrictionSchema` against, and a strict schema that
@@ -305,7 +333,12 @@ export const currentAdminSchema = z.object({
   phone: z.string().nullish(),
   phoneMasked: z.string().nullish(),
   role: adminRoleSchema,
-  status: accountStatusSchema,
+  /*
+   * Tolerant for a sharper reason than the others: this is the signed-in
+   * admin's own record. A status the enum did not know would fail
+   * `/admin/auth/me` and lock the operator out of the console over a badge.
+   */
+  status: accountStatusValueSchema,
   accountType: accountTypeSchema.optional(),
   profile: z
     .object({
@@ -342,7 +375,7 @@ export const adminUserSchema = z.object({
   displayName: z.string(),
   email: z.string(),
   role: adminRoleSchema,
-  status: accountStatusSchema,
+  status: accountStatusValueSchema,
   createdAt: isoDateTime,
   lastActiveAt: isoDateTime.nullable(),
 })
