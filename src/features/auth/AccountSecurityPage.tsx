@@ -23,6 +23,7 @@ import {
   type ChangeEmailValues,
   type ChangePasswordValues,
 } from './passwordPolicy'
+import { SignOutAllDevicesCard } from './SignOutAllDevicesCard'
 
 /**
  * Turn an API error into something an operator can act on.
@@ -315,6 +316,8 @@ export function AccountSecurityPage() {
       <div className="max-w-3xl space-y-6">
         <ChangePasswordForm />
         {admin ? <ChangeEmailForm currentEmail={admin.email} /> : null}
+        {/* Last: it is the one control on this page that ends the visit. */}
+        <SignOutAllDevicesCard />
       </div>
     </div>
   )

@@ -65,6 +65,62 @@ test('an invalid email is rejected before hitting the API', async ({ page }) => 
   await expect(page.getByText('Enter a valid email address.')).toBeVisible()
 })
 
+/**
+ * Global sign-out — `POST /admin/auth/logout` with `{ allDevices: true }`.
+ *
+ * The body is what these assert. The route answers 200 to a plain `{}` too,
+ * so a missing or mistyped flag would look like a success and revoke nothing
+ * but this browser — the exact outcome the feature exists to prevent.
+ */
+test.describe('sign out everywhere', () => {
+  test('warns that the current session ends too, before doing anything', async ({
+    page,
+  }) => {
+    await page.getByRole('button', { name: 'Sign out of all devices' }).click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByText(/including this one/i)).toBeVisible()
+
+    // Cancelling is not a sign-out.
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+    await expect(page).toHaveURL(/\/account/)
+  })
+
+  test('sends allDevices as a boolean and returns to sign-in', async ({ page }) => {
+    await page.getByRole('button', { name: 'Sign out of all devices' }).click()
+
+    const request = page.waitForRequest(
+      (r) => r.url().includes('/admin/auth/logout') && r.method() === 'POST',
+    )
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Sign out everywhere' })
+      .click()
+
+    const body = (await request).postDataJSON() as Record<string, unknown>
+    // `true`, not `"true"` — the schema rejects a string with a 400.
+    expect(body['allDevices']).toBe(true)
+
+    await expect(page).toHaveURL(/\/login/)
+  })
+
+  test('the revoked session cannot be resumed by reloading', async ({ page }) => {
+    await page.getByRole('button', { name: 'Sign out of all devices' }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Sign out everywhere' })
+      .click()
+    await expect(page).toHaveURL(/\/login/)
+
+    /*
+     * The credentials must be gone from storage, not merely unrendered. A
+     * surviving refresh token would let the next visit walk straight back in.
+     */
+    await page.goto('/account')
+    await expect(page).toHaveURL(/\/login/)
+  })
+})
+
 test('the page never scrolls horizontally', async ({ page }) => {
   const overflow = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,

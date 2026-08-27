@@ -134,12 +134,19 @@ export async function refreshSession(): Promise<boolean> {
  * ---------------------------------------------------------------------- */
 
 /**
- * Sign out.
+ * Sign out of this browser only.
  *
  * `POST /admin/auth/logout` is real and revokes the session server-side, so
  * this is not merely local token disposal — without the call the refresh token
  * would stay valid for its full 7 days after the operator believed they had
- * signed out.
+ * signed out. Verified live: after the call, both `/admin/auth/me` and
+ * `/admin/auth/refresh` reject the old credentials, and other devices on the
+ * same account are untouched.
+ *
+ * ⚠️ The body is mandatory. Sending no payload makes Fastify set
+ * `request.body` to `null` and the route schema rejects it with
+ * `body/ Expected object, received null` — the same trap that broke the
+ * capability-restriction DELETEs. `{}` is the smallest thing that passes.
  *
  * The local credentials are cleared unconditionally. Whether or not the server
  * acknowledges, this browser must stop presenting them; a network failure is
@@ -153,6 +160,43 @@ export async function signOut(): Promise<void> {
   } finally {
     clearSession()
   }
+}
+
+/**
+ * Sign out of every device on this admin account.
+ *
+ * The same route with `{ allDevices: true }`. Verified against the live API
+ * that the field exists and is an optional boolean — a wrong type is rejected
+ * with `body/allDevices Expected boolean, received string`, and validation
+ * runs ahead of authentication, which is how the schema was confirmed without
+ * revoking anybody's session to find out.
+ *
+ * Two deliberate differences from {@link signOut}:
+ *
+ * 1. **Failures are not swallowed.** A best-effort global sign-out is worse
+ *    than none: the operator walks away believing every other device is dead.
+ *    The error propagates so the UI can say the opposite, and `clearSession`
+ *    below is never reached — nothing was revoked, so this browser is still
+ *    legitimately signed in and must not pretend otherwise.
+ *
+ * 2. **A second, plain logout follows.** Whether `allDevices` also kills the
+ *    *calling* session is the one thing that could not be established without
+ *    signing out the eight live sessions on the production admin account. If
+ *    it does, this second call is a harmless 401. If it does not, it is the
+ *    difference between a dead refresh token and one that stays valid for
+ *    seven days after the operator asked for exactly the opposite. Once the
+ *    behaviour is confirmed against a disposable account, delete it.
+ */
+export async function signOutEverywhere(): Promise<void> {
+  await apiClient.post<unknown>('/admin/auth/logout', { body: { allDevices: true } })
+
+  try {
+    await apiClient.post<unknown>('/admin/auth/logout', { body: {} })
+  } catch {
+    /* Expected 401 when the call above already revoked this session. */
+  }
+
+  clearSession()
 }
 
 /* -------------------------------------------------------------------------
