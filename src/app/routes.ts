@@ -56,6 +56,26 @@ export const ROUTES = {
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,
 
+  /**
+   * System Settings (system_settings_plan.md §4.1).
+   *
+   * Every section is a real URL rather than in-page tab state, so an operator
+   * can bookmark one, link a colleague to it, and — where a section is Super
+   * Admin only — land on a 403 for that section instead of for the whole page.
+   *
+   * `configuration` below is the old placeholder path and is retained only
+   * until nothing references it.
+   */
+  settings: '/settings',
+  settingsGeneral: '/settings/general',
+  settingsBranding: '/settings/branding',
+  settingsMaintenance: '/settings/maintenance',
+  settingsChat: '/settings/chat',
+  settingsPlatform: '/settings/platform',
+  settingsReleases: '/settings/releases',
+  settingsDatabase: '/settings/database',
+  settingsSms: '/settings/sms',
+
   configuration: '/configuration',
 
   /** Dev-only component gallery (plan.md §1F). */

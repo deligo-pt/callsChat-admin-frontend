@@ -32,6 +32,10 @@ export type StatusDomain =
   | 'balance'
   | 'accountType'
   | 'notification'
+  | 'backup'
+  | 'smsProvider'
+  | 'smsTest'
+  | 'maintenance'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -117,6 +121,46 @@ const NOTIFICATION: DomainMap = {
   EXPIRED: { label: 'Expired', tone: 'neutral' },
 }
 
+/**
+ * `database_backup_logs.status` (system_settings_plan.md §2.7).
+ *
+ * `RUNNING` is `info`, not `warning`: a job in flight is the expected state,
+ * not something needing attention. It becomes `danger` only once it actually
+ * fails — which, on production today, it always does.
+ */
+const BACKUP: DomainMap = {
+  RUNNING: { label: 'Running', tone: 'info' },
+  SUCCESS: { label: 'Completed', tone: 'success' },
+  FAILED: { label: 'Failed', tone: 'danger' },
+}
+
+const SMS_PROVIDER: DomainMap = {
+  BULKGATE: { label: 'BulkGate', tone: 'info' },
+  TWILIO: { label: 'Twilio', tone: 'info' },
+  /*
+   * `danger`, not `neutral`. With no SMS provider no user can receive an OTP,
+   * so sign-in and sign-up are down platform-wide — that is a broken service,
+   * not a preference someone switched off.
+   */
+  DISABLED: { label: 'Disabled', tone: 'danger' },
+}
+
+const SMS_TEST: DomainMap = {
+  SUCCESS: { label: 'Delivered', tone: 'success' },
+  FAILED: { label: 'Not delivered', tone: 'danger' },
+}
+
+/**
+ * Derived client-side from `maintenanceMode` plus the advisory window — the
+ * API has no such enum. `resolveMaintenanceState` below is the only place the
+ * derivation happens.
+ */
+const MAINTENANCE: DomainMap = {
+  ACTIVE: { label: 'Live — users blocked', tone: 'danger' },
+  SCHEDULED: { label: 'Scheduled', tone: 'warning' },
+  OFF: { label: 'Off', tone: 'neutral' },
+}
+
 const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   user: USER,
   restriction: RESTRICTION,
@@ -128,6 +172,36 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   balance: BALANCE,
   accountType: ACCOUNT_TYPE,
   notification: NOTIFICATION,
+  backup: BACKUP,
+  smsProvider: SMS_PROVIDER,
+  smsTest: SMS_TEST,
+  maintenance: MAINTENANCE,
+}
+
+/** The three states the maintenance card and the global banner can be in. */
+export type MaintenanceState = 'ACTIVE' | 'SCHEDULED' | 'OFF'
+
+/**
+ * Derive the maintenance state from the settings record.
+ *
+ * The switch is the only thing that actually blocks traffic; the window is
+ * advisory metadata the backend does not act on. So `ACTIVE` is driven by
+ * `maintenanceMode` alone, and `SCHEDULED` means only "a future window is
+ * recorded" — never "users are about to be cut off automatically", because
+ * nothing automatic happens.
+ */
+export function resolveMaintenanceState(
+  maintenanceMode: boolean,
+  maintenanceStartsAt: string | null,
+  now: Date = new Date(),
+): MaintenanceState {
+  if (maintenanceMode) return 'ACTIVE'
+  if (!maintenanceStartsAt) return 'OFF'
+
+  const startsAt = new Date(maintenanceStartsAt)
+  if (Number.isNaN(startsAt.getTime())) return 'OFF'
+
+  return startsAt.getTime() > now.getTime() ? 'SCHEDULED' : 'OFF'
 }
 
 /**

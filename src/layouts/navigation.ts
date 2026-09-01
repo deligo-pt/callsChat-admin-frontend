@@ -1,8 +1,22 @@
-import { Activity, LayoutDashboard, Users } from 'lucide-react'
+import { Activity, LayoutDashboard, Settings2, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import { ROUTES } from '@/app/routes'
+import { SETTINGS_SECTIONS } from '@/app/settingsSections'
 import { PERMISSIONS, type Permission } from '@/auth/permissions'
+
+/**
+ * A second-level entry, rendered indented beneath its parent.
+ *
+ * No icon: at this depth an icon adds visual noise without adding meaning,
+ * and the indent plus the bullet already carry the hierarchy.
+ */
+export interface NavChild {
+  readonly label: string
+  readonly to: string
+  /** Hidden when the acting admin lacks this permission. */
+  readonly permission?: Permission
+}
 
 export interface NavItem {
   readonly label: string
@@ -12,6 +26,14 @@ export interface NavItem {
   readonly permission?: Permission
   /** Match nested routes, e.g. /users/:id highlights "Users". */
   readonly matchPrefix?: string
+  /**
+   * Sub-items, revealed by expanding the parent.
+   *
+   * The parent stays a real link: clicking it navigates *and* expands, because
+   * an entry that looks clickable but only toggles is a small, repeated
+   * annoyance for anyone who just wants to get to the page.
+   */
+  readonly children?: readonly NavChild[]
 }
 
 export interface NavSection {
@@ -60,6 +82,39 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Users,
         permission: PERMISSIONS.usersView,
         matchPrefix: '/users',
+      },
+    ],
+  },
+  /*
+   * Added 2026-09-01 under the rule above: the `/admin/settings/*` endpoints
+   * shipped and were verified live, so the section comes back the same day
+   * rather than ahead of it (system_settings_plan.md §4.2).
+   *
+   * `configuration.view` gates the entry; the two Super Admin sections inside
+   * gate themselves, so an ADMIN still sees the page — just five tabs of it.
+   */
+  {
+    id: 'platform',
+    label: 'Platform',
+    items: [
+      {
+        label: 'System Settings',
+        to: ROUTES.settings,
+        icon: Settings2,
+        permission: PERMISSIONS.configurationView,
+        matchPrefix: '/settings',
+        /*
+         * The sections live in `app/settingsSections.ts` so the sidebar and
+         * the settings page read one list. Unbuilt sections are filtered out
+         * here rather than rendered disabled — same rule as the modules above.
+         */
+        children: SETTINGS_SECTIONS.filter((section) => section.shipped).map(
+          (section) => ({
+            label: section.label,
+            to: section.to,
+            ...(section.permission ? { permission: section.permission } : {}),
+          }),
+        ),
       },
     ],
   },

@@ -19,26 +19,26 @@ import { API_PREFIX, applyScenario, errorResponse } from './shared'
 const ACCOUNTS: Readonly<
   Record<string, { displayName: string; username: string; role: AdminRole }>
 > = {
-  'nadia@callchat.app': {
+  'nadia@callschat.app': {
     displayName: 'Nadia Chowdhury',
     username: 'nadia',
     role: 'SUPER_ADMIN',
   },
-  'tomas@callchat.app': {
+  'tomas@callschat.app': {
     displayName: 'Tomas Ricci',
     username: 'tomas',
     role: 'ADMIN',
   },
-  'elena@callchat.app': {
+  'elena@callschat.app': {
     displayName: 'Elena Petrova',
     username: 'elena',
     role: 'MODERATOR',
   },
 }
 
-const SESSION_KEY = 'callchat.mock.session'
-const PASSWORD_KEY = 'callchat.mock.password'
-const REFRESH_KEY = 'callchat.mock.refresh'
+const SESSION_KEY = 'callschat.mock.session'
+const PASSWORD_KEY = 'callschat.mock.password'
+const REFRESH_KEY = 'callschat.mock.refresh'
 
 /**
  * The mock accepts ANY non-empty password until one is explicitly set through

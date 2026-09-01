@@ -19,7 +19,7 @@ const OUT_DIR = 'dist'
  */
 function envGuard(env: Record<string, string>): Plugin {
   return {
-    name: 'callchat:env-guard',
+    name: 'callschat:env-guard',
     apply: 'build',
     buildStart() {
       const result = envSchema.safeParse(env)
@@ -36,7 +36,7 @@ function envGuard(env: Record<string, string>): Plugin {
 /** Removes the MSW service worker from the output of a real-backend build. */
 function stripMockWorker(): Plugin {
   return {
-    name: 'callchat:strip-mock-worker',
+    name: 'callschat:strip-mock-worker',
     apply: 'build',
     closeBundle() {
       const worker = join(OUT_DIR, 'mockServiceWorker.js')

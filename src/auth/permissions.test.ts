@@ -49,10 +49,36 @@ describe('permissionsForRole', () => {
       PERMISSIONS.payoutRatesConfigure,
       PERMISSIONS.withdrawalsApprove,
       PERMISSIONS.paymentsRefund,
-      PERMISSIONS.configurationConfigure,
     ]) {
       expect(admin).not.toContain(permission)
     }
+  })
+
+  it('lets an Admin write system settings, following the live guards', () => {
+    /*
+     * A deliberate divergence from doc/RBAC, Security, and Privacy.md:52,
+     * which reserves configuration writes for Super Admin.
+     *
+     * All six settings-write routes are guarded with `verifyAdmin` on the live
+     * API, verified 2026-09-01 (system_settings_plan.md §2.1 / §4.3).
+     * Withholding this would show an ADMIN a settings page of permanently
+     * disabled controls that the API would in fact have accepted — a lie about
+     * capability. plan.md §1 makes the backend the source of truth.
+     *
+     * Tracked as system_settings_plan.md §8 O1: if the doc is the intended
+     * policy, the route guards tighten and this expectation inverts.
+     */
+    expect(permissionsForRole('ADMIN')).toContain(PERMISSIONS.configurationConfigure)
+  })
+
+  it('reserves the database and SMS suites for Super Admin alone', () => {
+    // These two are guarded with `verifySuperAdmin`, unlike the six above.
+    for (const role of ['ADMIN', 'MODERATOR']) {
+      expect(permissionsForRole(role)).not.toContain(PERMISSIONS.settingsDatabase)
+      expect(permissionsForRole(role)).not.toContain(PERMISSIONS.settingsSms)
+    }
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.settingsDatabase)
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.settingsSms)
   })
 
   it('lets a Moderator restrict a capability but not suspend or ban', () => {

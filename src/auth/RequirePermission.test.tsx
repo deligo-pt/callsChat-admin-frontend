@@ -11,7 +11,7 @@ function withPermissions(permissions: string[]): AuthContextValue {
   return {
     admin: {
       id: 'adm_1',
-      email: 'test@callchat.app',
+      email: 'test@callschat.app',
       role: 'MODERATOR',
       status: 'ACTIVE',
       profile: { displayName: 'Test Admin', username: 'test', avatarUrl: null },

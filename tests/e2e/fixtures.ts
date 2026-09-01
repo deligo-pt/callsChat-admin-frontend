@@ -5,9 +5,9 @@ import { expect, type Page } from '@playwright/test'
  * Any non-empty password is accepted; password policy is a backend concern.
  */
 export const ACCOUNTS = {
-  superAdmin: 'nadia@callchat.app',
-  admin: 'tomas@callchat.app',
-  moderator: 'elena@callchat.app',
+  superAdmin: 'nadia@callschat.app',
+  admin: 'tomas@callschat.app',
+  moderator: 'elena@callschat.app',
 } as const
 
 /** Sign in and wait for the authenticated shell. */

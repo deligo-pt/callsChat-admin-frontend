@@ -16,6 +16,14 @@ export interface RequestOptions {
   params?: Record<string, string | number | boolean | undefined | null>
   /** JSON request body. */
   body?: unknown
+  /**
+   * Multipart body. Mutually exclusive with `body`.
+   *
+   * When set, `Content-Type` is deliberately NOT sent: the browser has to
+   * generate it itself so it can append the multipart boundary. Setting it by
+   * hand produces a header with no boundary and the server rejects the request.
+   */
+  formData?: FormData
   /** Cancels the request — used by search/filter changes (plan.md §2.1). */
   signal?: AbortSignal
   /**
@@ -156,6 +164,16 @@ async function request<TResult>(
     headers['Authorization'] = `Bearer ${accessToken}`
   }
 
+  if (options.body !== undefined && options.formData !== undefined) {
+    throw new Error(
+      `${method} ${path} was given both a JSON body and formData. Send one or the other.`,
+    )
+  }
+
+  /*
+   * No Content-Type for multipart — see `RequestOptions.formData`. The browser
+   * sets it, boundary included, from the FormData instance itself.
+   */
   if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'
   }
@@ -175,6 +193,7 @@ async function request<TResult>(
        * outright against a wildcard CORS origin.
        */
       credentials: 'omit',
+      ...(options.formData !== undefined ? { body: options.formData } : {}),
       ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
       ...(options.signal ? { signal: options.signal } : {}),
     })
@@ -363,4 +382,20 @@ export const apiClient = {
     request<TResult>('PUT', path, options),
   delete: <TResult>(path: string, options?: RequestOptions) =>
     request<TResult>('DELETE', path, options),
+
+  /**
+   * `POST` a `multipart/form-data` body — currently only the brand logo
+   * upload (system_settings_plan.md §2.6).
+   *
+   * A branch inside `request()` rather than a second client, so the bearer
+   * header, `X-Request-ID`, error-envelope parsing, contract validation and
+   * the single 401-refresh retry all apply here exactly as they do to every
+   * JSON call. A separate uploader would have had to reimplement all five and
+   * would drift from them.
+   */
+  postMultipart: <TResult>(
+    path: string,
+    formData: FormData,
+    options?: Omit<RequestOptions, 'body' | 'formData'>,
+  ) => request<TResult>('POST', path, { ...options, formData }),
 }

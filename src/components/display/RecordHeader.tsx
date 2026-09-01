@@ -11,7 +11,7 @@ export interface RecordHeaderProps {
    * page's only name for its subject, so the document still has exactly one
    * top-level heading.
    */
-  as?: 'h1' | 'h2' 
+  as?: 'h1' | 'h2'
   /** Secondary identifiers — IDs, masked contact, created date. */
   identifiers?: ReactNode
   /** Status and restriction badges. */

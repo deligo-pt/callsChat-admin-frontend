@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { server } from '@/mocks/server'
+import { resetSessionForTests, setSession } from '@/auth/tokenStore'
 import { newIdempotencyKey } from '@/lib/idempotency'
 import { z } from 'zod'
 
@@ -250,5 +251,94 @@ describe('apiClient — query parameters', () => {
     expect(url).not.toContain('empty=')
     expect(url).not.toContain('missing')
     expect(url).not.toContain('nothing')
+  })
+})
+
+describe('apiClient — multipart uploads', () => {
+  it('does not set Content-Type, so the browser can add the boundary', async () => {
+    let contentType: string | null = null
+    server.use(
+      http.post(`${BASE}/admin/settings/logo`, ({ request }) => {
+        contentType = request.headers.get('Content-Type')
+        return HttpResponse.json({ ok: true })
+      }),
+    )
+
+    const formData = new FormData()
+    formData.append('file', new File(['x'], 'logo.png', { type: 'image/png' }))
+    await apiClient.postMultipart('/admin/settings/logo', formData)
+
+    /*
+     * Setting it by hand yields a header with no boundary and the server
+     * rejects the request outright — so the only correct behaviour is to
+     * leave it to fetch, which derives it from the FormData instance.
+     */
+    expect(contentType).toMatch(/^multipart\/form-data; boundary=/)
+  })
+
+  it('still attaches the bearer token and correlation ID', async () => {
+    let auth: string | null = null
+    let correlationId: string | null = null
+    server.use(
+      http.post(`${BASE}/admin/settings/logo`, ({ request }) => {
+        auth = request.headers.get('Authorization')
+        correlationId = request.headers.get('X-Request-ID')
+        return HttpResponse.json({ ok: true })
+      }),
+    )
+
+    setSession({ accessToken: 'upload-token', refreshToken: 'r', expiresAt: null })
+    try {
+      const formData = new FormData()
+      formData.append('file', new File(['x'], 'logo.png', { type: 'image/png' }))
+      await apiClient.postMultipart('/admin/settings/logo', formData)
+    } finally {
+      resetSessionForTests()
+    }
+
+    expect(auth).toBe('Bearer upload-token')
+    expect(correlationId).toMatch(/^corr_[0-9a-f]{32}$/)
+  })
+
+  it('delivers the file part under the field name the API expects', async () => {
+    let fieldNames: string[] = []
+    let contents: string | undefined
+    server.use(
+      http.post(`${BASE}/admin/settings/logo`, async ({ request }) => {
+        const form = await request.formData()
+        fieldNames = [...form.keys()]
+        const part = form.get('file')
+        contents =
+          typeof (part as Blob | null)?.text === 'function'
+            ? await (part as Blob).text()
+            : undefined
+        return HttpResponse.json({ ok: true })
+      }),
+    )
+
+    const formData = new FormData()
+    formData.append(
+      'file',
+      new File(['brand-bytes'], 'brand.png', { type: 'image/png' }),
+    )
+    await apiClient.postMultipart('/admin/settings/logo', formData)
+
+    /*
+     * Field name and bytes, not `file.name` — the filename does not survive
+     * the undici multipart round-trip in this environment, so asserting it
+     * would test the test runner rather than the client.
+     */
+    expect(fieldNames).toEqual(['file'])
+    expect(contents).toBe('brand-bytes')
+  })
+
+  it('refuses a request carrying both a JSON body and formData', async () => {
+    // Two bodies is a caller bug, and fetch would silently drop one of them.
+    await expect(
+      apiClient.post('/admin/settings/logo', {
+        body: { a: 1 },
+        formData: new FormData(),
+      }),
+    ).rejects.toThrow(/both a JSON body and formData/)
   })
 })

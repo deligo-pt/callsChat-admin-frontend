@@ -94,13 +94,13 @@ describe('session storage', () => {
   })
 
   it('survives unparseable persisted data instead of throwing', () => {
-    globalThis.sessionStorage.setItem('callchat.admin.session', '{not json')
+    globalThis.sessionStorage.setItem('callschat.admin.session', '{not json')
     resetSessionForTests()
     expect(getAccessToken()).toBeNull()
   })
 
   it('ignores persisted data missing an access token', () => {
-    globalThis.sessionStorage.setItem('callchat.admin.session', '{"refreshToken":"r"}')
+    globalThis.sessionStorage.setItem('callschat.admin.session', '{"refreshToken":"r"}')
     resetSessionForTests()
     expect(getAccessToken()).toBeNull()
   })

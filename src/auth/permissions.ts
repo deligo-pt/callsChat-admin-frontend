@@ -61,6 +61,19 @@ export const PERMISSIONS = {
 
   configurationView: 'configuration.view',
   configurationConfigure: 'configuration.configure',
+
+  /**
+   * Database backup suite — `POST/GET /admin/settings/database/*`.
+   *
+   * Separate from `configuration.configure` because the backend guards these
+   * with `verifySuperAdmin` while the six settings-write routes only need
+   * `verifyAdmin` (system_settings_plan.md §2.1). Folding them together would
+   * show an ADMIN a tab the API will always refuse.
+   */
+  settingsDatabase: 'settings.database',
+
+  /** SMS gateway suite — `GET/PATCH /admin/settings/sms`, `POST …/sms/test`. Super Admin only. */
+  settingsSms: 'settings.sms',
 } as const
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
@@ -136,6 +149,28 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.notificationsSend,
   PERMISSIONS.auditLogsView,
   PERMISSIONS.configurationView,
+  /*
+   * `configurationConfigure` IS granted to ADMIN, deliberately diverging from
+   * `doc/RBAC, Security, and Privacy.md:52`, which reserves configuration
+   * writes for Super Admin.
+   *
+   * The live backend guards all six settings-write routes — general, logo,
+   * chat, platform, deployment/app-versions — with `verifyAdmin`, verified
+   * 2026-09-01 (system_settings_plan.md §2.1). Withholding it here would show
+   * an ADMIN a settings page of permanently disabled controls that the API
+   * would in fact have accepted: a lie about capability, and the same
+   * "broken product rather than an unfinished one" failure the navigation
+   * comment in `layouts/navigation.ts` warns against.
+   *
+   * plan.md §1 makes the backend the source of truth, so this follows the
+   * backend. Logged for the backend owner as system_settings_plan.md §8 O1 —
+   * if the doc is the intended policy, the route guards tighten and this line
+   * comes back out.
+   *
+   * The two SUPER_ADMIN-only suites — `settingsDatabase` and `settingsSms` —
+   * are deliberately absent, matching their `verifySuperAdmin` guards.
+   */
+  PERMISSIONS.configurationConfigure,
 ]
 
 const ROLE_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> = {

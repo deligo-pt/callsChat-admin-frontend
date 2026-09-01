@@ -33,7 +33,11 @@ import { API_PREFIX, applyScenario, errorResponse, isEmptyScenario } from './sha
 async function requireJsonBody(request: Request) {
   const raw = await request.text()
   if (raw.trim() === '') {
-    return errorResponse(400, 'FST_ERR_VALIDATION', 'body/ Expected object, received null')
+    return errorResponse(
+      400,
+      'FST_ERR_VALIDATION',
+      'body/ Expected object, received null',
+    )
   }
   try {
     const parsed: unknown = JSON.parse(raw)
@@ -45,7 +49,11 @@ async function requireJsonBody(request: Request) {
       )
     }
   } catch {
-    return errorResponse(400, 'FST_ERR_VALIDATION', 'body/ Expected object, received null')
+    return errorResponse(
+      400,
+      'FST_ERR_VALIDATION',
+      'body/ Expected object, received null',
+    )
   }
   return null
 }
@@ -488,13 +496,16 @@ export const resourceHandlers = [
    * laxer than the service it stands in for does not just miss bugs, it
    * actively certifies them.
    */
-  http.delete(`${API_PREFIX}/admin/users/:id/restrictions/:rid`, async ({ request }) => {
-    const scenario = await applyScenario()
-    if (scenario) return scenario
-    const invalid = await requireJsonBody(request)
-    if (invalid) return invalid
-    return HttpResponse.json({ success: true, message: 'Restriction removed.' })
-  }),
+  http.delete(
+    `${API_PREFIX}/admin/users/:id/restrictions/:rid`,
+    async ({ request }) => {
+      const scenario = await applyScenario()
+      if (scenario) return scenario
+      const invalid = await requireJsonBody(request)
+      if (invalid) return invalid
+      return HttpResponse.json({ success: true, message: 'Restriction removed.' })
+    },
+  ),
 
   http.delete(`${API_PREFIX}/admin/users/:id/sessions/:sid`, async ({ request }) => {
     const scenario = await applyScenario()

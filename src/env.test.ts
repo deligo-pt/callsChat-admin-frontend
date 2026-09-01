@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { parseEnv } from './env'
 
 const VALID = {
-  VITE_API_BASE_URL: 'https://staging-api.callchat.app',
+  VITE_API_BASE_URL: 'https://staging-api.callschat.app',
   VITE_ENV_LABEL: 'staging',
   VITE_USE_MOCKS: 'false',
 }
@@ -11,7 +11,7 @@ const VALID = {
 describe('environment contract', () => {
   it('accepts a valid configuration', () => {
     const env = parseEnv(VALID)
-    expect(env.VITE_API_BASE_URL).toBe('https://staging-api.callchat.app')
+    expect(env.VITE_API_BASE_URL).toBe('https://staging-api.callschat.app')
     expect(env.VITE_ENV_LABEL).toBe('staging')
   })
 

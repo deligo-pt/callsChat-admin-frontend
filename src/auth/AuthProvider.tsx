@@ -4,11 +4,7 @@ import { useCallback, useMemo, useSyncExternalStore, type ReactNode } from 'reac
 import { UnauthorizedError } from '@/api/errors'
 import { queryKeys } from '@/api/queryKeys'
 
-import {
-  AuthContext,
-  type AuthContextValue,
-  type SignOutOptions,
-} from './AuthContext'
+import { AuthContext, type AuthContextValue, type SignOutOptions } from './AuthContext'
 import { permissionsForRole, type Permission } from './permissions'
 import {
   fetchCurrentAdmin,

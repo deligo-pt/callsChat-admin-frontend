@@ -90,7 +90,7 @@ export function LoginPage() {
       <div className="space-y-1">
         <h1 className="text-h2">Sign in</h1>
         <p className="text-caption text-foreground-muted">
-          Use your CallChat admin account.
+          Use your CallsChat admin account.
         </p>
       </div>
 

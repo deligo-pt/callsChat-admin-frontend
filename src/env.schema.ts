@@ -9,7 +9,7 @@ import { z } from 'zod'
  * private certificates and database credentials must never reach the build output.
  */
 export const envSchema = z.object({
-  /** Base URL of the backend, e.g. https://staging-api.callchat.app */
+  /** Base URL of the backend, e.g. https://staging-api.callschat.app */
   VITE_API_BASE_URL: z
     .string()
     .min(1, 'VITE_API_BASE_URL is required')

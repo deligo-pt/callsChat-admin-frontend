@@ -38,6 +38,42 @@ const AccountSecurityPage = lazy(() =>
     default: m.AccountSecurityPage,
   })),
 )
+const SettingsPage = lazy(() =>
+  import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+)
+const GeneralTab = lazy(() =>
+  import('@/features/settings/general/GeneralTab').then((m) => ({
+    default: m.GeneralTab,
+  })),
+)
+const BrandingTab = lazy(() =>
+  import('@/features/settings/general/BrandingTab').then((m) => ({
+    default: m.BrandingTab,
+  })),
+)
+const MaintenanceTab = lazy(() =>
+  import('@/features/settings/general/MaintenanceTab').then((m) => ({
+    default: m.MaintenanceTab,
+  })),
+)
+const ChatTab = lazy(() =>
+  import('@/features/settings/chat/ChatTab').then((m) => ({ default: m.ChatTab })),
+)
+const PlatformTab = lazy(() =>
+  import('@/features/settings/platform/PlatformTab').then((m) => ({
+    default: m.PlatformTab,
+  })),
+)
+const ReleasesTab = lazy(() =>
+  import('@/features/settings/releases/ReleasesTab').then((m) => ({
+    default: m.ReleasesTab,
+  })),
+)
+const DatabaseTab = lazy(() =>
+  import('@/features/settings/database/DatabaseTab').then((m) => ({
+    default: m.DatabaseTab,
+  })),
+)
 
 function suspended(node: ReactNode) {
   return <Suspense fallback={<RouteFallback />}>{node}</Suspense>
@@ -100,6 +136,54 @@ const moduleRoutes: RouteObject[] = [
         {suspended(<UserDetailPage />)}
       </RequirePermission>
     ),
+  },
+
+  /*
+   * Phase S1 — System Settings (system_settings_plan.md §4.1).
+   *
+   * The shell is one guarded route with a child per section, so each section
+   * is bookmarkable and a Super-Admin-only section can 403 on its own rather
+   * than taking the whole page with it.
+   *
+   * Only the sections that exist are routed. `maintenance`, `chat`,
+   * `platform`, `releases`, `database` and `sms` fall through to the not-found
+   * route until their phases ship, matching the tab rail in `SettingsPage`.
+   */
+  {
+    path: ROUTES.settings,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.configurationView}
+        resource="system settings"
+      >
+        {suspended(<SettingsPage />)}
+      </RequirePermission>
+    ),
+    children: [
+      { index: true, element: <Navigate to={ROUTES.settingsGeneral} replace /> },
+      { path: 'general', element: suspended(<GeneralTab />) },
+      { path: 'branding', element: suspended(<BrandingTab />) },
+      { path: 'maintenance', element: suspended(<MaintenanceTab />) },
+      { path: 'chat', element: suspended(<ChatTab />) },
+      { path: 'platform', element: suspended(<PlatformTab />) },
+      { path: 'releases', element: suspended(<ReleasesTab />) },
+      /*
+       * Super Admin only, matching the route's `verifySuperAdmin` guard. Gated
+       * here as well as in the sidebar so a typed URL gets the standard 403
+       * rather than a screen that fails on its first request.
+       */
+      {
+        path: 'database',
+        element: (
+          <RequirePermission
+            permission={PERMISSIONS.settingsDatabase}
+            resource="database backups"
+          >
+            {suspended(<DatabaseTab />)}
+          </RequirePermission>
+        ),
+      },
+    ],
   },
 ]
 

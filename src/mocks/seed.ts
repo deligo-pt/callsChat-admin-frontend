@@ -743,21 +743,25 @@ export const auditLogs: AuditLog[] = Array.from({ length: 400 }, (_, index) => {
 export const adminUsers: AdminUser[] = [
   {
     displayName: 'Nadia Chowdhury',
-    email: 'nadia@callchat.app',
+    email: 'nadia@callschat.app',
     role: 'SUPER_ADMIN' as const,
   },
-  { displayName: 'Tomas Ricci', email: 'tomas@callchat.app', role: 'ADMIN' as const },
+  { displayName: 'Tomas Ricci', email: 'tomas@callschat.app', role: 'ADMIN' as const },
   {
     displayName: 'Elena Petrova',
-    email: 'elena@callchat.app',
+    email: 'elena@callschat.app',
     role: 'MODERATOR' as const,
   },
   {
     displayName: 'Ibrahim Diallo',
-    email: 'ibrahim@callchat.app',
+    email: 'ibrahim@callschat.app',
     role: 'MODERATOR' as const,
   },
-  { displayName: 'Clara Bergman', email: 'clara@callchat.app', role: 'ADMIN' as const },
+  {
+    displayName: 'Clara Bergman',
+    email: 'clara@callschat.app',
+    role: 'ADMIN' as const,
+  },
 ].map((entry, index) => ({
   id: id('adm', index),
   displayName: entry.displayName,
@@ -783,7 +787,7 @@ export const announcements: Announcement[] = Array.from({ length: 24 }, (_, inde
   return {
     id: id('ann', index),
     title: `Scheduled maintenance notice #${index + 1}`,
-    body: 'CallChat will be briefly unavailable while we complete planned maintenance.',
+    body: 'CallsChat will be briefly unavailable while we complete planned maintenance.',
     channel: rng.bool(0.6) ? 'PUSH' : 'IN_APP_BANNER',
     audience: rng.pick([
       'ALL_USERS',
@@ -793,7 +797,7 @@ export const announcements: Announcement[] = Array.from({ length: 24 }, (_, inde
     ] as const),
     audienceDescription: 'All active users',
     status,
-    deepLink: rng.bool(0.3) ? 'callchat://settings' : null,
+    deepLink: rng.bool(0.3) ? 'callschat://settings' : null,
     createdByName: rng.pick(ADMIN_ACTORS).name,
     version: 1,
     scheduledAt: status === 'SCHEDULED' ? rng.pastDate(-10, -20) : null,

@@ -69,10 +69,10 @@ export function SignOutAllDevicesCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-body text-foreground-muted">
-          Ends every signed-in session on this account — this browser and every
-          other device, including any you no longer have. Each one has to sign in
-          again. Use this if you think someone else has your password, or after
-          signing in on a device you do not control.
+          Ends every signed-in session on this account — this browser and every other
+          device, including any you no longer have. Each one has to sign in again. Use
+          this if you think someone else has your password, or after signing in on a
+          device you do not control.
         </p>
 
         <Button variant="outline" onClick={() => setOpen(true)}>
@@ -98,8 +98,8 @@ export function SignOutAllDevicesCard() {
               <div className="min-w-0 space-y-1">
                 <DialogTitle className="text-h3">Sign out of all devices</DialogTitle>
                 <DialogDescription className="text-body">
-                  Every session on this account is revoked immediately, including
-                  this one. You will be returned to the sign-in screen.
+                  Every session on this account is revoked immediately, including this
+                  one. You will be returned to the sign-in screen.
                 </DialogDescription>
               </div>
             </div>
@@ -115,8 +115,8 @@ export function SignOutAllDevicesCard() {
               role="alert"
               className="rounded-md bg-danger-soft px-3 py-2 text-body text-danger-foreground"
             >
-              {errorMessage} You are still signed in, and your other devices have
-              not been signed out.
+              {errorMessage} You are still signed in, and your other devices have not
+              been signed out.
             </p>
           ) : null}
 
