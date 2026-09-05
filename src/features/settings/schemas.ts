@@ -1,8 +1,4 @@
-import type { FieldValues, UseFormSetError, Path } from 'react-hook-form'
 import { z } from 'zod'
-
-import { isAppError } from '@/api/errors'
-import { parseFieldErrors } from '@/types/common'
 
 /**
  * Client-side form schemas.
@@ -66,36 +62,3 @@ export const generalSettingsSchema = z.object({
 })
 
 export type GeneralSettingsValues = z.infer<typeof generalSettingsSchema>
-
-/**
- * Push a server rejection onto the form's controls.
- *
- * The API concatenates field failures into one string
- * (`"body/appName App name is required, body/tosUrl Invalid …"`), so
- * `parseFieldErrors` splits them and each lands on its own input. Anything
- * that cannot be attributed to a field is left for the card-level alert in
- * `SettingsCard` — attributing it to the wrong control would be worse than
- * not attributing it at all.
- *
- * Returns `true` when at least one field was matched, so a caller can decide
- * whether it still needs to raise a toast.
- */
-export function applyServerFieldErrors<TValues extends FieldValues>(
-  error: unknown,
-  setError: UseFormSetError<TValues>,
-  knownFields: readonly string[],
-): boolean {
-  if (!isAppError(error)) return false
-
-  let matched = false
-  for (const fieldError of parseFieldErrors(error.message)) {
-    if (!knownFields.includes(fieldError.field)) continue
-    setError(fieldError.field as Path<TValues>, {
-      type: 'server',
-      message: fieldError.message,
-    })
-    matched = true
-  }
-
-  return matched
-}

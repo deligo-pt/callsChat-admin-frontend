@@ -3,11 +3,16 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
 /**
- * One labelled control.
+ * One labelled control — label, optional hint, error, and the ARIA that ties
+ * them together.
  *
- * Separate from `SettingsCard` so each settings section can compose fields
- * without importing the whole card. Its ARIA wiring lives in `fieldAria.ts` —
- * a module exporting both components and plain functions breaks Fast Refresh.
+ * Promoted out of `features/settings` in A2, where it began life as
+ * `SettingsField`. Staff provisioning needs exactly the same field, and a
+ * feature may not import a sibling feature — so the shared half moves here,
+ * which is what the lint rule's own message prescribes (plan.md §7).
+ *
+ * Its ARIA wiring lives in `fieldAria.ts`: a module exporting both a component
+ * and a plain function breaks Fast Refresh.
  */
 
 /**
@@ -15,7 +20,7 @@ import { cn } from '@/lib/cn'
  * beneath the control and states the rule **before** the operator hits it —
  * discovering a bound by rejection is the pattern this whole module avoids.
  */
-export function SettingsField({
+export function FormField({
   id,
   label,
   hint,

@@ -11,11 +11,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { resolveMaintenanceState } from '@/lib/status'
 import type { SystemSettings } from '@/types/settings'
+import { fieldAria, FormField } from '@/components/form'
 
 import { updateMaintenanceSettings } from '../api'
-import { fieldAria } from '../fieldAria'
 import { SettingsCard } from '../SettingsCard'
-import { SettingsField } from '../SettingsField'
 import { buildMaintenancePayload, type MaintenanceFormValues } from '../serialize'
 import { useSettingsMutation, useSettingsQuery } from '../useSettings'
 import { MaintenanceDialog } from './MaintenanceDialog'
@@ -196,7 +195,7 @@ export function MaintenanceTab() {
          * blocks inside it, and they end up touching.
          */}
         <fieldset disabled={!canEdit} className="contents space-y-4">
-          <SettingsField
+          <FormField
             id="maintenanceMessage"
             label="Message shown to users"
             hint="Returned with the 503 response. Leave blank for a bare error."
@@ -212,10 +211,10 @@ export function MaintenanceTab() {
                 }))
               }
             />
-          </SettingsField>
+          </FormField>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <SettingsField
+            <FormField
               id="maintenanceStartsAt"
               label="Window starts"
               hint="Advisory only."
@@ -231,13 +230,9 @@ export function MaintenanceTab() {
                   }))
                 }
               />
-            </SettingsField>
+            </FormField>
 
-            <SettingsField
-              id="maintenanceEndsAt"
-              label="Window ends"
-              hint="Advisory only."
-            >
+            <FormField id="maintenanceEndsAt" label="Window ends" hint="Advisory only.">
               <Input
                 type="datetime-local"
                 {...fieldAria('maintenanceEndsAt', true, false)}
@@ -249,7 +244,7 @@ export function MaintenanceTab() {
                   }))
                 }
               />
-            </SettingsField>
+            </FormField>
           </div>
         </fieldset>
 

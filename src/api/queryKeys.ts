@@ -59,8 +59,17 @@ export const queryKeys = {
 
   auditLogs: domain('audit-logs'),
   announcements: domain('announcements'),
-  adminUsers: domain('admin-users'),
-  roles: { all: ['roles'] as const },
+  /**
+   * Staff & Access Control (staff_management_plan.md §4.5).
+   *
+   * `all` is the invalidation root every staff mutation targets. That is not a
+   * convenience: a status change revokes sessions, and the mutation's own
+   * response reports the counts from *before* the revocation (§3.7). Both the
+   * list and the detail must be refetched, never patched from the response, or
+   * the directory shows live sessions on an account whose sessions were just
+   * destroyed — precisely the fact the operator is checking.
+   */
+  staff: domain('staff'),
 
   /**
    * System Settings (system_settings_plan.md §4.4).

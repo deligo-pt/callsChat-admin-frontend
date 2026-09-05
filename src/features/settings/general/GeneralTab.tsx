@@ -7,19 +7,15 @@ import { PERMISSIONS } from '@/auth/permissions'
 import { ErrorState, LoadingState } from '@/components/feedback'
 import { Input } from '@/components/ui/input'
 import type { SystemSettings } from '@/types/settings'
+import { fieldAria, FormField } from '@/components/form'
+import { useUnsavedChangesGuard } from '@/lib/hooks/useUnsavedChangesGuard'
+import { applyServerFieldErrors } from '@/api/formErrors'
 
 import { updateGeneralSettings } from '../api'
 import { SettingsCard } from '../SettingsCard'
-import { fieldAria } from '../fieldAria'
-import { SettingsField } from '../SettingsField'
-import {
-  applyServerFieldErrors,
-  generalSettingsSchema,
-  type GeneralSettingsValues,
-} from '../schemas'
+import { generalSettingsSchema, type GeneralSettingsValues } from '../schemas'
 import { buildGeneralPayload } from '../serialize'
 import { useSettingsMutation, useSettingsQuery } from '../useSettings'
-import { useUnsavedChangesGuard } from '../useUnsavedChangesGuard'
 
 /**
  * Brand identity and support contacts — `PATCH /admin/settings/general`.
@@ -160,7 +156,7 @@ export function GeneralTab() {
     >
       <fieldset disabled={!canEdit} className="contents">
         <div className="grid gap-4 md:grid-cols-2">
-          <SettingsField
+          <FormField
             id="appName"
             label="App name"
             required
@@ -173,9 +169,9 @@ export function GeneralTab() {
               {...form.register('appName')}
               autoComplete="off"
             />
-          </SettingsField>
+          </FormField>
 
-          <SettingsField
+          <FormField
             id="supportEmail"
             label="Support email"
             required
@@ -188,9 +184,9 @@ export function GeneralTab() {
               {...form.register('supportEmail')}
               autoComplete="off"
             />
-          </SettingsField>
+          </FormField>
 
-          <SettingsField
+          <FormField
             id="supportPhone"
             label="Support phone"
             hint="Optional. International format, e.g. +12025550199."
@@ -202,9 +198,9 @@ export function GeneralTab() {
               {...form.register('supportPhone')}
               autoComplete="off"
             />
-          </SettingsField>
+          </FormField>
 
-          <SettingsField
+          <FormField
             id="tosUrl"
             label="Terms of service URL"
             hint="Optional. Leave blank to remove the link from clients."
@@ -216,9 +212,9 @@ export function GeneralTab() {
               {...form.register('tosUrl')}
               autoComplete="off"
             />
-          </SettingsField>
+          </FormField>
 
-          <SettingsField
+          <FormField
             id="privacyPolicyUrl"
             label="Privacy policy URL"
             hint="Optional. Leave blank to remove the link from clients."
@@ -230,7 +226,7 @@ export function GeneralTab() {
               {...form.register('privacyPolicyUrl')}
               autoComplete="off"
             />
-          </SettingsField>
+          </FormField>
         </div>
       </fieldset>
 

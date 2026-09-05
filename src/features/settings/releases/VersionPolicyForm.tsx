@@ -6,11 +6,10 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { isPolicyCoherent } from '@/lib/semver'
 import type { AppVersionPolicy } from '@/types/settings'
+import { fieldAria, FormField } from '@/components/form'
 
 import { updateVersionPolicy } from '../api'
-import { fieldAria } from '../fieldAria'
 import { SettingsCard } from '../SettingsCard'
-import { SettingsField } from '../SettingsField'
 import { buildVersionPolicyPayload, type VersionPolicyFormValues } from '../serialize'
 import { useSettingsMutation } from '../useSettings'
 import { ForceUpdateDialog } from './ForceUpdateDialog'
@@ -131,7 +130,7 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
       >
         <fieldset disabled={!canEdit} className="contents space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <SettingsField
+            <FormField
               id={`${policy.platform}-latestVersion`}
               label="Latest version"
               required
@@ -143,9 +142,9 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
                 onChange={(event) => patch({ latestVersion: event.target.value })}
                 autoComplete="off"
               />
-            </SettingsField>
+            </FormField>
 
-            <SettingsField
+            <FormField
               id={`${policy.platform}-minRequiredVersion`}
               label="Minimum required version"
               required
@@ -162,10 +161,10 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
                 onChange={(event) => patch({ minRequiredVersion: event.target.value })}
                 autoComplete="off"
               />
-            </SettingsField>
+            </FormField>
           </div>
 
-          <SettingsField
+          <FormField
             id={`${policy.platform}-buildNumber`}
             label="Build number"
             /*
@@ -183,9 +182,9 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
               autoComplete="off"
               inputMode="numeric"
             />
-          </SettingsField>
+          </FormField>
 
-          <SettingsField
+          <FormField
             id={`${policy.platform}-releaseNotes`}
             label="Release notes"
             hint="Shown in the update prompt. Clearing it removes it from the policy."
@@ -196,7 +195,7 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
               value={draft.releaseNotes}
               onChange={(event) => patch({ releaseNotes: event.target.value })}
             />
-          </SettingsField>
+          </FormField>
 
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface-muted p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 space-y-1">

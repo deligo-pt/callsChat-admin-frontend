@@ -1,6 +1,5 @@
 import { maskPhone, maskReference } from '@/lib/mask'
 import type {
-  AdminUser,
   Announcement,
   AuditLog,
   ConfigurationEntry,
@@ -739,38 +738,16 @@ export const auditLogs: AuditLog[] = Array.from({ length: 400 }, (_, index) => {
  * Administration
  * ---------------------------------------------------------------------- */
 
-/** Roles use the VERIFIED enum — `ADMIN`, not the assumed `OPERATIONS_ADMIN`. */
-export const adminUsers: AdminUser[] = [
-  {
-    displayName: 'Nadia Chowdhury',
-    email: 'nadia@callschat.app',
-    role: 'SUPER_ADMIN' as const,
-  },
-  { displayName: 'Tomas Ricci', email: 'tomas@callschat.app', role: 'ADMIN' as const },
-  {
-    displayName: 'Elena Petrova',
-    email: 'elena@callschat.app',
-    role: 'MODERATOR' as const,
-  },
-  {
-    displayName: 'Ibrahim Diallo',
-    email: 'ibrahim@callschat.app',
-    role: 'MODERATOR' as const,
-  },
-  {
-    displayName: 'Clara Bergman',
-    email: 'clara@callschat.app',
-    role: 'ADMIN' as const,
-  },
-].map((entry, index) => ({
-  id: id('adm', index),
-  displayName: entry.displayName,
-  email: entry.email,
-  role: entry.role,
-  status: index !== 4 ? ('ACTIVE' as const) : ('INACTIVE' as const),
-  createdAt: rng.pastDate(500, 100),
-  lastActiveAt: rng.pastDate(10, 0),
-}))
+/*
+ * The `adminUsers` fixture was removed on 2026-09-03 along with `AdminUser`.
+ *
+ * It seeded `GET /admin/admin-users`, a route that has never existed. The real
+ * endpoint shipped as `/admin/staff` with a different shape, and it now has a
+ * verified mock of its own in `handlers/staff.ts` — one built from captured
+ * live responses and deliberately hostile enough to reproduce the backend's
+ * bugs. Keeping an invented fixture beside it would give two answers to the
+ * same question, one of them made up.
+ */
 
 export const announcements: Announcement[] = Array.from({ length: 24 }, (_, index) => {
   const status = rng.pick([

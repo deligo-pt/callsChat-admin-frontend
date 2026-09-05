@@ -4,6 +4,8 @@ import { PERMISSIONS } from '@/auth/permissions'
 import { useAuth } from '@/auth/useAuth'
 import { ErrorState, LoadingState } from '@/components/feedback'
 import { Input } from '@/components/ui/input'
+import { fieldAria, FormField } from '@/components/form'
+import { useUnsavedChangesGuard } from '@/lib/hooks/useUnsavedChangesGuard'
 import {
   MEDIA_SIZE_MAX_MB,
   MEDIA_SIZE_MIN_MB,
@@ -11,12 +13,9 @@ import {
 } from '@/types/settings'
 
 import { updateChatSettings } from '../api'
-import { fieldAria } from '../fieldAria'
 import { SettingsCard } from '../SettingsCard'
-import { SettingsField } from '../SettingsField'
 import { buildChatPayload } from '../serialize'
 import { useSettingsMutation, useSettingsQuery } from '../useSettings'
-import { useUnsavedChangesGuard } from '../useUnsavedChangesGuard'
 import { FileTypeEditor } from './FileTypeEditor'
 
 /**
@@ -134,7 +133,7 @@ export function ChatTab() {
       updatedBy={settings.updatedBy}
     >
       <fieldset disabled={!canEdit} className="contents space-y-4">
-        <SettingsField
+        <FormField
           id="maxMediaFileSizeMB"
           label="Maximum file size"
           hint={`${MEDIA_SIZE_MIN_MB}–${MEDIA_SIZE_MAX_MB} MB.${
@@ -160,11 +159,11 @@ export function ChatTab() {
             />
             <span className="text-body text-foreground-muted">MB</span>
           </div>
-        </SettingsField>
+        </FormField>
 
-        <SettingsField id="allowedFileTypes" label="Allowed file types">
+        <FormField id="allowedFileTypes" label="Allowed file types">
           <FileTypeEditor value={types} onChange={setTypes} disabled={!canEdit} />
-        </SettingsField>
+        </FormField>
       </fieldset>
 
       {!canEdit ? (

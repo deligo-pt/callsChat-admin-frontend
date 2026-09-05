@@ -54,21 +54,44 @@ describe('permissionsForRole', () => {
     }
   })
 
-  it('lets an Admin write system settings, following the live guards', () => {
+  it('no longer lets an Admin write system settings by role alone', () => {
     /*
-     * A deliberate divergence from doc/RBAC, Security, and Privacy.md:52,
-     * which reserves configuration writes for Super Admin.
+     * ⚠️ This expectation was INVERTED on 2026-09-03, exactly as
+     * system_settings_plan.md §8 O1 said it would be.
      *
-     * All six settings-write routes are guarded with `verifyAdmin` on the live
-     * API, verified 2026-09-01 (system_settings_plan.md §2.1 / §4.3).
-     * Withholding this would show an ADMIN a settings page of permanently
-     * disabled controls that the API would in fact have accepted — a lie about
-     * capability. plan.md §1 makes the backend the source of truth.
+     * It previously asserted the opposite, on the grounds — correct at the
+     * time — that all six settings-write routes were guarded with
+     * `verifyAdmin`, so withholding the permission would have shown an ADMIN a
+     * page of disabled controls the API would have accepted.
      *
-     * Tracked as system_settings_plan.md §8 O1: if the doc is the intended
-     * policy, the route guards tighten and this expectation inverts.
+     * The backend has since moved to per-module permissions. `GET
+     * /admin/settings` now answers `403 Missing required module permission
+     * 'SYSTEM_SETTINGS_EDIT'` for an ADMIN without the grant, verified live
+     * against a real account. Settings access is no longer a property of the
+     * role at all — it is granted per account in Staff, and will be read from
+     * `adminPermissions` once `GET /admin/auth/me` returns it
+     * (staff_management_plan.md §3.2, phase A5).
      */
-    expect(permissionsForRole('ADMIN')).toContain(PERMISSIONS.configurationConfigure)
+    expect(permissionsForRole('ADMIN')).not.toContain(
+      PERMISSIONS.configurationConfigure,
+    )
+    /* Reading the page is still role-granted; only the writes moved. */
+    expect(permissionsForRole('ADMIN')).toContain(PERMISSIONS.configurationView)
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(
+      PERMISSIONS.configurationConfigure,
+    )
+  })
+
+  it('reserves staff management for Super Admin alone', () => {
+    /*
+     * All eight `/admin/staff/*` routes are `verifySuperAdmin`-guarded and an
+     * ADMIN gets `403 "Requires SUPER_ADMIN privileges"` from every one —
+     * verified live 2026-09-03. No judgement call here, unlike the settings
+     * case above.
+     */
+    expect(permissionsForRole('ADMIN')).not.toContain(PERMISSIONS.staffManage)
+    expect(permissionsForRole('MODERATOR')).not.toContain(PERMISSIONS.staffManage)
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.staffManage)
   })
 
   it('reserves the database and SMS suites for Super Admin alone', () => {
@@ -96,7 +119,7 @@ describe('permissionsForRole', () => {
       PERMISSIONS.ledgerView,
       PERMISSIONS.paymentsView,
       PERMISSIONS.withdrawalsView,
-      PERMISSIONS.adminUsersManage,
+      PERMISSIONS.staffManage,
       PERMISSIONS.auditLogsView,
       PERMISSIONS.configurationView,
     ]) {

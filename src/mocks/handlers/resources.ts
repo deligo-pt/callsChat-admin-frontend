@@ -4,7 +4,6 @@ import type { Paginated } from '@/types/common'
 
 import { queryCollection, type QueryConfig } from '../query'
 import {
-  adminUsers,
   announcements,
   auditLogs,
   configuration,
@@ -654,14 +653,11 @@ export const resourceHandlers = [
   }),
   detailHandler('/admin/announcements', announcements, 'Announcement'),
 
-  listHandler('/admin/admin-users', adminUsers, {
-    searchFields: ['id', 'displayName', 'email'],
-    sortFields: ['displayName', 'role', 'lastActiveAt'],
-    filters: {
-      role: (row, value) => row.role === value,
-      status: (row, value) => row.status === value,
-    },
-  }),
+  /*
+   * `/admin/admin-users` was removed on 2026-09-03. That route never existed;
+   * staff management shipped as `/admin/staff`, and `handlers/staff.ts` mocks
+   * it from captured live responses.
+   */
 
   http.get(`${API_PREFIX}/admin/configuration`, async () => {
     const scenario = await applyScenario()

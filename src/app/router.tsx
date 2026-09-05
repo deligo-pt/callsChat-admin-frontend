@@ -74,6 +74,21 @@ const DatabaseTab = lazy(() =>
     default: m.DatabaseTab,
   })),
 )
+const StaffListPage = lazy(() =>
+  import('@/features/staff/StaffListPage').then((m) => ({
+    default: m.StaffListPage,
+  })),
+)
+const StaffCreatePage = lazy(() =>
+  import('@/features/staff/StaffCreatePage').then((m) => ({
+    default: m.StaffCreatePage,
+  })),
+)
+const StaffDetailPage = lazy(() =>
+  import('@/features/staff/StaffDetailPage').then((m) => ({
+    default: m.StaffDetailPage,
+  })),
+)
 
 function suspended(node: ReactNode) {
   return <Suspense fallback={<RouteFallback />}>{node}</Suspense>
@@ -184,6 +199,47 @@ const moduleRoutes: RouteObject[] = [
         ),
       },
     ],
+  },
+
+  /*
+   * Phase A1 — Staff & Access Control (staff_management_plan.md §4.1).
+   *
+   * Super Admin only. All eight `/admin/staff/*` routes are guarded with
+   * `verifySuperAdmin` and answer `403 "Requires SUPER_ADMIN privileges"` to
+   * anyone else, so guarding here as well as in the sidebar means a typed URL
+   * gets the standard 403 rather than a screen that fails on its first request.
+   */
+  {
+    path: ROUTES.staff,
+    element: (
+      <RequirePermission permission={PERMISSIONS.staffManage} resource="staff">
+        {suspended(<StaffListPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase A2 — provisioning. Guarded identically, and declared **before**
+   * `/staff/:id`: React Router prefers a static segment over a dynamic one, but
+   * relying on that silently is how `new` ends up being looked up as a staff id.
+   */
+  {
+    path: ROUTES.staffNew,
+    element: (
+      <RequirePermission permission={PERMISSIONS.staffManage} resource="staff">
+        {suspended(<StaffCreatePage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /* Phase A3 — the record, and its permission grid. */
+  {
+    path: '/staff/:id',
+    element: (
+      <RequirePermission permission={PERMISSIONS.staffManage} resource="staff">
+        {suspended(<StaffDetailPage />)}
+      </RequirePermission>
+    ),
   },
 ]
 

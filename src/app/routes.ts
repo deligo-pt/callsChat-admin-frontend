@@ -49,9 +49,21 @@ export const ROUTES = {
   notificationCreate: '/notifications/create',
   notification: (id: string) => `/notifications/${id}`,
 
-  adminUsers: '/admin-users',
-  adminUser: (id: string) => `/admin-users/${id}`,
-  roles: '/roles',
+  /**
+   * Staff & Access Control (staff_management_plan.md §4.1).
+   *
+   * Replaces the `/admin-users` and `/roles` placeholders reserved by plan.md
+   * §10B. `/roles` is gone rather than renamed: it stood for a role builder,
+   * and the backend has two fixed staff roles and a flat list of eight module
+   * keys — there is no role to build.
+   *
+   * `/staff/new` is a route rather than a modal because provisioning is six
+   * fields plus an eight-key permission grid, and because the grid needs room
+   * to explain what each key actually unlocks.
+   */
+  staff: '/staff',
+  staffNew: '/staff/new',
+  staffMember: (id: string) => `/staff/${id}`,
 
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,

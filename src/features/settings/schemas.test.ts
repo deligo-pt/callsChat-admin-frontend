@@ -1,8 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { ValidationError } from '@/api/errors'
-
-import { applyServerFieldErrors, generalSettingsSchema } from './schemas'
+import { generalSettingsSchema } from './schemas'
 
 /**
  * Form-schema rules, and the bridge from a server rejection to a control.
@@ -74,59 +72,5 @@ describe('generalSettingsSchema', () => {
         tosUrl: 'https://callschat.com/terms',
       }).success,
     ).toBe(true)
-  })
-})
-
-describe('applyServerFieldErrors', () => {
-  const FIELDS = ['appName', 'supportEmail', 'tosUrl']
-
-  it('routes each concatenated failure to its own control', () => {
-    const setError = vi.fn()
-    const error = new ValidationError(
-      'body/appName App name is required, body/tosUrl Invalid Terms of Service URL',
-    )
-
-    const matched = applyServerFieldErrors(error, setError, FIELDS)
-
-    expect(matched).toBe(true)
-    expect(setError).toHaveBeenCalledWith('appName', {
-      type: 'server',
-      message: 'App name is required',
-    })
-    expect(setError).toHaveBeenCalledWith('tosUrl', {
-      type: 'server',
-      message: 'Invalid Terms of Service URL',
-    })
-  })
-
-  it('ignores a field this form does not render', () => {
-    // Setting an error on a control that does not exist hides it entirely.
-    const setError = vi.fn()
-    const error = new ValidationError('body/maxMediaFileSizeMB Minimum is 1MB')
-
-    expect(applyServerFieldErrors(error, setError, FIELDS)).toBe(false)
-    expect(setError).not.toHaveBeenCalled()
-  })
-
-  it('leaves the prefix-less cross-field message for the card', () => {
-    /*
-     * "Default language 'zz' must be included in supported languages." has no
-     * field to own it. Guessing one would put the message somewhere the
-     * operator has no way to act on.
-     */
-    const setError = vi.fn()
-    const error = new ValidationError(
-      "Default language 'zz' must be included in supported languages.",
-    )
-
-    expect(applyServerFieldErrors(error, setError, FIELDS)).toBe(false)
-    expect(setError).not.toHaveBeenCalled()
-  })
-
-  it('leaves the root body rejection for the card', () => {
-    const setError = vi.fn()
-    const error = new ValidationError('body/ Expected object, received null')
-
-    expect(applyServerFieldErrors(error, setError, FIELDS)).toBe(false)
   })
 })

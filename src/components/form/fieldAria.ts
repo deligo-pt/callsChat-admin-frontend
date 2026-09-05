@@ -1,7 +1,7 @@
 /**
- * ARIA wiring for a settings field.
+ * ARIA wiring for a form field.
  *
- * Pairs with `SettingsField`, which renders the hint and error nodes at the
+ * Pairs with `FormField`, which renders the hint and error nodes at the
  * ids this points at. Keeping the convention in one function means no caller
  * has to remember it, and a control can never end up describing an element
  * that was not rendered.

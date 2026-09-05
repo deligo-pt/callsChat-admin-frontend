@@ -36,6 +36,8 @@ export type StatusDomain =
   | 'smsProvider'
   | 'smsTest'
   | 'maintenance'
+  | 'staff'
+  | 'staffRole'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -161,6 +163,49 @@ const MAINTENANCE: DomainMap = {
   OFF: { label: 'Off', tone: 'neutral' },
 }
 
+/**
+ * A staff account's lifecycle state (staff_management_plan.md §5.2).
+ *
+ * Deliberately **not** the `USER` map, and the difference is the whole point.
+ *
+ * `USER` renders `INACTIVE` as a neutral "Inactive", which for a consumer
+ * account is right — it is dormant. For a staff account `INACTIVE` is what
+ * `DELETE /admin/staff/:id` sets, so it means *deleted*: sessions purged,
+ * sign-in blocked, no route back. Because the backend also fails to filter
+ * those rows out of the directory, that badge is the only thing separating a
+ * deleted colleague from a working one — and calling it "Inactive" would tell
+ * the operator the opposite of what happened.
+ *
+ * `locked` (violet) is already this panel's colour for *this record is closed
+ * to action*, which is exactly true here: every mutation against it answers
+ * 404.
+ *
+ * `BANNED` is `danger` rather than `locked` because, unlike the deletion, it
+ * is reversible — `PATCH /:id/status` back to `ACTIVE` works.
+ */
+const STAFF: DomainMap = {
+  ACTIVE: { label: 'Active', tone: 'success' },
+  SUSPENDED: { label: 'Suspended', tone: 'warning' },
+  BANNED: { label: 'Banned', tone: 'danger' },
+  INACTIVE: { label: 'Deleted', tone: 'locked' },
+}
+
+/**
+ * Admin-panel role, as a badge.
+ *
+ * `primary` for Admin and `neutral` for Moderator: the tone carries the
+ * privilege difference at a glance down a column, without either reading as a
+ * warning — neither role is a problem state.
+ *
+ * `SUPER_ADMIN` is included for the top bar and the account page only. It can
+ * never appear in the staff directory, which excludes Super Admins entirely.
+ */
+const STAFF_ROLE: DomainMap = {
+  SUPER_ADMIN: { label: 'Super Admin', tone: 'locked' },
+  ADMIN: { label: 'Admin', tone: 'primary' },
+  MODERATOR: { label: 'Moderator', tone: 'neutral' },
+}
+
 const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   user: USER,
   restriction: RESTRICTION,
@@ -176,6 +221,8 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   smsProvider: SMS_PROVIDER,
   smsTest: SMS_TEST,
   maintenance: MAINTENANCE,
+  staff: STAFF,
+  staffRole: STAFF_ROLE,
 }
 
 /** The three states the maintenance card and the global banner can be in. */

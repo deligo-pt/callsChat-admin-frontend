@@ -6,14 +6,13 @@ import { ErrorState, LoadingState } from '@/components/feedback'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import type { SystemSettings } from '@/types/settings'
+import { fieldAria, FormField } from '@/components/form'
+import { useUnsavedChangesGuard } from '@/lib/hooks/useUnsavedChangesGuard'
 
 import { updatePlatformSettings } from '../api'
-import { fieldAria } from '../fieldAria'
 import { SettingsCard } from '../SettingsCard'
-import { SettingsField } from '../SettingsField'
 import { buildPlatformPayload, type PlatformFormValues } from '../serialize'
 import { useSettingsMutation, useSettingsQuery } from '../useSettings'
-import { useUnsavedChangesGuard } from '../useUnsavedChangesGuard'
 import { LanguageEditor } from './LanguageEditor'
 
 /**
@@ -136,7 +135,7 @@ export function PlatformTab() {
       updatedBy={settings.updatedBy}
     >
       <fieldset disabled={!canEdit} className="contents space-y-4">
-        <SettingsField id="supportedLanguages" label="Supported languages">
+        <FormField id="supportedLanguages" label="Supported languages">
           <LanguageEditor
             supported={draft.supportedLanguages}
             defaultLanguage={draft.defaultLanguage}
@@ -145,10 +144,10 @@ export function PlatformTab() {
               patch({ supportedLanguages: supported, defaultLanguage })
             }
           />
-        </SettingsField>
+        </FormField>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <SettingsField
+          <FormField
             id="playStoreUrl"
             label="Google Play listing"
             hint="Optional. Leave blank to remove the link from clients."
@@ -161,9 +160,9 @@ export function PlatformTab() {
               onChange={(event) => patch({ playStoreUrl: event.target.value })}
               autoComplete="off"
             />
-          </SettingsField>
+          </FormField>
 
-          <SettingsField
+          <FormField
             id="appStoreUrl"
             label="App Store listing"
             hint="Optional. Leave blank to remove the link from clients."
@@ -176,7 +175,7 @@ export function PlatformTab() {
               onChange={(event) => patch({ appStoreUrl: event.target.value })}
               autoComplete="off"
             />
-          </SettingsField>
+          </FormField>
         </div>
 
         {/*

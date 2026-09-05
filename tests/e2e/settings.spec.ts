@@ -413,18 +413,32 @@ test.describe('settings access', () => {
     await expect(page.getByText(/do not have access/i)).toBeVisible()
   })
 
-  test('an Admin can edit — the live routes accept ADMIN', async ({ page }) => {
+  test('an Admin reads settings but cannot change them', async ({ page }) => {
     /*
-     * Deliberately diverges from doc/RBAC §52. All six settings-write routes
-     * are guarded with `verifyAdmin` (system_settings_plan.md §4.3 / §8 O1);
-     * disabling the form here would misreport what the API allows.
+     * Reversed on 2026-09-05, from "an Admin can edit".
+     *
+     * Until 2026-09-03 the six settings-write routes were guarded with
+     * `verifyAdmin`, so an editable form was the honest rendering and a
+     * disabled one would have misreported what the API allowed
+     * (system_settings_plan.md §8 O1). The backend has since moved to
+     * per-module permissions: `/admin/settings` now answers `403 "Missing
+     * required module permission 'SYSTEM_SETTINGS_EDIT'"` to an ADMIN without
+     * that key, verified live.
+     *
+     * So the grant came out of `ADMIN_PERMISSIONS`
+     * (staff_management_plan.md §4.4) and the form is read-only for a role
+     * that no longer decides this. Which ADMINs may configure settings is a
+     * per-account grant made in Staff, and the panel can only honour it once
+     * `GET /admin/auth/me` returns `adminPermissions` — phase A5.
      */
     await signIn(page, ACCOUNTS.admin)
     await page.goto('/settings/general')
 
-    await expect(page.getByLabel('App name')).toBeEnabled()
-    await page.getByLabel('App name').fill('Admin edit')
-    await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled()
+    await expect(page.getByLabel('App name')).toBeDisabled()
+    /* And the page says so, rather than leaving a dead form to be discovered. */
+    await expect(
+      page.getByText(/can view these settings but not change them/i),
+    ).toBeVisible()
   })
 
   test('an Admin is not shown the Super Admin sections', async ({ page }) => {

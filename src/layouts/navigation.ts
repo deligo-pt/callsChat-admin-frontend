@@ -1,4 +1,4 @@
-import { Activity, LayoutDashboard, Settings2, Users } from 'lucide-react'
+import { Activity, LayoutDashboard, Settings2, ShieldCheck, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import { ROUTES } from '@/app/routes'
@@ -115,6 +115,37 @@ export const NAV_SECTIONS: readonly NavSection[] = [
             ...(section.permission ? { permission: section.permission } : {}),
           }),
         ),
+      },
+    ],
+  },
+  /*
+   * Added 2026-09-03 under the rule above: the `/admin/staff/*` endpoints
+   * shipped and were verified live, so the section appears the same day
+   * (staff_management_plan.md §4.2).
+   *
+   * **Last, deliberately.** This is the least-visited section and the most
+   * dangerous — the only one whose subject is the panel's own operators. Below
+   * Platform it stays out of the path of daily work without being hidden.
+   *
+   * One item, no sub-menu: a collapsible group holding a single child would be
+   * chrome for its own sake. `/staff/new` and `/staff/:id` are reached from
+   * the directory, not from the rail.
+   *
+   * `staff.manage` is Super-Admin-only, so an ADMIN or MODERATOR never sees
+   * this heading at all — the Sidebar drops a section once every item in it is
+   * filtered out. That matches the backend exactly: all eight routes answer
+   * `403 "Requires SUPER_ADMIN privileges"` to anyone else.
+   */
+  {
+    id: 'access',
+    label: 'Access',
+    items: [
+      {
+        label: 'Staff',
+        to: ROUTES.staff,
+        icon: ShieldCheck,
+        permission: PERMISSIONS.staffManage,
+        matchPrefix: '/staff',
       },
     ],
   },

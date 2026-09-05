@@ -54,8 +54,20 @@ export const PERMISSIONS = {
   notificationsSend: 'notifications.send',
   notificationsBroadcast: 'notifications.broadcast',
 
-  adminUsersManage: 'admin_users.manage',
-  rolesManage: 'roles.manage',
+  /**
+   * Staff & Access Control — `/admin/staff/*` (staff_management_plan.md §4.3).
+   *
+   * Replaces the former `admin_users.manage`. `roles.manage` was removed
+   * outright rather than renamed: it described a role builder, and the backend
+   * has exactly two fixed staff roles and a flat list of eight module keys.
+   * There is nothing for a roles screen to manage.
+   *
+   * Super Admin only, with no ambiguity to weigh — all eight routes are
+   * `verifySuperAdmin`-guarded and an ADMIN receives `403 "Access Denied:
+   * Requires SUPER_ADMIN privileges"` from every one of them, verified
+   * 2026-09-03.
+   */
+  staffManage: 'staff.manage',
 
   auditLogsView: 'audit_logs.view',
 
@@ -150,27 +162,33 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.auditLogsView,
   PERMISSIONS.configurationView,
   /*
-   * `configurationConfigure` IS granted to ADMIN, deliberately diverging from
-   * `doc/RBAC, Security, and Privacy.md:52`, which reserves configuration
-   * writes for Super Admin.
+   * `configurationConfigure` was granted here on 2026-09-01 and **removed on
+   * 2026-09-03**. That divergence, logged as system_settings_plan.md §8 O1, is
+   * now retired: the route guards tightened exactly as that note anticipated.
    *
-   * The live backend guards all six settings-write routes — general, logo,
-   * chat, platform, deployment/app-versions — with `verifyAdmin`, verified
-   * 2026-09-01 (system_settings_plan.md §2.1). Withholding it here would show
-   * an ADMIN a settings page of permanently disabled controls that the API
-   * would in fact have accepted: a lie about capability, and the same
-   * "broken product rather than an unfinished one" failure the navigation
-   * comment in `layouts/navigation.ts` warns against.
+   * The reasoning then was sound and is worth keeping, because it is the rule
+   * this file follows: the six settings-write routes were guarded with
+   * `verifyAdmin`, so withholding the permission would have shown an ADMIN a
+   * page of disabled controls the API would in fact have accepted — a lie
+   * about capability.
    *
-   * plan.md §1 makes the backend the source of truth, so this follows the
-   * backend. Logged for the backend owner as system_settings_plan.md §8 O1 —
-   * if the doc is the intended policy, the route guards tighten and this line
-   * comes back out.
+   * The backend has since moved to per-module permissions. `GET /admin/settings`
+   * now answers `403 "Access Denied: Missing required module permission
+   * 'SYSTEM_SETTINGS_EDIT'"` for an ADMIN that has not been granted the key —
+   * verified live 2026-09-03 against a real account. Note it gates the *read*
+   * as well as the writes despite its `_EDIT` name; there is no separate view
+   * permission.
+   *
+   * So the grant would now be the lie in the other direction, and it comes
+   * out. Which ADMINs may configure settings is no longer a property of the
+   * role at all — it is a per-account grant made in Staff, and it will be read
+   * from `adminPermissions` once `GET /admin/auth/me` returns it
+   * (staff_management_plan.md §3.2, phase A5).
    *
    * The two SUPER_ADMIN-only suites — `settingsDatabase` and `settingsSms` —
-   * are deliberately absent, matching their `verifySuperAdmin` guards.
+   * remain absent, matching their `verifySuperAdmin` guards. `staffManage` is
+   * absent for the same reason.
    */
-  PERMISSIONS.configurationConfigure,
 ]
 
 const ROLE_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> = {

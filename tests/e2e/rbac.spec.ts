@@ -156,3 +156,58 @@ test.describe('the access-denied state', () => {
     expect(body).not.toMatch(/usr_|adm_/)
   })
 })
+
+test.describe('permission bootstrap', () => {
+  /*
+   * Phase A5's two acceptance criteria for the permission bridge — pinned now,
+   * while the bridge is still inert, because they are the checks that decide
+   * whether it can ever be switched on.
+   *
+   * `POST /admin/auth/login` returns a real `adminPermissions` array;
+   * `GET /admin/auth/me` returns `[]` for the same token
+   * (staff_management_plan.md §3.2). `LoginPage` seeds the session cache from
+   * the login response, and a reload reads `/me` — so consuming those keys
+   * today gives correct navigation on login and an empty panel on F5.
+   *
+   * These tests fail the moment that divergence appears in the UI, whoever
+   * introduces it.
+   */
+
+  async function navLabels(page: Page): Promise<string[]> {
+    const nav = page.getByRole('navigation').first()
+    await nav.waitFor()
+    return (await nav.getByRole('link').allInnerTexts()).map((text) => text.trim())
+  }
+
+  test('an Admin sees the same navigation after a reload as on login', async ({
+    page,
+  }) => {
+    await signIn(page, ACCOUNTS.admin)
+    const onLogin = await navLabels(page)
+    expect(onLogin.length).toBeGreaterThan(0)
+
+    await page.reload()
+    expect(await navLabels(page)).toEqual(onLogin)
+  })
+
+  test('a Super Admin keeps full access across a reload', async ({ page }) => {
+    /*
+     * §3.1, the module's most dangerous line: `/me` returns
+     * `adminPermissions: []` for a Super Admin too, and an empty array there
+     * means *unlimited*, not *none*. Any check that reads the array before the
+     * role locks the Super Administrator out of their own panel.
+     */
+    await signIn(page, ACCOUNTS.superAdmin)
+    /*
+     * Asserted on the guarded PAGE, not the sidebar link: below `lg` the nav
+     * collapses into a drawer, so link visibility is a statement about the
+     * viewport rather than about permissions.
+     */
+    await page.goto('/staff')
+    await expect(page.getByRole('heading', { name: 'Staff', level: 1 })).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Staff', level: 1 })).toBeVisible()
+    await expect(page.getByText(/do not have access/i)).toHaveCount(0)
+  })
+})

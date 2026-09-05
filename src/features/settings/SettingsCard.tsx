@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card'
 import { cn } from '@/lib/cn'
 
-import { formLevelMessage } from './cardError'
+import { formLevelMessage } from '@/api/formErrors'
 
 /**
  * The one card chrome every settings section uses
