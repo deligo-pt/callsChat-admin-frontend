@@ -4,4 +4,5 @@ node_modules
 playwright-report
 test-results
 package-lock.json
+pnpm-lock.yaml
 public/mockServiceWorker.js

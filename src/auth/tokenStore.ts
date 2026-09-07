@@ -20,7 +20,7 @@
  *     larger blast radius for the same convenience.
  */
 
-const STORAGE_KEY = 'callchat.admin.session'
+const STORAGE_KEY = 'callschat.admin.session'
 
 export interface StoredSession {
   readonly accessToken: string

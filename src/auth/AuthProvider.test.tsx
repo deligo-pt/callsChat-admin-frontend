@@ -55,7 +55,7 @@ function renderWithAdmin(payload: Record<string, unknown>) {
 
 const BASE_ADMIN = {
   id: 'adm_1',
-  email: 'test@callchat.app',
+  email: 'test@callschat.app',
   role: 'ADMIN',
   status: 'ACTIVE',
 }

@@ -284,20 +284,61 @@ describe('Fastify validation message parsing', () => {
     ).toEqual([{ field: 'limit', message: 'Number must be less than or equal to 100' }])
   })
 
-  it('gives up rather than mis-split an enum message containing a comma', () => {
+  it('keeps an enum message containing a comma whole', () => {
     /*
-     * "Expected 'A' | 'B', received 'X'" would split on the comma into a
-     * nonsense second field. Returning nothing forces the caller onto the raw
-     * message, which is correct — a wrong field attribution is worse than none.
+     * This used to return `[]`: a plain `split(', ')` tore
+     * "Expected 'A' | 'B', received 'X'" into a nonsense second segment and
+     * the parse aborted. Splitting only ahead of a location prefix keeps the
+     * message intact AND maps it, which is strictly better than falling back
+     * to the raw string.
      */
     expect(
       parseFieldErrors(
         "body/status Invalid enum value. Expected 'ACTIVE' | 'SUSPENDED', received 'XX'",
       ),
-    ).toEqual([])
+    ).toEqual([
+      {
+        field: 'status',
+        message: "Invalid enum value. Expected 'ACTIVE' | 'SUSPENDED', received 'XX'",
+      },
+    ])
   })
 
   it('returns nothing for a message that is not field-shaped', () => {
     expect(parseFieldErrors('Invalid or expired access token')).toEqual([])
+  })
+
+  it('maps an array member to bracket notation', () => {
+    /*
+     * The settings API indexes array failures with a slash —
+     * `body/allowedFileTypes/1`. The capture group used to stop at the second
+     * slash, so the whole parse bailed and every field mapping in the message
+     * was lost. Normalising to `allowedFileTypes[1]` matches the path React
+     * Hook Form addresses the control by.
+     */
+    expect(
+      parseFieldErrors('body/allowedFileTypes/1 Expected string, received number'),
+    ).toEqual([
+      { field: 'allowedFileTypes[1]', message: 'Expected string, received number' },
+    ])
+  })
+
+  it('still maps sibling fields when one of them is an array member', () => {
+    expect(
+      parseFieldErrors(
+        'body/supportedLanguages/2 String must contain at least 2 character(s), body/appName App name is required',
+      ),
+    ).toEqual([
+      {
+        field: 'supportedLanguages[2]',
+        message: 'String must contain at least 2 character(s)',
+      },
+      { field: 'appName', message: 'App name is required' },
+    ])
+  })
+
+  it('returns nothing for the root-level body rejection, which names no field', () => {
+    // `body/ Expected object, received null` — the mandatory-body trap.
+    expect(parseFieldErrors('body/ Expected object, received null')).toEqual([])
   })
 })

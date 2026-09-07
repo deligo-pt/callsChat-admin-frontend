@@ -153,7 +153,7 @@ export function UsersListPage() {
     <div className="space-y-6">
       <PageHeader
         title="Users"
-        description="Every registered CallChat account. Select a record to review status, restrictions, sessions and history."
+        description="Every registered CallsChat account. Select a record to review status, restrictions, sessions and history."
         breadcrumbs={[{ label: 'Users' }]}
         actions={
           <>

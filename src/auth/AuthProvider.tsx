@@ -4,9 +4,13 @@ import { useCallback, useMemo, useSyncExternalStore, type ReactNode } from 'reac
 import { UnauthorizedError } from '@/api/errors'
 import { queryKeys } from '@/api/queryKeys'
 
-import { AuthContext, type AuthContextValue } from './AuthContext'
+import { AuthContext, type AuthContextValue, type SignOutOptions } from './AuthContext'
 import { permissionsForRole, type Permission } from './permissions'
-import { fetchCurrentAdmin, signOut as signOutRequest } from './session'
+import {
+  fetchCurrentAdmin,
+  signOut as signOutRequest,
+  signOutEverywhere as signOutEverywhereRequest,
+} from './session'
 import { getSession, isExpired, onSessionChange } from './tokenStore'
 
 /**
@@ -76,24 +80,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [permissions],
   )
 
-  const handleSignOut = useCallback(async () => {
-    try {
-      await signOutRequest()
-    } finally {
-      /*
-       * Clear the cache unconditionally. Even if the logout call fails, the
-       * next admin at this browser must never see the previous one's records.
-       */
-      queryClient.clear()
-      /*
-       * Explicitly null the session too. `clear()` empties the cache, but this
-       * observer is disabled the moment the credentials go, so it does not
-       * necessarily re-publish `undefined` — leaving a stale admin object in
-       * context and the operator sitting on a data page after signing out.
-       */
-      queryClient.setQueryData(queryKeys.session.current, null)
-    }
+  /**
+   * Forget everything this browser knows about the departing admin.
+   *
+   * The cache is cleared as well as the credentials: the next admin at this
+   * browser must never see the previous one's records. Nulling the session
+   * query is separate and necessary — `clear()` empties the cache, but this
+   * observer is disabled the moment the credentials go, so it does not
+   * necessarily re-publish `undefined`, leaving a stale admin object in
+   * context and the operator sitting on a data page after signing out.
+   */
+  const discardLocalState = useCallback(() => {
+    queryClient.clear()
+    queryClient.setQueryData(queryKeys.session.current, null)
   }, [queryClient])
+
+  const handleSignOut = useCallback(
+    async ({ allDevices = false }: SignOutOptions = {}) => {
+      if (allDevices) {
+        /*
+         * Deliberately unguarded. If the revocation failed, nothing was
+         * revoked — discarding the local state here would strand the operator
+         * at the sign-in screen with no error and every other device still
+         * live. Let it throw; the caller reports it and this browser stays
+         * signed in, which is the truth.
+         */
+        await signOutEverywhereRequest()
+        discardLocalState()
+        return
+      }
+
+      try {
+        await signOutRequest()
+      } finally {
+        // Best effort: this browser stops presenting the credentials regardless.
+        discardLocalState()
+      }
+    },
+    [discardLocalState],
+  )
 
   const refresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.session.current })

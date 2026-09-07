@@ -123,22 +123,43 @@ export type FieldError = z.infer<typeof fieldErrorSchema>
  * `"body/capability Required, body/reason Required"` becomes
  * `[{ field: 'capability', message: 'Required' }, …]`.
  *
- * This is best-effort by necessity: a message containing a comma inside an
- * enum list (`"Expected 'A' | 'B', received 'X'"`) would split wrongly, so the
- * caller must always keep the raw message as the form-level fallback rather
- * than relying on this alone.
+ * Array members arrive with a **slash-separated index** rather than bracket
+ * notation — `"body/allowedFileTypes/1 Expected string, received number"` —
+ * which is normalised here to `allowedFileTypes[1]` so a form can match it
+ * against the path React Hook Form uses. Without that, the whole parse bailed
+ * and every field mapping in the message was lost (system_settings_plan.md §3.2).
+ *
+ * Segments are split on a comma **only where the next one begins with a
+ * location prefix**. A plain `split(', ')` tore apart the two commonest
+ * messages this API produces — `"Expected string, received number"` and
+ * `"Expected 'A' | 'B', received 'X'"` — leaving a fragment that matched
+ * nothing, which forced the whole parse to abort. The lookahead keeps such a
+ * message whole and still separates genuinely distinct field failures.
+ *
+ * It is still best-effort: a field message that itself contained the literal
+ * text `", body/…"` would split wrongly. Callers must therefore keep the raw
+ * message as the form-level fallback rather than relying on this alone.
+ *
+ * Two shapes deliberately yield `[]`, meaning "no field mapping, show the raw
+ * message": the root-level `"body/ Expected object, received null"`, which
+ * names no field, and any `BAD_REQUEST` cross-field message that carries no
+ * `body/` prefix at all.
  */
+const FIELD_LOCATION = /(?:body|querystring|params|headers)\//
+
 export function parseFieldErrors(message: string): readonly FieldError[] {
   // Only attempt a split when every segment looks like "<location>/<field> <text>".
-  const segments = message.split(', ')
+  const segments = message.split(new RegExp(`,\\s+(?=${FIELD_LOCATION.source})`))
   const parsed: FieldError[] = []
 
   for (const segment of segments) {
-    const match = /^(?:body|querystring|params|headers)\/([\w.[\]]+)\s+(.*)$/.exec(
-      segment.trim(),
-    )
+    const match =
+      /^(?:body|querystring|params|headers)\/([\w.[\]]+(?:\/\d+)*)\s+(.*)$/.exec(
+        segment.trim(),
+      )
     if (!match?.[1] || !match[2]) return []
-    parsed.push({ field: match[1], message: match[2] })
+    // "allowedFileTypes/1" -> "allowedFileTypes[1]"
+    parsed.push({ field: match[1].replace(/\/(\d+)/g, '[$1]'), message: match[2] })
   }
 
   return parsed

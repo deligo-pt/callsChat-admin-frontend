@@ -49,10 +49,59 @@ describe('permissionsForRole', () => {
       PERMISSIONS.payoutRatesConfigure,
       PERMISSIONS.withdrawalsApprove,
       PERMISSIONS.paymentsRefund,
-      PERMISSIONS.configurationConfigure,
     ]) {
       expect(admin).not.toContain(permission)
     }
+  })
+
+  it('no longer lets an Admin write system settings by role alone', () => {
+    /*
+     * ⚠️ This expectation was INVERTED on 2026-09-03, exactly as
+     * system_settings_plan.md §8 O1 said it would be.
+     *
+     * It previously asserted the opposite, on the grounds — correct at the
+     * time — that all six settings-write routes were guarded with
+     * `verifyAdmin`, so withholding the permission would have shown an ADMIN a
+     * page of disabled controls the API would have accepted.
+     *
+     * The backend has since moved to per-module permissions. `GET
+     * /admin/settings` now answers `403 Missing required module permission
+     * 'SYSTEM_SETTINGS_EDIT'` for an ADMIN without the grant, verified live
+     * against a real account. Settings access is no longer a property of the
+     * role at all — it is granted per account in Staff, and will be read from
+     * `adminPermissions` once `GET /admin/auth/me` returns it
+     * (staff_management_plan.md §3.2, phase A5).
+     */
+    expect(permissionsForRole('ADMIN')).not.toContain(
+      PERMISSIONS.configurationConfigure,
+    )
+    /* Reading the page is still role-granted; only the writes moved. */
+    expect(permissionsForRole('ADMIN')).toContain(PERMISSIONS.configurationView)
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(
+      PERMISSIONS.configurationConfigure,
+    )
+  })
+
+  it('reserves staff management for Super Admin alone', () => {
+    /*
+     * All eight `/admin/staff/*` routes are `verifySuperAdmin`-guarded and an
+     * ADMIN gets `403 "Requires SUPER_ADMIN privileges"` from every one —
+     * verified live 2026-09-03. No judgement call here, unlike the settings
+     * case above.
+     */
+    expect(permissionsForRole('ADMIN')).not.toContain(PERMISSIONS.staffManage)
+    expect(permissionsForRole('MODERATOR')).not.toContain(PERMISSIONS.staffManage)
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.staffManage)
+  })
+
+  it('reserves the database and SMS suites for Super Admin alone', () => {
+    // These two are guarded with `verifySuperAdmin`, unlike the six above.
+    for (const role of ['ADMIN', 'MODERATOR']) {
+      expect(permissionsForRole(role)).not.toContain(PERMISSIONS.settingsDatabase)
+      expect(permissionsForRole(role)).not.toContain(PERMISSIONS.settingsSms)
+    }
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.settingsDatabase)
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.settingsSms)
   })
 
   it('lets a Moderator restrict a capability but not suspend or ban', () => {
@@ -70,7 +119,7 @@ describe('permissionsForRole', () => {
       PERMISSIONS.ledgerView,
       PERMISSIONS.paymentsView,
       PERMISSIONS.withdrawalsView,
-      PERMISSIONS.adminUsersManage,
+      PERMISSIONS.staffManage,
       PERMISSIONS.auditLogsView,
       PERMISSIONS.configurationView,
     ]) {

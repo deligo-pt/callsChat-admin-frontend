@@ -26,7 +26,7 @@ test('login rejects an unknown account without leaking which part was wrong', as
   page,
 }) => {
   await page.goto('/login')
-  await page.getByLabel('Email or phone').fill('nobody@callchat.app')
+  await page.getByLabel('Email or phone').fill('nobody@callschat.app')
   await page.getByLabel('Password', { exact: true }).fill('whatever')
   await page.getByRole('button', { name: 'Sign in' }).click()
 
@@ -132,7 +132,7 @@ test('signing out calls the API so the session is revoked server-side', async ({
 test('signing out discards the stored credentials', async ({ page }) => {
   await signIn(page, ACCOUNTS.superAdmin)
   expect(
-    await page.evaluate(() => window.sessionStorage.getItem('callchat.admin.session')),
+    await page.evaluate(() => window.sessionStorage.getItem('callschat.admin.session')),
   ).not.toBeNull()
 
   await page.getByRole('button', { name: 'Account menu' }).click()
@@ -140,7 +140,7 @@ test('signing out discards the stored credentials', async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/)
 
   expect(
-    await page.evaluate(() => window.sessionStorage.getItem('callchat.admin.session')),
+    await page.evaluate(() => window.sessionStorage.getItem('callschat.admin.session')),
   ).toBeNull()
 })
 
@@ -162,7 +162,7 @@ test('a wrong password and an unknown account give the SAME message', async ({
   }
 
   const known = await messageFor(ACCOUNTS.superAdmin, '')
-  const unknown = await messageFor('nobody@callchat.app', 'whatever')
+  const unknown = await messageFor('nobody@callschat.app', 'whatever')
 
   expect(unknown).toContain('not recognised')
   // An empty password is caught client-side, so compare the API-backed one only.
@@ -171,7 +171,7 @@ test('a wrong password and an unknown account give the SAME message', async ({
 
 test('a failed sign-in clears the password field', async ({ page }) => {
   await page.goto('/login')
-  await page.getByLabel('Email or phone').fill('nobody@callchat.app')
+  await page.getByLabel('Email or phone').fill('nobody@callschat.app')
   await page.getByLabel('Password', { exact: true }).fill('some-secret')
   await page.getByRole('button', { name: 'Sign in' }).click()
 

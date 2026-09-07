@@ -1,5 +1,5 @@
 /**
- * CallChat Admin Panel — Design Tokens
+ * CallsChat Admin Panel — Design Tokens
  *
  * Source: Figma "Chats Project" (pages: color, Typography, Componant)
  * See plan.md §5 for the full specification.
@@ -174,7 +174,7 @@
    * 2b. shadcn/ui compatibility layer
    *
    * shadcn primitives are generated against a fixed set of token names.
-   * Mapping them onto the CallChat semantics above means every copied
+   * Mapping them onto the CallsChat semantics above means every copied
    * component is themed correctly on arrival — we never hand-edit colors
    * inside components/ui/.
    * ------------------------------------------------------------------- */

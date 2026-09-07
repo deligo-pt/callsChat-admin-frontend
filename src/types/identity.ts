@@ -370,21 +370,22 @@ export const loginResponseSchema = z.object({
 })
 export type LoginResponse = z.infer<typeof loginResponseSchema>
 
-export const adminUserSchema = z.object({
-  id: idSchema,
-  displayName: z.string(),
-  email: z.string(),
-  role: adminRoleSchema,
-  status: accountStatusValueSchema,
-  createdAt: isoDateTime,
-  lastActiveAt: isoDateTime.nullable(),
-})
-export type AdminUser = z.infer<typeof adminUserSchema>
-
-export const roleSchema = z.object({
-  key: adminRoleSchema,
-  label: z.string(),
-  description: z.string(),
-  permissions: z.array(z.string()),
-})
-export type Role = z.infer<typeof roleSchema>
+/*
+ * `adminUserSchema` and `roleSchema` were removed on 2026-09-03.
+ *
+ * Both were speculative placeholders for plan.md §10B, written before the
+ * endpoints existed and never referenced. When the real API shipped they were
+ * wrong in two different ways:
+ *
+ * - `adminUserSchema` was missing `username`, `phone`, `adminPermissions` and
+ *   `activeSessionsCount` — four of the nine fields a staff record actually
+ *   carries, including the one the whole module exists to edit. The verified
+ *   shape is `staffMemberSchema` in `types/staff.ts`.
+ * - `roleSchema` modelled a role with its own permission list. No such object
+ *   exists: the backend has two fixed staff roles, and permissions are granted
+ *   per account as a flat array of eight module keys, independent of role.
+ *
+ * A schema nobody imports is not harmless — it is a description of the API
+ * that nothing keeps honest, and the next person to need one would have
+ * started from it.
+ */

@@ -1,28 +1,27 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import { Check, X } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { isAppError, UnauthorizedError } from '@/api/errors'
 import { useAuth } from '@/auth/useAuth'
 import { changeEmail, changePassword, signOut } from '@/auth/session'
+import { PasswordRules } from '@/components/form'
 import { PageHeader } from '@/components/display'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
-import { cn } from '@/lib/cn'
 import { ADMIN_ROLE_LABELS } from '@/types/identity'
 
 import {
   changeEmailSchema,
   changePasswordSchema,
-  PASSWORD_RULES,
   type ChangeEmailValues,
   type ChangePasswordValues,
 } from './passwordPolicy'
+import { SignOutAllDevicesCard } from './SignOutAllDevicesCard'
 
 /**
  * Turn an API error into something an operator can act on.
@@ -156,28 +155,7 @@ function ChangePasswordForm() {
           </div>
 
           {/* The policy, stated up front rather than discovered by rejection. */}
-          <ul id="password-rules" className="space-y-1">
-            {PASSWORD_RULES.map((rule) => {
-              const met = rule.met(newPassword ?? '')
-              return (
-                <li
-                  key={rule.label}
-                  className={cn(
-                    'flex items-center gap-2 text-caption',
-                    met ? 'text-success-foreground' : 'text-foreground-muted',
-                  )}
-                >
-                  {met ? (
-                    <Check className="size-3.5 shrink-0" aria-hidden="true" />
-                  ) : (
-                    <X className="size-3.5 shrink-0 opacity-50" aria-hidden="true" />
-                  )}
-                  {rule.label}
-                  <span className="sr-only">{met ? ' — met' : ' — not yet met'}</span>
-                </li>
-              )
-            })}
-          </ul>
+          <PasswordRules id="password-rules" value={newPassword ?? ''} />
 
           <Button type="submit" loading={mutation.isPending}>
             Change password
@@ -315,6 +293,8 @@ export function AccountSecurityPage() {
       <div className="max-w-3xl space-y-6">
         <ChangePasswordForm />
         {admin ? <ChangeEmailForm currentEmail={admin.email} /> : null}
+        {/* Last: it is the one control on this page that ends the visit. */}
+        <SignOutAllDevicesCard />
       </div>
     </div>
   )

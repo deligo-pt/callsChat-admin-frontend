@@ -101,7 +101,7 @@ export function RoleAction({ user }: { user: UserIdentity }) {
 
             {escalating ? (
               <p className="rounded-md bg-danger-soft px-3 py-2 text-caption text-danger-foreground">
-                {humaniseEnum(role)} can sign in to the CallChat admin panel.
+                {humaniseEnum(role)} can sign in to the CallsChat admin panel.
               </p>
             ) : null}
           </div>

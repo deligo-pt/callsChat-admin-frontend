@@ -49,7 +49,16 @@ export function RecordCardList<TRow>({
         const interactive = Boolean(onRowClick)
 
         return (
-          <li key={rowKey(row)}>
+          /*
+            `min-w-0` on the ITEM, not just the list.
+            
+            A grid item's automatic minimum size is its min-content width, so a
+            card holding a long filename or a two-column meta grid forces its
+            track wider than the viewport — the list stops fitting and `main`
+            gains a sideways scroll. `min-w-0` on the container does not help;
+            the override has to be on the item.
+          */
+          <li key={rowKey(row)} className="min-w-0">
             {/*
               The card is NOT `role="button"`.
               

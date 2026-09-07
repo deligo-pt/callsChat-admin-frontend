@@ -4,7 +4,6 @@ import type { Paginated } from '@/types/common'
 
 import { queryCollection, type QueryConfig } from '../query'
 import {
-  adminUsers,
   announcements,
   auditLogs,
   configuration,
@@ -33,7 +32,11 @@ import { API_PREFIX, applyScenario, errorResponse, isEmptyScenario } from './sha
 async function requireJsonBody(request: Request) {
   const raw = await request.text()
   if (raw.trim() === '') {
-    return errorResponse(400, 'FST_ERR_VALIDATION', 'body/ Expected object, received null')
+    return errorResponse(
+      400,
+      'FST_ERR_VALIDATION',
+      'body/ Expected object, received null',
+    )
   }
   try {
     const parsed: unknown = JSON.parse(raw)
@@ -45,7 +48,11 @@ async function requireJsonBody(request: Request) {
       )
     }
   } catch {
-    return errorResponse(400, 'FST_ERR_VALIDATION', 'body/ Expected object, received null')
+    return errorResponse(
+      400,
+      'FST_ERR_VALIDATION',
+      'body/ Expected object, received null',
+    )
   }
   return null
 }
@@ -488,13 +495,16 @@ export const resourceHandlers = [
    * laxer than the service it stands in for does not just miss bugs, it
    * actively certifies them.
    */
-  http.delete(`${API_PREFIX}/admin/users/:id/restrictions/:rid`, async ({ request }) => {
-    const scenario = await applyScenario()
-    if (scenario) return scenario
-    const invalid = await requireJsonBody(request)
-    if (invalid) return invalid
-    return HttpResponse.json({ success: true, message: 'Restriction removed.' })
-  }),
+  http.delete(
+    `${API_PREFIX}/admin/users/:id/restrictions/:rid`,
+    async ({ request }) => {
+      const scenario = await applyScenario()
+      if (scenario) return scenario
+      const invalid = await requireJsonBody(request)
+      if (invalid) return invalid
+      return HttpResponse.json({ success: true, message: 'Restriction removed.' })
+    },
+  ),
 
   http.delete(`${API_PREFIX}/admin/users/:id/sessions/:sid`, async ({ request }) => {
     const scenario = await applyScenario()
@@ -643,14 +653,11 @@ export const resourceHandlers = [
   }),
   detailHandler('/admin/announcements', announcements, 'Announcement'),
 
-  listHandler('/admin/admin-users', adminUsers, {
-    searchFields: ['id', 'displayName', 'email'],
-    sortFields: ['displayName', 'role', 'lastActiveAt'],
-    filters: {
-      role: (row, value) => row.role === value,
-      status: (row, value) => row.status === value,
-    },
-  }),
+  /*
+   * `/admin/admin-users` was removed on 2026-09-03. That route never existed;
+   * staff management shipped as `/admin/staff`, and `handlers/staff.ts` mocks
+   * it from captured live responses.
+   */
 
   http.get(`${API_PREFIX}/admin/configuration`, async () => {
     const scenario = await applyScenario()

@@ -32,6 +32,12 @@ export type StatusDomain =
   | 'balance'
   | 'accountType'
   | 'notification'
+  | 'backup'
+  | 'smsProvider'
+  | 'smsTest'
+  | 'maintenance'
+  | 'staff'
+  | 'staffRole'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -117,6 +123,89 @@ const NOTIFICATION: DomainMap = {
   EXPIRED: { label: 'Expired', tone: 'neutral' },
 }
 
+/**
+ * `database_backup_logs.status` (system_settings_plan.md §2.7).
+ *
+ * `RUNNING` is `info`, not `warning`: a job in flight is the expected state,
+ * not something needing attention. It becomes `danger` only once it actually
+ * fails — which, on production today, it always does.
+ */
+const BACKUP: DomainMap = {
+  RUNNING: { label: 'Running', tone: 'info' },
+  SUCCESS: { label: 'Completed', tone: 'success' },
+  FAILED: { label: 'Failed', tone: 'danger' },
+}
+
+const SMS_PROVIDER: DomainMap = {
+  BULKGATE: { label: 'BulkGate', tone: 'info' },
+  TWILIO: { label: 'Twilio', tone: 'info' },
+  /*
+   * `danger`, not `neutral`. With no SMS provider no user can receive an OTP,
+   * so sign-in and sign-up are down platform-wide — that is a broken service,
+   * not a preference someone switched off.
+   */
+  DISABLED: { label: 'Disabled', tone: 'danger' },
+}
+
+const SMS_TEST: DomainMap = {
+  SUCCESS: { label: 'Delivered', tone: 'success' },
+  FAILED: { label: 'Not delivered', tone: 'danger' },
+}
+
+/**
+ * Derived client-side from `maintenanceMode` plus the advisory window — the
+ * API has no such enum. `resolveMaintenanceState` below is the only place the
+ * derivation happens.
+ */
+const MAINTENANCE: DomainMap = {
+  ACTIVE: { label: 'Live — users blocked', tone: 'danger' },
+  SCHEDULED: { label: 'Scheduled', tone: 'warning' },
+  OFF: { label: 'Off', tone: 'neutral' },
+}
+
+/**
+ * A staff account's lifecycle state (staff_management_plan.md §5.2).
+ *
+ * Deliberately **not** the `USER` map, and the difference is the whole point.
+ *
+ * `USER` renders `INACTIVE` as a neutral "Inactive", which for a consumer
+ * account is right — it is dormant. For a staff account `INACTIVE` is what
+ * `DELETE /admin/staff/:id` sets, so it means *deleted*: sessions purged,
+ * sign-in blocked, no route back. Because the backend also fails to filter
+ * those rows out of the directory, that badge is the only thing separating a
+ * deleted colleague from a working one — and calling it "Inactive" would tell
+ * the operator the opposite of what happened.
+ *
+ * `locked` (violet) is already this panel's colour for *this record is closed
+ * to action*, which is exactly true here: every mutation against it answers
+ * 404.
+ *
+ * `BANNED` is `danger` rather than `locked` because, unlike the deletion, it
+ * is reversible — `PATCH /:id/status` back to `ACTIVE` works.
+ */
+const STAFF: DomainMap = {
+  ACTIVE: { label: 'Active', tone: 'success' },
+  SUSPENDED: { label: 'Suspended', tone: 'warning' },
+  BANNED: { label: 'Banned', tone: 'danger' },
+  INACTIVE: { label: 'Deleted', tone: 'locked' },
+}
+
+/**
+ * Admin-panel role, as a badge.
+ *
+ * `primary` for Admin and `neutral` for Moderator: the tone carries the
+ * privilege difference at a glance down a column, without either reading as a
+ * warning — neither role is a problem state.
+ *
+ * `SUPER_ADMIN` is included for the top bar and the account page only. It can
+ * never appear in the staff directory, which excludes Super Admins entirely.
+ */
+const STAFF_ROLE: DomainMap = {
+  SUPER_ADMIN: { label: 'Super Admin', tone: 'locked' },
+  ADMIN: { label: 'Admin', tone: 'primary' },
+  MODERATOR: { label: 'Moderator', tone: 'neutral' },
+}
+
 const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   user: USER,
   restriction: RESTRICTION,
@@ -128,6 +217,38 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   balance: BALANCE,
   accountType: ACCOUNT_TYPE,
   notification: NOTIFICATION,
+  backup: BACKUP,
+  smsProvider: SMS_PROVIDER,
+  smsTest: SMS_TEST,
+  maintenance: MAINTENANCE,
+  staff: STAFF,
+  staffRole: STAFF_ROLE,
+}
+
+/** The three states the maintenance card and the global banner can be in. */
+export type MaintenanceState = 'ACTIVE' | 'SCHEDULED' | 'OFF'
+
+/**
+ * Derive the maintenance state from the settings record.
+ *
+ * The switch is the only thing that actually blocks traffic; the window is
+ * advisory metadata the backend does not act on. So `ACTIVE` is driven by
+ * `maintenanceMode` alone, and `SCHEDULED` means only "a future window is
+ * recorded" — never "users are about to be cut off automatically", because
+ * nothing automatic happens.
+ */
+export function resolveMaintenanceState(
+  maintenanceMode: boolean,
+  maintenanceStartsAt: string | null,
+  now: Date = new Date(),
+): MaintenanceState {
+  if (maintenanceMode) return 'ACTIVE'
+  if (!maintenanceStartsAt) return 'OFF'
+
+  const startsAt = new Date(maintenanceStartsAt)
+  if (Number.isNaN(startsAt.getTime())) return 'OFF'
+
+  return startsAt.getTime() > now.getTime() ? 'SCHEDULED' : 'OFF'
 }
 
 /**

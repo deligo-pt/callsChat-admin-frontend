@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/cn'
+import { useReturnFocus } from '@/lib/hooks/useReturnFocus'
 
 /** Minimum characters for a reason to be considered meaningful. */
 export const MIN_REASON_LENGTH = 10
@@ -79,6 +80,29 @@ export interface ConfirmActionDialogProps {
    */
   typedConfirmation?: string
 
+  /**
+   * Whether to collect a reason. `'required'` — the default and the norm.
+   *
+   * `'none'` exists for the endpoints that **accept no reason at all**:
+   * `PATCH /admin/staff/:id/role` and `DELETE /admin/staff/:id` have no field
+   * for one, so demanding ten characters the client then discards would imply
+   * a record that is never even sent (staff_management_plan.md §5.6). Use it
+   * only when the API genuinely has nowhere to put the text — never to make a
+   * dangerous action quicker to confirm.
+   */
+  reason?: 'required' | 'none'
+
+  /**
+   * Replaces the default hint under the reason field.
+   *
+   * The default promises the reason is "recorded in the audit log with your
+   * name and the current time". That is true of the consumer-user actions this
+   * dialog was built for and **false for staff**: the reason is posted and no
+   * endpoint reads it back (§3.6). Callers whose reason lands somewhere else —
+   * or nowhere readable — say so here.
+   */
+  reasonHint?: ReactNode
+
   confirmLabel?: string
   cancelLabel?: string
   loading?: boolean
@@ -102,9 +126,20 @@ export function ConfirmActionDialog({
   onOpenChange,
   ...rest
 }: ConfirmActionDialogProps) {
+  const returnFocus = useReturnFocus(open)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        /*
+         * These dialogs are opened from state, not a `DialogTrigger`, so Radix
+         * has no element to restore focus to and a keyboard user lands at the
+         * top of the document with the button they came from lost.
+         */
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          returnFocus()
+        }}
         /*
          * Constrained height with a scrolling body.
          *
@@ -145,6 +180,8 @@ function ConfirmActionForm({
   fields,
   confirmDisabled = false,
   typedConfirmation,
+  reason: reasonMode = 'required',
+  reasonHint,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   loading = false,
@@ -164,7 +201,8 @@ function ConfirmActionForm({
   const Icon = config.icon
 
   const trimmedReason = reason.trim()
-  const reasonTooShort = trimmedReason.length < MIN_REASON_LENGTH
+  const reasonTooShort =
+    reasonMode === 'required' && trimmedReason.length < MIN_REASON_LENGTH
   const typedMismatch =
     typedConfirmation !== undefined && typed.trim() !== typedConfirmation
   const canConfirm = !reasonTooShort && !typedMismatch && !confirmDisabled && !loading
@@ -213,33 +251,39 @@ function ConfirmActionForm({
         {fields ? <div className="space-y-4">{fields}</div> : null}
 
         {/* Mandatory reason — recorded in the audit event. */}
-        <div className="space-y-2">
-          <Label htmlFor={reasonId}>
-            Reason <span className="text-danger">*</span>
-          </Label>
-          <Textarea
-            id={reasonId}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            onBlur={() => setTouched(true)}
-            rows={3}
-            placeholder="Why is this action being taken? This is recorded in the audit log."
-            aria-required="true"
-            aria-invalid={showReasonError || undefined}
-            aria-describedby={showReasonError ? errorId : undefined}
-            className={showReasonError ? 'border-danger' : undefined}
-          />
-          {showReasonError ? (
-            <p id={errorId} className="text-caption text-danger" role="alert">
-              A reason of at least {MIN_REASON_LENGTH} characters is required.
-            </p>
-          ) : (
-            <p id={hintId} className="text-caption text-foreground-muted">
-              A reason of at least {MIN_REASON_LENGTH} characters is required. It is
-              recorded in the audit log with your name and the current time.
-            </p>
-          )}
-        </div>
+        {reasonMode === 'none' ? null : (
+          <div className="space-y-2">
+            <Label htmlFor={reasonId}>
+              Reason <span className="text-danger">*</span>
+            </Label>
+            <Textarea
+              id={reasonId}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              onBlur={() => setTouched(true)}
+              rows={3}
+              placeholder="Why is this action being taken? This is recorded in the audit log."
+              aria-required="true"
+              aria-invalid={showReasonError || undefined}
+              aria-describedby={showReasonError ? errorId : undefined}
+              className={showReasonError ? 'border-danger' : undefined}
+            />
+            {showReasonError ? (
+              <p id={errorId} className="text-caption text-danger" role="alert">
+                A reason of at least {MIN_REASON_LENGTH} characters is required.
+              </p>
+            ) : (
+              <p id={hintId} className="text-caption text-foreground-muted">
+                {reasonHint ?? (
+                  <>
+                    A reason of at least {MIN_REASON_LENGTH} characters is required. It
+                    is recorded in the audit log with your name and the current time.
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Typed confirmation for irreversible actions. */}
         {typedConfirmation !== undefined ? (

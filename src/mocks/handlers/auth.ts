@@ -19,26 +19,26 @@ import { API_PREFIX, applyScenario, errorResponse } from './shared'
 const ACCOUNTS: Readonly<
   Record<string, { displayName: string; username: string; role: AdminRole }>
 > = {
-  'nadia@callchat.app': {
+  'nadia@callschat.app': {
     displayName: 'Nadia Chowdhury',
     username: 'nadia',
     role: 'SUPER_ADMIN',
   },
-  'tomas@callchat.app': {
+  'tomas@callschat.app': {
     displayName: 'Tomas Ricci',
     username: 'tomas',
     role: 'ADMIN',
   },
-  'elena@callchat.app': {
+  'elena@callschat.app': {
     displayName: 'Elena Petrova',
     username: 'elena',
     role: 'MODERATOR',
   },
 }
 
-const SESSION_KEY = 'callchat.mock.session'
-const PASSWORD_KEY = 'callchat.mock.password'
-const REFRESH_KEY = 'callchat.mock.refresh'
+const SESSION_KEY = 'callschat.mock.session'
+const PASSWORD_KEY = 'callschat.mock.password'
+const REFRESH_KEY = 'callschat.mock.refresh'
 
 /**
  * The mock accepts ANY non-empty password until one is explicitly set through
@@ -302,13 +302,63 @@ export const authHandlers = [
    * `POST /admin/auth/logout` — real, and it revokes server-side. Without the
    * call the refresh token would stay valid for its full 7 days after the
    * operator believed they had signed out.
+   *
+   * The validation below is not decoration. Both checks were confirmed against
+   * the live API, and the mock previously accepted anything at all — which is
+   * exactly how the capability-restriction DELETEs shipped broken behind a
+   * green test suite. A mock laxer than the service tests nothing.
    */
-  http.post(`${API_PREFIX}/admin/auth/logout`, async () => {
+  http.post(`${API_PREFIX}/admin/auth/logout`, async ({ request }) => {
+    const raw = await request.text()
+
+    // Fastify turns an absent payload into `null`, and the schema refuses it.
+    if (raw.trim() === '') {
+      return errorResponse(
+        400,
+        'FST_ERR_VALIDATION',
+        'body/ Expected object, received null',
+      )
+    }
+
+    let body: unknown
+    try {
+      body = JSON.parse(raw)
+    } catch {
+      body = null
+    }
+
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+      return errorResponse(
+        400,
+        'FST_ERR_VALIDATION',
+        'body/ Expected object, received null',
+      )
+    }
+
+    const { allDevices } = body as { allDevices?: unknown }
+
+    // Optional, but a boolean when present. Unknown sibling keys are ignored.
+    if (allDevices !== undefined && typeof allDevices !== 'boolean') {
+      return errorResponse(
+        400,
+        'FST_ERR_VALIDATION',
+        `body/allDevices Expected boolean, received ${typeof allDevices}`,
+      )
+    }
+
+    /*
+     * One browser holds one mock session, so `allDevices` has no extra effect
+     * here — the distinction lives in the message, which is what the UI shows.
+     */
     writeSession(null)
     globalThis.localStorage?.removeItem(REFRESH_KEY)
+
     return HttpResponse.json({
       success: true,
-      message: 'Admin session logged out successfully.',
+      message:
+        allDevices === true
+          ? 'Logged out from all devices successfully.'
+          : 'Admin session logged out successfully.',
     })
   }),
 ]

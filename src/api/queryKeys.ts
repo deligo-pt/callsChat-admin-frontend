@@ -59,9 +59,36 @@ export const queryKeys = {
 
   auditLogs: domain('audit-logs'),
   announcements: domain('announcements'),
-  adminUsers: domain('admin-users'),
-  roles: { all: ['roles'] as const },
-  configuration: { all: ['configuration'] as const },
+  /**
+   * Staff & Access Control (staff_management_plan.md §4.5).
+   *
+   * `all` is the invalidation root every staff mutation targets. That is not a
+   * convenience: a status change revokes sessions, and the mutation's own
+   * response reports the counts from *before* the revocation (§3.7). Both the
+   * list and the detail must be refetched, never patched from the response, or
+   * the directory shows live sessions on an account whose sessions were just
+   * destroyed — precisely the fact the operator is checking.
+   */
+  staff: domain('staff'),
+
+  /**
+   * System Settings (system_settings_plan.md §4.4).
+   *
+   * `all` is the invalidation root every settings mutation targets, so a save
+   * on one tab refreshes the sibling reads that share the same singleton
+   * record. `publicConfig` sits under it on purpose: it is a different shape
+   * from a different route, but it is the same underlying data, and it must
+   * never be left stale after a write.
+   */
+  configuration: {
+    all: ['configuration'] as const,
+    settings: ['configuration', 'settings'] as const,
+    deployment: ['configuration', 'deployment'] as const,
+    backups: (params?: ListParams) =>
+      ['configuration', 'backups', params ?? {}] as const,
+    sms: ['configuration', 'sms'] as const,
+    publicConfig: ['configuration', 'public'] as const,
+  },
 
   search: (term: string) => ['search', term] as const,
 } as const

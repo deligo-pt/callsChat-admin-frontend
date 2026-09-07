@@ -161,6 +161,129 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * Sidebar surface
+ *
+ * Three effects:
+ *
+ * 1. A vertical deepening from navy-500 to navy-800. Every step is on the same
+ *    ramp and the panel only gets *darker* downward, so light text on it gains
+ *    contrast rather than losing it — that direction is what makes a visible
+ *    gradient safe here at all (`plan.md` §11A).
+ * 2. A soft primary-blue glow at the top, behind the brand and the first
+ *    section. It gives the logo somewhere to sit instead of floating on flat
+ *    navy.
+ * 3. A highlight down the inner right edge. On a dark panel meeting a light
+ *    content area, that one line is what separates "crisp" from merely "dark".
+ *
+ * Still no pattern or texture: this is a console people read for hours, and
+ * anything the eye keeps returning to becomes noise by the second hour. The
+ * first pass of this was pitched so quietly it was invisible on a normal
+ * display — measurable, but not perceptible. These values are the corrected
+ * ones.
+ * ------------------------------------------------------------------------ */
+@utility sidebar-surface {
+  background-color: var(--color-sidebar);
+  background-image:
+    /* Top glow — primary blue, barely there, behind the brand. */
+    radial-gradient(120% 45% at 0% 0%, rgb(37 99 235 / 18%) 0%, transparent 70%),
+    linear-gradient(
+      to bottom,
+      var(--color-navy-500) 0%,
+      var(--color-navy-600) 40%,
+      var(--color-navy-800) 100%
+    );
+  /* navy-50 at 12% — a bevel, not a border. */
+  box-shadow: inset -1px 0 0 0 rgb(231 232 234 / 12%);
+}
+
+/* ---------------------------------------------------------------------------
+ * Sign-in surface
+ *
+ * Deliberately richer than `sidebar-surface`, and the difference is the point:
+ * the sidebar is a narrow strip of small text read for hours, where decoration
+ * becomes noise. This is a large empty field looked at for a few seconds
+ * before anyone reads anything, so it can carry depth the console never
+ * should.
+ *
+ * Four layers, listed top to bottom as CSS paints them:
+ *
+ * 1. A vignette. Darkening the corners is what makes the sign-in card look
+ *    lit and lifted rather than pasted on.
+ * 2. A light-blue accent glow low on the right, balancing (3) so the field
+ *    reads as lit from two sides rather than tilted toward one corner.
+ * 3. A primary-blue glow at the top left — the same gesture as the sidebar's,
+ *    so the signed-out and signed-in halves of the product feel related.
+ * 4. The navy base, deepening downward exactly as the sidebar does.
+ *
+ * Every colour is drawn from the existing ramps; nothing here introduces a hue
+ * the design system does not already own.
+ * ------------------------------------------------------------------------ */
+@utility auth-surface {
+  background-color: var(--color-navy-500);
+  background-image:
+    radial-gradient(125% 95% at 50% 38%, transparent 38%, rgb(6 10 18 / 60%) 100%),
+    radial-gradient(55% 50% at 100% 105%, rgb(56 189 248 / 14%) 0%, transparent 68%),
+    radial-gradient(65% 55% at 0% 0%, rgb(37 99 235 / 26%) 0%, transparent 66%),
+    linear-gradient(
+      to bottom,
+      var(--color-navy-500) 0%,
+      var(--color-navy-700) 55%,
+      var(--color-navy-900) 100%
+    );
+}
+
+/* ---------------------------------------------------------------------------
+ * Collapsible sections — the sidebar sub-menu
+ *
+ * `height: auto` cannot be animated in CSS, so these run against
+ * `--radix-collapsible-content-height`, which Radix measures and sets on the
+ * content element. Anything using them must also clip its overflow, or the
+ * list spills past the group while it slides.
+ *
+ * 160ms on an ease-out-cubic curve: long enough to read as motion, short
+ * enough that a keyboard user tabbing quickly never waits on it.
+ *
+ * The curve matters as much as the duration. An expo-out easing was tried
+ * first and covered ~97% of the distance in the first 40% of the time, which
+ * made a 150ms animation look like an instant pop — technically animated,
+ * visibly not. The block below zeroes both for anyone who has asked for
+ * reduced motion.
+ * ------------------------------------------------------------------------ */
+@keyframes collapsible-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@utility collapsible-panel {
+  overflow: hidden;
+
+  &[data-state='open'] {
+    animation: collapsible-down 160ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  &[data-state='closed'] {
+    animation: collapsible-up 160ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * Motion — plan.md §11A
  * ------------------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {

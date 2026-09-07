@@ -1,6 +1,5 @@
 import { maskPhone, maskReference } from '@/lib/mask'
 import type {
-  AdminUser,
   Announcement,
   AuditLog,
   ConfigurationEntry,
@@ -739,34 +738,16 @@ export const auditLogs: AuditLog[] = Array.from({ length: 400 }, (_, index) => {
  * Administration
  * ---------------------------------------------------------------------- */
 
-/** Roles use the VERIFIED enum — `ADMIN`, not the assumed `OPERATIONS_ADMIN`. */
-export const adminUsers: AdminUser[] = [
-  {
-    displayName: 'Nadia Chowdhury',
-    email: 'nadia@callchat.app',
-    role: 'SUPER_ADMIN' as const,
-  },
-  { displayName: 'Tomas Ricci', email: 'tomas@callchat.app', role: 'ADMIN' as const },
-  {
-    displayName: 'Elena Petrova',
-    email: 'elena@callchat.app',
-    role: 'MODERATOR' as const,
-  },
-  {
-    displayName: 'Ibrahim Diallo',
-    email: 'ibrahim@callchat.app',
-    role: 'MODERATOR' as const,
-  },
-  { displayName: 'Clara Bergman', email: 'clara@callchat.app', role: 'ADMIN' as const },
-].map((entry, index) => ({
-  id: id('adm', index),
-  displayName: entry.displayName,
-  email: entry.email,
-  role: entry.role,
-  status: index !== 4 ? ('ACTIVE' as const) : ('INACTIVE' as const),
-  createdAt: rng.pastDate(500, 100),
-  lastActiveAt: rng.pastDate(10, 0),
-}))
+/*
+ * The `adminUsers` fixture was removed on 2026-09-03 along with `AdminUser`.
+ *
+ * It seeded `GET /admin/admin-users`, a route that has never existed. The real
+ * endpoint shipped as `/admin/staff` with a different shape, and it now has a
+ * verified mock of its own in `handlers/staff.ts` — one built from captured
+ * live responses and deliberately hostile enough to reproduce the backend's
+ * bugs. Keeping an invented fixture beside it would give two answers to the
+ * same question, one of them made up.
+ */
 
 export const announcements: Announcement[] = Array.from({ length: 24 }, (_, index) => {
   const status = rng.pick([
@@ -783,7 +764,7 @@ export const announcements: Announcement[] = Array.from({ length: 24 }, (_, inde
   return {
     id: id('ann', index),
     title: `Scheduled maintenance notice #${index + 1}`,
-    body: 'CallChat will be briefly unavailable while we complete planned maintenance.',
+    body: 'CallsChat will be briefly unavailable while we complete planned maintenance.',
     channel: rng.bool(0.6) ? 'PUSH' : 'IN_APP_BANNER',
     audience: rng.pick([
       'ALL_USERS',
@@ -793,7 +774,7 @@ export const announcements: Announcement[] = Array.from({ length: 24 }, (_, inde
     ] as const),
     audienceDescription: 'All active users',
     status,
-    deepLink: rng.bool(0.3) ? 'callchat://settings' : null,
+    deepLink: rng.bool(0.3) ? 'callschat://settings' : null,
     createdByName: rng.pick(ADMIN_ACTORS).name,
     version: 1,
     scheduledAt: status === 'SCHEDULED' ? rng.pastDate(-10, -20) : null,

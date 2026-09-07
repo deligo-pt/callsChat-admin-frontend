@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 
+import { MaintenanceBanner } from '@/components/feedback/MaintenanceBanner'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { ROUTES } from '@/app/routes'
 import { useAuth } from '@/auth/useAuth'
@@ -10,7 +11,7 @@ import { cn } from '@/lib/cn'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 
-const COLLAPSE_STORAGE_KEY = 'callchat.admin.sidebarCollapsed'
+const COLLAPSE_STORAGE_KEY = 'callschat.admin.sidebarCollapsed'
 
 /**
  * The authenticated application shell.
@@ -109,6 +110,13 @@ export function AdminLayout() {
           adminRole={admin ? ADMIN_ROLE_LABELS[admin.role] : ''}
           onSignOut={() => void handleSignOut()}
         />
+
+        {/*
+         * Above `<main>`, so it is present on every admin screen rather than
+         * only on the page that owns the switch. An operator who turns
+         * maintenance on and navigates away must not be able to forget.
+         */}
+        <MaintenanceBanner />
 
         {/* The only vertically scrolling region in the shell. */}
         <main className={cn('min-w-0 flex-1 overflow-y-auto overscroll-contain py-6')}>

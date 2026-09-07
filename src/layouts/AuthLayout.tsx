@@ -14,11 +14,39 @@ export function AuthLayout() {
      * shell has to scroll itself — otherwise the sign-in card would be
      * unreachable on a short window or with the keyboard open on a phone.
      */
-    <div className="flex h-full flex-col items-center justify-center overflow-y-auto bg-sidebar px-4 py-10">
-      <div className="w-full max-w-md space-y-6">
+    <div className="relative flex h-full flex-col items-center justify-center overflow-y-auto auth-surface px-4 py-10">
+      {/*
+       * The mark, oversized and bleeding off the bottom-right corner.
+       *
+       * Cropped on purpose: a whole logo floating in the background reads as a
+       * stray image, while one running off the edge reads as a deliberate
+       * treatment. `fixed` rather than `absolute` so it stays put if the card
+       * has to scroll on a short window, and 3% so it never competes with the
+       * card — on a field this large that is still clearly visible.
+       */}
+      <img
+        src="/logo-mark.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none fixed -right-16 -bottom-20 hidden w-[26rem] opacity-[0.035] select-none sm:block lg:-right-24 lg:w-[34rem]"
+      />
+
+      <div className="relative w-full max-w-md space-y-6">
         <div className="space-y-1 text-center">
+          {/*
+           * Decorative: the wordmark directly beneath already names the
+           * product, so announcing the logo would repeat it.
+           */}
+          <img
+            src="/logo-mark.png"
+            alt=""
+            aria-hidden="true"
+            width={64}
+            height={64}
+            className="mx-auto mb-3 size-16 object-contain"
+          />
           <p className="text-h2 text-sidebar-foreground">
-            CallChat<span className="font-normal text-sidebar-muted"> Admin</span>
+            CallsChat<span className="font-normal text-sidebar-muted"> Admin</span>
           </p>
           <p className="text-caption text-sidebar-muted">Internal operations console</p>
         </div>
