@@ -260,7 +260,23 @@ function ConfirmActionForm({
               id={reasonId}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
-              onBlur={() => setTouched(true)}
+              /*
+               * Marked touched on blur **only once something has been typed**.
+               *
+               * A bare `setTouched(true)` here showed the operator "a reason of
+               * at least 10 characters is required" before they had typed a
+               * character, whenever the dialog was opened from a Radix menu:
+               * closing the menu moves focus, which blurs the autofocused
+               * textarea on the very first frame. Every caller until
+               * `features/feedback` opened this dialog from a plain button, so
+               * the path never ran (feedback_management_plan.md F3).
+               *
+               * An empty field is still caught — `handleConfirm` sets `touched`
+               * unconditionally, so attempting to confirm surfaces the error.
+               */
+              onBlur={() => {
+                if (reason.length > 0) setTouched(true)
+              }}
               rows={3}
               placeholder="Why is this action being taken? This is recorded in the audit log."
               aria-required="true"

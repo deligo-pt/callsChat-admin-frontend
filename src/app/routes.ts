@@ -65,6 +65,20 @@ export const ROUTES = {
   staffNew: '/staff/new',
   staffMember: (id: string) => `/staff/${id}`,
 
+  /**
+   * Feedback & Support (feedback_management_plan.md §4.1).
+   *
+   * Two routes and no `/new`: there is no admin submit endpoint, and a "New
+   * ticket" button would file a report as the acting Super Admin against
+   * themselves.
+   *
+   * Status is a query parameter rather than a route segment, so a filtered
+   * queue round-trips through a deep link the way every other list in the
+   * panel does.
+   */
+  feedback: '/feedback',
+  feedbackTicket: (id: string) => `/feedback/${id}`,
+
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,
 

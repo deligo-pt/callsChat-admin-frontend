@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { idSchema, isoDateTime } from './common'
+import { idSchema, isoDateTime, itemsEnvelopeSchema } from './common'
 
 /**
  * System Settings contracts.
@@ -182,19 +182,15 @@ export type BackupLog = z.infer<typeof backupLogSchema>
  * uses. This route nests the rows under `data.items` and the page info under
  * `data.meta`. `paginatedSchema` from `types/common` does not fit and must not
  * be forced onto it.
+ *
+ * The shape was declared inline here while this was the only route that used
+ * it. `GET /admin/feedbacks` then shipped with the same envelope
+ * (feedback_management_plan.md §2.1), so it moved to
+ * {@link itemsEnvelopeSchema} in `types/common` — two occurrences make it a
+ * pattern, and a second hand-rolled copy would have been free to drift from
+ * this one.
  */
-export const backupListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(backupLogSchema),
-    meta: z.object({
-      page: z.number().int().positive(),
-      limit: z.number().int().positive(),
-      total: z.number().int().nonnegative(),
-      totalPages: z.number().int().nonnegative(),
-    }),
-  }),
-})
+export const backupListResponseSchema = itemsEnvelopeSchema(backupLogSchema)
 
 export type BackupList = z.infer<typeof backupListResponseSchema>['data']
 

@@ -7,11 +7,15 @@ import { MODULE_PERMISSION_VALUES, type ModulePermission } from '@/types/staff'
 import {
   MODULE_PERMISSION_GROUPS,
   MODULE_PERMISSIONS,
+  hasGrantableKey,
   type ModulePermissionDescriptor,
 } from './permissionMap'
 
 /**
- * The eight module keys as an editable grid (staff_management_plan.md §5.5).
+ * The module permission keys as an editable grid (staff_management_plan.md §5.5).
+ *
+ * Nine rows, of which **six are editable**: eight keys the API grants, plus one
+ * it enforces and refuses to grant (see below).
  *
  * The module's most consequential control, shared by create and detail. Five
  * decisions are baked in, each answering something the API does not:
@@ -20,11 +24,13 @@ import {
  *   states that it carries session revocation. This is where a Super Admin
  *   decides what a colleague may do to a real person's account, and the
  *   consequence belongs at the moment of the decision.
- * - **The two Super-Admin keys are shown, disabled, with the reason.** The API
- *   accepts them on an ADMIN, but the routes they name are
- *   `verifySuperAdmin`-guarded, so granting them buys nothing. Hiding them
- *   would leave an operator comparing the doc's eight keys against a grid of
- *   six, unable to tell whether the panel or the doc was stale.
+ * - **Three keys are shown, locked, with their reason.** Two are
+ *   `verifySuperAdmin`-guarded, so granting them buys nothing; the third,
+ *   `FEEDBACK_MANAGEMENT`, is enforced by `/admin/feedbacks/*` and then
+ *   rejected by every write route, so nobody can hold it at all
+ *   (feedback_management_plan.md §3.1). Hiding any of them would leave an
+ *   operator comparing the doc's key list against a shorter grid, unable to
+ *   tell whether the panel or the doc was stale.
  * - **Ungranted is the default.** Denied by default, plan.md §8.
  * - **The value is the whole array**, never a delta — `PATCH /permissions`
  *   replaces the set outright (§3.3), so the control that feeds it is the
@@ -56,8 +62,16 @@ function GridRow({
 }) {
   const id = `permission-${entry.key}`
   const descriptionId = `${id}-description`
-  /* A key whose routes are Super-Admin-guarded can never be usefully granted. */
-  const locked = entry.superAdminOnly
+  /*
+   * Two different reasons a row is inert, and the row states which:
+   *
+   * - `superAdminOnly` — the API accepts the key, but the routes it names are
+   *   `verifySuperAdmin`-guarded, so granting it buys nothing.
+   * - `ungrantable` — the API *enforces* the key and then rejects it on every
+   *   write, because it is missing from the permission enum
+   *   (feedback_management_plan.md §3.1). Nobody can hold it at all.
+   */
+  const locked = entry.superAdminOnly || entry.ungrantable === true
 
   return (
     <li
@@ -95,12 +109,18 @@ function GridRow({
         <p id={descriptionId} className="text-caption text-foreground-muted">
           {entry.description}
         </p>
-        {locked ? (
-          /*
-           * Stated per row, not just as a group heading: the row is inert and
-           * an operator who reaches for it deserves the reason where they
-           * reached, rather than having to look up at a header to find it.
-           */
+        {/*
+         * Stated per row, not just as a group heading: the row is inert and
+         * an operator who reaches for it deserves the reason where they
+         * reached, rather than having to look up at a header to find it.
+         */}
+        {entry.ungrantable === true ? (
+          <p className="text-caption text-foreground-subtle">
+            Not yet grantable. The backend enforces this permission but does not include
+            it in the list it accepts, so only Super Administrators can reach Feedback
+            &amp; support today.
+          </p>
+        ) : entry.superAdminOnly ? (
           <p className="text-caption text-foreground-subtle">
             Super Administrators hold this already. Granting it to an Admin or Moderator
             has no effect — the routes it names refuse anyone else.
@@ -169,9 +189,18 @@ export function PermissionGrid({
                 <GridRow
                   key={entry.key}
                   entry={entry}
-                  checked={granted.has(entry.key)}
+                  /*
+                   * `hasGrantableKey` is what stops an ungrantable key reaching
+                   * a request body, and it does it in the type system rather
+                   * than by convention — its row renders no checkbox, so the
+                   * guard inside `onToggle` is unreachable, but the narrowing
+                   * is what makes `toggle` accept the key at all.
+                   */
+                  checked={hasGrantableKey(entry) && granted.has(entry.key)}
                   disabled={disabled}
-                  onToggle={(next) => toggle(entry.key, next)}
+                  onToggle={(next) => {
+                    if (hasGrantableKey(entry)) toggle(entry.key, next)
+                  }}
                 />
               ))}
             </ul>

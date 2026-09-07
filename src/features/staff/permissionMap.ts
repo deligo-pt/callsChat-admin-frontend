@@ -30,10 +30,29 @@ import { MODULE_PERMISSION_VALUES, type ModulePermission } from '@/types/staff'
 
 /** Grouping for the permission grid. Presentation order, not a backend concept. */
 export type ModulePermissionGroup =
-  'Analytics' | 'Users' | 'Business' | 'Platform' | 'Restricted'
+  'Analytics' | 'Users' | 'Support' | 'Business' | 'Platform' | 'Restricted'
+
+/**
+ * A key the API enforces but does not let anyone hold.
+ *
+ * `FEEDBACK_MANAGEMENT` guards `/admin/feedbacks/*`, but it is absent from the
+ * enum `POST /admin/staff` and `PATCH /:id/permissions` validate against
+ * (feedback_management_plan.md §3.1). It can be required and it cannot be
+ * granted.
+ *
+ * It is deliberately **not** added to `modulePermissionSchema`: that schema is
+ * what the panel sends, and widening it would let the grid post a key the API
+ * rejects with a validation error the operator cannot act on. So this is a
+ * display-only string, typed apart from `ModulePermission` so the compiler
+ * keeps the two from mixing.
+ */
+export type UngrantableModulePermission = 'FEEDBACK_MANAGEMENT'
+
+/** Every key the grid renders — the eight real ones plus the ungrantable one. */
+export type DisplayModulePermission = ModulePermission | UngrantableModulePermission
 
 export interface ModulePermissionDescriptor {
-  readonly key: ModulePermission
+  readonly key: DisplayModulePermission
   /** Human label for the grid. Never the raw key. */
   readonly label: string
   readonly group: ModulePermissionGroup
@@ -56,6 +75,17 @@ export interface ModulePermissionDescriptor {
    * of six, with no way to tell whether the panel or the doc was out of date.
    */
   readonly superAdminOnly: boolean
+  /**
+   * The API enforces this key but rejects it on every write, so it can never
+   * be granted to anyone (see {@link UngrantableModulePermission}).
+   *
+   * Rendered like a `superAdminOnly` row — locked, with the reason on screen —
+   * but for a different cause, and the row says which. A Super Admin
+   * provisioning a support moderator should be able to see that the capability
+   * exists and that it cannot yet be delegated, rather than discovering later
+   * that their new hire has an invisible inbox.
+   */
+  readonly ungrantable?: boolean
 }
 
 export const MODULE_PERMISSIONS: readonly ModulePermissionDescriptor[] = [
@@ -80,6 +110,22 @@ export const MODULE_PERMISSIONS: readonly ModulePermissionDescriptor[] = [
     description:
       'Suspend, ban and restore users, apply capability restrictions, and revoke their sessions.',
     superAdminOnly: false,
+  },
+  {
+    /*
+     * The ninth row, and the only ungrantable one
+     * (feedback_management_plan.md §3.1 / §4.4). Shown rather than hidden for
+     * the same reason the two Super-Admin-only keys are shown: a grid that
+     * silently omits a capability the API enforces leaves an operator unable
+     * to tell whether the panel or the documentation is out of date.
+     */
+    key: 'FEEDBACK_MANAGEMENT',
+    label: 'Feedback & support',
+    group: 'Support',
+    description:
+      'Read, triage, assign and answer the support tickets users submit from the app.',
+    superAdminOnly: false,
+    ungrantable: true,
   },
   {
     key: 'BUSINESS_VERIFY',
@@ -131,17 +177,41 @@ export const MODULE_PERMISSIONS: readonly ModulePermissionDescriptor[] = [
 export const MODULE_PERMISSION_GROUPS: readonly ModulePermissionGroup[] = [
   'Analytics',
   'Users',
+  'Support',
   'Business',
   'Platform',
   'Restricted',
 ]
 
-/** Keys a non-Super-Admin can usefully hold — the grid's editable rows. */
+/**
+ * Keys a non-Super-Admin can usefully hold — the grid's editable rows.
+ *
+ * Excludes both the Super-Admin-only keys and the ungrantable one. The
+ * narrowing predicate is what keeps the return type `ModulePermission[]`: the
+ * ungrantable key is not a member of that union, and the compiler enforces
+ * that it can never reach a request body.
+ */
+/**
+ * Narrow a grid entry to one whose key the API will actually accept.
+ *
+ * The type predicate is the point: it is the only way a `FEEDBACK_MANAGEMENT`
+ * row can be excluded from a request body by the compiler rather than by a
+ * reviewer noticing. Everything that builds a `permissions` array goes through
+ * it.
+ */
+export function hasGrantableKey(
+  entry: ModulePermissionDescriptor,
+): entry is ModulePermissionDescriptor & { key: ModulePermission } {
+  return entry.ungrantable !== true
+}
+
 export const GRANTABLE_MODULE_PERMISSIONS: readonly ModulePermission[] =
-  MODULE_PERMISSIONS.filter((entry) => !entry.superAdminOnly).map((entry) => entry.key)
+  MODULE_PERMISSIONS.filter(hasGrantableKey)
+    .filter((entry) => !entry.superAdminOnly)
+    .map((entry) => entry.key)
 
 export function describeModulePermission(
-  key: ModulePermission,
+  key: DisplayModulePermission,
 ): ModulePermissionDescriptor {
   const found = MODULE_PERMISSIONS.find((entry) => entry.key === key)
   /*

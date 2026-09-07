@@ -6,21 +6,47 @@ import { MODULE_PERMISSION_VALUES } from '@/types/staff'
 import {
   GRANTABLE_MODULE_PERMISSIONS,
   MODULE_PERMISSIONS,
+  hasGrantableKey,
   describeModulePermission,
   modulePermissionsToPanel,
   sortModulePermissions,
 } from './permissionMap'
 
 describe('MODULE_PERMISSIONS', () => {
-  it('describes every key the backend enum contains, and no others', () => {
+  it('describes every key the backend enum contains, and adds only the ungrantable one', () => {
     /*
-     * The grid is generated from this list. A key present in the schema but
-     * missing here would silently vanish from the editor — a Super Admin would
-     * revoke it by saving, without ever seeing it.
+     * The grid is generated from this list, so the two directions matter for
+     * different reasons.
+     *
+     * A schema key missing from the list would silently vanish from the editor
+     * — a Super Admin would revoke it by saving, without ever seeing it. That
+     * is the assertion this test started as.
+     *
+     * A list key missing from the schema is the newer risk: as of 2026-09-06
+     * the grid renders a ninth row, `FEEDBACK_MANAGEMENT`, which the API
+     * enforces on `/admin/feedbacks/*` and rejects on every write route
+     * (feedback_management_plan.md §3.1). It is display-only and must never
+     * reach a request body, so it is deliberately absent from
+     * `modulePermissionSchema` — and it is the ONLY key allowed to be.
      */
-    expect(MODULE_PERMISSIONS.map((entry) => entry.key).sort()).toEqual(
-      [...MODULE_PERMISSION_VALUES].sort(),
+    const grantable = MODULE_PERMISSIONS.filter(hasGrantableKey).map(
+      (entry) => entry.key,
     )
+    expect([...grantable].sort()).toEqual([...MODULE_PERMISSION_VALUES].sort())
+
+    const ungrantable = MODULE_PERMISSIONS.filter((entry) => !hasGrantableKey(entry))
+    expect(ungrantable.map((entry) => entry.key)).toEqual(['FEEDBACK_MANAGEMENT'])
+  })
+
+  it('keeps the ungrantable key out of anything that can be sent', () => {
+    /*
+     * The compiler already prevents it — `GRANTABLE_MODULE_PERMISSIONS` is
+     * typed `ModulePermission[]`, which does not include the key. This asserts
+     * the runtime value too, because the whole grid is data-driven and a
+     * mistyped `ungrantable: false` would be a silent 400 for the operator.
+     */
+    expect(GRANTABLE_MODULE_PERMISSIONS).not.toContain('FEEDBACK_MANAGEMENT')
+    expect(MODULE_PERMISSION_VALUES).not.toContain('FEEDBACK_MANAGEMENT')
   })
 
   it('gives every key a description, because the grid renders them', () => {
@@ -127,6 +153,21 @@ describe('modulePermissionsToPanel', () => {
   it('maps BUSINESS_VERIFY to nothing, because no such module exists yet', () => {
     // staff_management_plan.md §8 O9 — honest emptiness beats an invented key.
     expect(modulePermissionsToPanel(['BUSINESS_VERIFY'], 'ADMIN')).toEqual([])
+  })
+
+  it('never grants feedback management to a non-Super-Admin', () => {
+    /*
+     * `feedback.manage` has no entry in the bridge at all, because there is no
+     * backend key that could produce it — `FEEDBACK_MANAGEMENT` is rejected by
+     * every write route (feedback_management_plan.md §3.1). The day it becomes
+     * grantable, the bridge gains a row and this test flips to asserting the
+     * mapping instead.
+     */
+    const everyKey = modulePermissionsToPanel(MODULE_PERMISSION_VALUES, 'ADMIN')
+    expect(everyKey).not.toContain(PERMISSIONS.feedbackManage)
+    expect(modulePermissionsToPanel([], 'SUPER_ADMIN')).toContain(
+      PERMISSIONS.feedbackManage,
+    )
   })
 
   it('never grants staff management to a non-Super-Admin', () => {

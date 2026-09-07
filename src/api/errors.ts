@@ -155,6 +155,26 @@ const ERROR_BY_CODE: Readonly<
   [FASTIFY_VALIDATION_CODE]: (m, c, f) =>
     new ValidationError(m, c, f && f.length > 0 ? f : parseFieldErrors(m)),
   VALIDATION_ERROR: (m, c, f) => new ValidationError(m, c, f),
+  /*
+   * `BAD_REQUEST` is what `/admin/feedbacks/*` returns for a request that is
+   * well-formed but wrong for the record's current state — an illegal status
+   * transition, or an assignment to a suspended colleague
+   * (feedback_management_plan.md §2.6).
+   *
+   * It resolves to a `ValidationError` with no field errors, which is the right
+   * surface: the server's message is a whole sentence naming the legal
+   * successors, so it belongs at form level rather than pinned to an input.
+   * `parseFieldErrors` returns `[]` for it — there is no `body/…` prefix to
+   * find — and that is deliberate, not a parse failure.
+   *
+   * Not `InvalidStateTransitionError`, despite the name fitting: that class
+   * hard-codes status 409 and this arrives as 400. An error object that
+   * misreports the status it came from is worse than one with a broader name.
+   *
+   * Mapped by code rather than left to the status fallback so it stays correct
+   * if the backend ever pairs the code with a different status.
+   */
+  BAD_REQUEST: (m, c) => new ValidationError(m, c, parseFieldErrors(m)),
   UNAUTHORIZED: (m, c) => new UnauthorizedError(m, c),
   FORBIDDEN: (m, c) => new ForbiddenError(m, c),
   NOT_FOUND: (m, c) => new NotFoundError(m, c),

@@ -211,3 +211,76 @@ test.describe('permission bootstrap', () => {
     await expect(page.getByText(/do not have access/i)).toHaveCount(0)
   })
 })
+
+test.describe('feedback.manage', () => {
+  /*
+   * Phase F5. Pinned separately from `staff.manage` because the two are
+   * Super-Admin-only for **different reasons**, and only one of them can ever
+   * change:
+   *
+   * - `staff.manage` is withheld because all eight `/admin/staff/*` routes are
+   *   `verifySuperAdmin`-guarded. That is a deliberate backend rule.
+   * - `feedback.manage` is withheld because `FEEDBACK_MANAGEMENT` is **absent
+   *   from the enum the staff write routes validate against**, so nobody can
+   *   be granted it (feedback_management_plan.md §3.1). The module is reachable
+   *   only through the SUPER_ADMIN wildcard bypass.
+   *
+   * The day backend ask #1 lands, this describe block is what has to change —
+   * and it will fail loudly rather than silently start over-granting.
+   */
+
+  test('a Super Admin reaches the queue and the ticket, on login and on reload', async ({
+    page,
+  }) => {
+    await signIn(page, ACCOUNTS.superAdmin)
+
+    await page.goto('/feedback')
+    await expect(
+      page.getByRole('heading', { name: 'Feedback', level: 1 }),
+    ).toBeVisible()
+
+    await page.reload()
+    await expect(
+      page.getByRole('heading', { name: 'Feedback', level: 1 }),
+    ).toBeVisible()
+    await expect(page.getByText(/do not have access/i)).toHaveCount(0)
+
+    /* The ticket route is guarded independently of the queue. */
+    await page.goto('/feedback/fb_pending')
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Audio cuts out/ }),
+    ).toBeVisible()
+  })
+
+  test('an Admin is refused both routes, identically on login and on reload', async ({
+    page,
+  }) => {
+    /*
+     * Asserted on the guarded PAGES rather than the sidebar: below `lg` the nav
+     * is a closed drawer, so link absence would be a statement about the
+     * viewport rather than about permissions — the mistake this module's own
+     * spec made and corrected in F1.
+     */
+    await signIn(page, ACCOUNTS.admin)
+
+    await page.goto('/feedback')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    /* No ticket data leaks into the forbidden state. */
+    await expect(page.getByText('Audio cuts out during group call')).toHaveCount(0)
+
+    await page.reload()
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+
+    await page.goto('/feedback/fb_pending')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    await expect(page.getByText(/Audio cuts out/)).toHaveCount(0)
+  })
+
+  test('a Moderator is refused, exactly as an Admin is', async ({ page }) => {
+    await signIn(page, ACCOUNTS.moderator)
+
+    await page.goto('/feedback')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    await expect(page.getByText('Audio cuts out during group call')).toHaveCount(0)
+  })
+})

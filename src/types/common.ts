@@ -64,6 +64,36 @@ export function envelopeSchema<TData extends z.ZodType>(data: TData) {
 }
 
 /**
+ * The OTHER list envelope: `{ success, data: { items: [...], meta: {...} } }`.
+ *
+ * Rows nest under `data.items` and the page info under `data.meta` — the same
+ * four fields `pagination` carries, one level deeper and under a different
+ * key. {@link paginatedSchema} does not fit and must not be forced onto it.
+ *
+ * This is not a quirk of one route. `GET /admin/settings/database/backups`
+ * shipped it first (system_settings_plan.md §2.5) and
+ * `GET /admin/feedbacks` shipped it again (feedback_management_plan.md §2.1),
+ * so it is promoted here rather than re-declared per feature. Which envelope a
+ * given route uses is a fact about that route, verified live; there is no rule
+ * to derive it from.
+ */
+export function itemsEnvelopeSchema<TItem extends z.ZodType>(item: TItem) {
+  return z.object({
+    success: z.literal(true),
+    data: z.object({
+      items: z.array(item),
+      meta: paginationSchema,
+    }),
+  })
+}
+
+/** The `data` payload of an {@link itemsEnvelopeSchema} response. */
+export interface ItemsPage<TItem> {
+  readonly items: readonly TItem[]
+  readonly meta: Pagination
+}
+
+/**
  * The API caps `limit` at 100 — `limit=200` is rejected with a 400. Requesting
  * more than this is a client bug, so the constant lives beside the contract
  * rather than being rediscovered in a feature.
@@ -81,6 +111,17 @@ export const MAX_PAGE_SIZE = 100
 export const errorCodeSchema = z.enum([
   'FST_ERR_VALIDATION',
   'VALIDATION_ERROR',
+  /**
+   * Verified live 2026-09-06 on `/admin/feedbacks/*`.
+   *
+   * The backend raises this — with status 400 — for a request whose *shape* is
+   * valid but whose *meaning* is not: an illegal status transition, or
+   * assigning a ticket to a suspended staff member. It is distinct from
+   * `FST_ERR_VALIDATION`, which is Zod refusing the body before the handler
+   * runs, and it carries no `body/…` prefixes, so `parseFieldErrors` correctly
+   * yields nothing and the message surfaces at form level.
+   */
+  'BAD_REQUEST',
   'UNAUTHORIZED',
   'FORBIDDEN',
   'NOT_FOUND',

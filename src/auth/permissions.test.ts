@@ -94,6 +94,27 @@ describe('permissionsForRole', () => {
     expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.staffManage)
   })
 
+  it('reserves feedback management for Super Admin — because nobody else CAN hold it', () => {
+    /*
+     * A different reason from every other Super-Admin-only entry above, and
+     * worth stating precisely (feedback_management_plan.md §3.1).
+     *
+     * `/admin/feedbacks/*` is guarded by
+     * `requirePermission('FEEDBACK_MANAGEMENT')`, which an ADMIN is entitled to
+     * hold — except that the key is absent from the enum the staff write routes
+     * validate against, so it can never be granted to anyone. The module is
+     * reachable only through the `SUPER_ADMIN` wildcard bypass.
+     *
+     * Granting it to ADMIN here would put a full inbox in their sidebar that
+     * 403s on its first request. When the backend adds the key, this permission
+     * arrives through `adminPermissions` rather than through this role list, and
+     * this test changes with it.
+     */
+    expect(permissionsForRole('ADMIN')).not.toContain(PERMISSIONS.feedbackManage)
+    expect(permissionsForRole('MODERATOR')).not.toContain(PERMISSIONS.feedbackManage)
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.feedbackManage)
+  })
+
   it('reserves the database and SMS suites for Super Admin alone', () => {
     // These two are guarded with `verifySuperAdmin`, unlike the six above.
     for (const role of ['ADMIN', 'MODERATOR']) {

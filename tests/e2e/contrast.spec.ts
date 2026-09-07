@@ -211,3 +211,114 @@ test('every staff status badge is legible on its own background', async ({ page 
     expect(ratio, `${label} badge contrast`).toBeGreaterThanOrEqual(4.5)
   }
 })
+
+test('the feedback surfaces have no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  /*
+   * Phase F5. This module adds **two** badge domains no other screen uses —
+   * `feedback` (six tones, including `primary` for IN_PROGRESS and `danger`
+   * for REOPENED) and `feedbackPriority` (four) — plus the stats strip's
+   * numbers on a `primary-soft` fill when pressed, and the attachment rows'
+   * `text-danger` warning on `surface-muted`. None of that was covered by the
+   * user or staff passes.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/feedback')
+  await expect(page.getByText('Audio cuts out during group call')).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the hostile ticket has no contrast violations', async ({ page }) => {
+  /*
+   * `fb_hostile` is the worst content the module renders, and the only place
+   * `text-danger` prose appears — the "unsafe link, not opened" line on three
+   * attachment rows.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/feedback/fb_hostile')
+  await expect(
+    page.getByRole('heading', { level: 1, name: /Payment failed/ }),
+  ).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('every feedback status and priority badge is legible on its own background', async ({
+  page,
+}) => {
+  /*
+   * Measured per badge rather than through axe, because these ten tones are
+   * the thing being checked — a regression in one of them should name which,
+   * not report "a violation on the page".
+   *
+   * All six statuses are on screen at once via the stats strip; the four
+   * priorities need the queue's rows, which carry a spread of them.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/feedback')
+  await expect(page.getByText('Audio cuts out during group call')).toBeVisible()
+
+  const ratios = await page.evaluate(() => {
+    function luminance(rgb: string): number {
+      const [r, g, b] = (rgb.match(/\d+/g) ?? ['0', '0', '0']).map(Number) as [
+        number,
+        number,
+        number,
+      ]
+      const channel = (value: number) => {
+        const c = value / 255
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    }
+
+    /* Walk up for the nearest ancestor that actually paints a background. */
+    function painted(el: Element): string {
+      let node: Element | null = el
+      while (node) {
+        const bg = getComputedStyle(node).backgroundColor
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg
+        node = node.parentElement
+      }
+      return 'rgb(255, 255, 255)'
+    }
+
+    /*
+     * A badge is an uppercase overline that paints **its own** background.
+     * Selecting on the typography alone also matched the date picker's "Filed
+     * (UTC)" label — muted text on the page ground, which is the known
+     * `foreground-subtle` token debt and not a badge at all.
+     */
+    const badges = Array.from(
+      document.querySelectorAll('span.text-overline.uppercase'),
+    ).filter((el) => {
+      const own = getComputedStyle(el).backgroundColor
+      const painted = own && own !== 'rgba(0, 0, 0, 0)' && own !== 'transparent'
+      return painted && (el.textContent ?? '').trim().length > 0
+    })
+
+    return badges.map((el) => {
+      const fg = luminance(getComputedStyle(el).color)
+      const bg = luminance(painted(el))
+      const ratio = (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)
+      return { label: (el.textContent ?? '').trim(), ratio }
+    })
+  })
+
+  expect(ratios.length).toBeGreaterThan(0)
+  for (const badge of ratios) {
+    /* 4.5:1 — these are small uppercase text, so the AA floor for normal text. */
+    expect(
+      badge.ratio,
+      `${badge.label} at ${badge.ratio.toFixed(2)}:1`,
+    ).toBeGreaterThan(4.5)
+  }
+})

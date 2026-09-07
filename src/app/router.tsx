@@ -74,6 +74,16 @@ const DatabaseTab = lazy(() =>
     default: m.DatabaseTab,
   })),
 )
+const FeedbackListPage = lazy(() =>
+  import('@/features/feedback/FeedbackListPage').then((m) => ({
+    default: m.FeedbackListPage,
+  })),
+)
+const FeedbackDetailPage = lazy(() =>
+  import('@/features/feedback/FeedbackDetailPage').then((m) => ({
+    default: m.FeedbackDetailPage,
+  })),
+)
 const StaffListPage = lazy(() =>
   import('@/features/staff/StaffListPage').then((m) => ({
     default: m.StaffListPage,
@@ -199,6 +209,36 @@ const moduleRoutes: RouteObject[] = [
         ),
       },
     ],
+  },
+
+  /*
+   * Phase F1 — Feedback & Support (feedback_management_plan.md §4.1).
+   *
+   * Super Admin only, and for a reason unlike every other guard in this file:
+   * `/admin/feedbacks/*` is gated by
+   * `requirePermission('FEEDBACK_MANAGEMENT')`, a key the staff write routes
+   * refuse to grant to anybody (§3.1). The module is reachable only through
+   * the SUPER_ADMIN wildcard, so guarding here as well as in the sidebar means
+   * a typed URL gets the standard 403 rather than a screen that 403s on its
+   * first request.
+   */
+  {
+    path: ROUTES.feedback,
+    element: (
+      <RequirePermission permission={PERMISSIONS.feedbackManage} resource="feedback">
+        {suspended(<FeedbackListPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /* Phase F2 — the ticket. Guarded identically; there is no `/feedback/new`. */
+  {
+    path: '/feedback/:id',
+    element: (
+      <RequirePermission permission={PERMISSIONS.feedbackManage} resource="feedback">
+        {suspended(<FeedbackDetailPage />)}
+      </RequirePermission>
+    ),
   },
 
   /*

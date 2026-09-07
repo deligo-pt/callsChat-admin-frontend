@@ -33,12 +33,23 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false)
 
+  /*
+   * All four cases, including the end-only one.
+   *
+   * A range with a `to` and no `from` is legal — "everything before this
+   * date" — and used to fall through to "All time", which told the operator
+   * the opposite of what was applied. It is not reachable by clicking, but it
+   * is reachable from a pasted URL wherever the range is URL-backed
+   * (feedback_management_plan.md §3.7).
+   */
   const display =
     value?.from && value.to
       ? `${formatDate(value.from, { timeZone })} – ${formatDate(value.to, { timeZone })}`
       : value?.from
         ? `${formatDate(value.from, { timeZone })} – …`
-        : 'All time'
+        : value?.to
+          ? `… – ${formatDate(value.to, { timeZone })}`
+          : 'All time'
 
   return (
     <div className={cn('space-y-1.5', className)}>
