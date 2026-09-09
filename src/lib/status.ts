@@ -38,6 +38,8 @@ export type StatusDomain =
   | 'maintenance'
   | 'staff'
   | 'staffRole'
+  | 'feedback'
+  | 'feedbackPriority'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -206,6 +208,51 @@ const STAFF_ROLE: DomainMap = {
   MODERATOR: { label: 'Moderator', tone: 'neutral' },
 }
 
+/**
+ * A support ticket's lifecycle state (feedback_management_plan.md §5.2).
+ *
+ * `PENDING` is `warning`, not `neutral`, and it is the only state that is: it
+ * means nobody has looked at the ticket yet, so it is the one value in this map
+ * that represents a debt to a person who is waiting. A neutral badge would let
+ * a queue of untouched tickets read as a queue at rest.
+ *
+ * `CLOSED` is `neutral` rather than `success`. A ticket closed without being
+ * resolved is closed too — `PENDING → CLOSED` is a legal transition — so
+ * colouring the terminal state green would claim an outcome the state does not
+ * carry. `RESOLVED` is the state that claims it, and it is the green one.
+ *
+ * `REOPENED` is `danger`, the strongest tone in the map, because it is the one
+ * value that means *this was declared done and it was not*. It is the most
+ * important thing an operator can spot while scanning a queue, and it earns the
+ * loudest colour in a domain where nothing else is an emergency.
+ */
+const FEEDBACK: DomainMap = {
+  PENDING: { label: 'Pending', tone: 'warning' },
+  REVIEWING: { label: 'Reviewing', tone: 'info' },
+  IN_PROGRESS: { label: 'In progress', tone: 'primary' },
+  RESOLVED: { label: 'Resolved', tone: 'success' },
+  CLOSED: { label: 'Closed', tone: 'neutral' },
+  REOPENED: { label: 'Reopened', tone: 'danger' },
+}
+
+/**
+ * A support ticket's urgency.
+ *
+ * Set by the reporter and editable by staff, so it is a claim about the ticket
+ * rather than a state of it — but it is rendered as a badge beside the status
+ * and needs to be legible in the same glance, which is why it is a tone map
+ * rather than a plain label.
+ *
+ * Note this scale runs the other way from `USER`: here `neutral` is the *low*
+ * end, because an unremarkable priority is genuinely unremarkable.
+ */
+const FEEDBACK_PRIORITY: DomainMap = {
+  LOW: { label: 'Low', tone: 'neutral' },
+  MEDIUM: { label: 'Medium', tone: 'info' },
+  HIGH: { label: 'High', tone: 'warning' },
+  CRITICAL: { label: 'Critical', tone: 'danger' },
+}
+
 const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   user: USER,
   restriction: RESTRICTION,
@@ -223,6 +270,8 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   maintenance: MAINTENANCE,
   staff: STAFF,
   staffRole: STAFF_ROLE,
+  feedback: FEEDBACK,
+  feedbackPriority: FEEDBACK_PRIORITY,
 }
 
 /** The three states the maintenance card and the global banner can be in. */

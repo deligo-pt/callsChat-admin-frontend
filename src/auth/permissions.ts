@@ -69,6 +69,17 @@ export const PERMISSIONS = {
    */
   staffManage: 'staff.manage',
 
+  /**
+   * Feedback & support — `/admin/feedbacks/*`
+   * (feedback_management_plan.md §4.3).
+   *
+   * One key, not a view/manage pair. The backend guards the reads and the
+   * writes with the same `FEEDBACK_MANAGEMENT`, exactly as `SYSTEM_SETTINGS_EDIT`
+   * gates `GET /admin/settings` despite its name. There is no read-only tier to
+   * express, so a staff member either works the inbox or cannot see it.
+   */
+  feedbackManage: 'feedback.manage',
+
   auditLogsView: 'audit_logs.view',
 
   configurationView: 'configuration.view',
@@ -188,6 +199,30 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
    * The two SUPER_ADMIN-only suites — `settingsDatabase` and `settingsSms` —
    * remain absent, matching their `verifySuperAdmin` guards. `staffManage` is
    * absent for the same reason.
+   */
+  /*
+   * `feedbackManage` is absent too, and for a different and stranger reason
+   * than the four above (feedback_management_plan.md §3.1).
+   *
+   * `/admin/feedbacks/*` is guarded by `requirePermission('FEEDBACK_MANAGEMENT')`,
+   * which an ADMIN is perfectly entitled to hold — except that the key is **not
+   * in the staff permission enum**. `POST /admin/staff` and
+   * `PATCH /admin/staff/:id/permissions` both reject it:
+   *
+   *   body/permissions/0 Invalid enum value. Expected 'DASHBOARD_VIEW' |
+   *   'USER_VIEW' | 'USER_MODERATE' | 'BUSINESS_VERIFY' | 'SYSTEM_SETTINGS_EDIT' |
+   *   'DEPLOYMENT_EDIT' | 'DATABASE_BACKUP' | 'SMS_GATEWAY_EDIT', received
+   *   'FEEDBACK_MANAGEMENT'
+   *
+   * — verified live 2026-09-06 with a control request that produced a
+   * byte-identical rejection for a made-up key. So no ADMIN or MODERATOR can
+   * be granted it, no matter what a Super Admin does in `/staff`, and the
+   * module is reachable only through the `SUPER_ADMIN` wildcard bypass.
+   *
+   * Granting it here would put a full inbox in an ADMIN's sidebar that 403s on
+   * its first request — the same lie `configurationConfigure` told, in the same
+   * direction. It comes back the day backend ask #1 lands, and by then it will
+   * arrive through `adminPermissions` rather than through this role list.
    */
 ]
 

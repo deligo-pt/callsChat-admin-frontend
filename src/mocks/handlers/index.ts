@@ -1,4 +1,5 @@
 import { authHandlers } from './auth'
+import { feedbackHandlers } from './feedback'
 import { resourceHandlers } from './resources'
 import { searchHandlers } from './search'
 import { settingsHandlers } from './settings'
@@ -13,5 +14,6 @@ export const handlers = [
    * modules — a later generic handler would otherwise swallow `/admin/staff`.
    */
   ...staffHandlers,
+  ...feedbackHandlers,
   ...resourceHandlers,
 ]

@@ -1,4 +1,11 @@
-import { Activity, LayoutDashboard, Settings2, ShieldCheck, Users } from 'lucide-react'
+import {
+  Activity,
+  LayoutDashboard,
+  MessageSquare,
+  Settings2,
+  ShieldCheck,
+  Users,
+} from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import { ROUTES } from '@/app/routes'
@@ -82,6 +89,31 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Users,
         permission: PERMISSIONS.usersView,
         matchPrefix: '/users',
+      },
+      /*
+       * Added 2026-09-07 under the rule above: the `/admin/feedbacks/*`
+       * endpoints shipped and were verified live, so the entry appears the
+       * same day (feedback_management_plan.md §4.2).
+       *
+       * **In Community, below Users, rather than in a section of its own.**
+       * The contrast with Staff is deliberate: Staff earned its own section
+       * because its subject is the panel's operators and its actions are
+       * irreversible. Feedback's subject is the same population Users already
+       * covers, and moving between a ticket and the reporter's account is the
+       * expected path — a one-item section would put a rule between two
+       * entries that belong together.
+       *
+       * `feedback.manage` is Super-Admin-only, so an ADMIN or MODERATOR never
+       * sees this entry. That matches the backend exactly, though for an
+       * unusual reason: the permission the routes enforce cannot be granted to
+       * anyone (§3.1), so the wildcard is the only way in.
+       */
+      {
+        label: 'Feedback',
+        to: ROUTES.feedback,
+        icon: MessageSquare,
+        permission: PERMISSIONS.feedbackManage,
+        matchPrefix: '/feedback',
       },
     ],
   },

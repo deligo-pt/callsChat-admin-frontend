@@ -50,7 +50,7 @@ describe('permission grid', () => {
     expect(screen.getByText(/Read and change app name/i)).toBeInTheDocument()
   })
 
-  it('offers a checkbox for every grantable key and none for the restricted two', () => {
+  it('offers a checkbox for every grantable key and none for the three locked rows', () => {
     renderWithProviders(<Harness />)
 
     expect(screen.getAllByRole('checkbox')).toHaveLength(
@@ -59,10 +59,35 @@ describe('permission grid', () => {
     /*
      * Once per restricted row, not once per group heading: an operator who
      * reaches for an inert box deserves the reason where they reached.
+     *
+     * Two rows carry the Super-Admin reason. The third locked row —
+     * `FEEDBACK_MANAGEMENT` — carries a different one, because it is locked for
+     * a different cause: the API enforces it and then rejects it on every write
+     * (feedback_management_plan.md §3.1). Telling an operator that Super
+     * Administrators "hold this already" would be the wrong explanation, so the
+     * two reasons are asserted separately.
      */
     expect(
       screen.getAllByText(/Granting it to an Admin or\s+Moderator has no effect/i),
-    ).toHaveLength(MODULE_PERMISSIONS.length - GRANTABLE_MODULE_PERMISSIONS.length)
+    ).toHaveLength(2)
+    expect(screen.getAllByText(/Not yet grantable/i)).toHaveLength(1)
+    expect(MODULE_PERMISSIONS).toHaveLength(GRANTABLE_MODULE_PERMISSIONS.length + 3)
+  })
+
+  it('renders the ungrantable key as a locked row with no checkbox', () => {
+    /*
+     * Shown rather than hidden. A Super Admin provisioning a support moderator
+     * should be able to see that the capability exists and that it cannot yet
+     * be delegated — otherwise they grant what they can, and later discover
+     * their new hire has an invisible inbox with no explanation anywhere.
+     */
+    renderWithProviders(<Harness />)
+
+    expect(screen.getByText('Feedback & support')).toBeInTheDocument()
+    /* No label points at it, because there is no control to label. */
+    expect(
+      screen.queryByRole('checkbox', { name: /Feedback & support/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('starts with nothing granted', () => {

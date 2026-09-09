@@ -47,3 +47,23 @@ globalThis.ResizeObserver = class ResizeObserver {
 }
 
 Element.prototype.scrollIntoView = vi.fn()
+
+/**
+ * Pointer capture, which jsdom does not implement at all.
+ *
+ * Radix's `Select`, `DropdownMenu` and `Popover` call these on every pointer
+ * interaction, so without them a click on a trigger throws
+ * `target.hasPointerCapture is not a function` and the menu never opens. That
+ * cost the staff and feedback suites real coverage: both had to assert on the
+ * constants their menus were built from instead of on the menu, and
+ * `feedback_management_plan.md` F3 needs the assignment combobox driven for
+ * real — the `{"adminId": null}` unassign is only observable by selecting it.
+ *
+ * Added 2026-09-07, in F3. It is a jsdom gap, not a workaround for anything in
+ * this codebase.
+ */
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false
+  Element.prototype.setPointerCapture = () => {}
+  Element.prototype.releasePointerCapture = () => {}
+}

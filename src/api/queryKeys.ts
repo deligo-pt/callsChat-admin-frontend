@@ -72,6 +72,25 @@ export const queryKeys = {
   staff: domain('staff'),
 
   /**
+   * Feedback & Support (feedback_management_plan.md §4.5).
+   *
+   * `all` is the invalidation root every feedback mutation targets, and — as
+   * with staff — that is a correctness requirement rather than a convenience.
+   * `PATCH /:id/status` returns one of two different shapes depending on which
+   * backend process answers (§3.2), and `POST /:id/reply` silently rewrites
+   * `adminResponse` (§3.3). Neither response may seed the cache; both the
+   * queue and the ticket must be refetched.
+   *
+   * `stats` sits under the same root so a transition refreshes the counters
+   * the queue header shows. It takes no parameters — the endpoint is global
+   * and ignores every filter.
+   */
+  feedback: {
+    ...domain('feedback'),
+    stats: () => ['feedback', 'stats'] as const,
+  },
+
+  /**
    * System Settings (system_settings_plan.md §4.4).
    *
    * `all` is the invalidation root every settings mutation targets, so a save

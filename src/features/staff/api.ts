@@ -1,8 +1,6 @@
 import { apiClient } from '@/api/client'
-import type { ListParams } from '@/types/common'
 import {
   staffAcknowledgementSchema,
-  staffListResponseSchema,
   staffMemberResponseSchema,
   type CreateStaffPayload,
   type ModulePermission,
@@ -10,7 +8,6 @@ import {
   type StaffRole,
   type UpdateStaffStatusPayload,
 } from '@/types/staff'
-import type { Paginated } from '@/types/common'
 import type { z } from 'zod'
 
 /**
@@ -40,42 +37,17 @@ import type { z } from 'zod'
  * Reads
  * ---------------------------------------------------------------------- */
 
-export interface StaffListParams extends ListParams {
-  readonly page?: number | undefined
-  readonly limit?: number | undefined
-  /** `ADMIN` · `MODERATOR` · `ALL`. */
-  readonly role?: string | undefined
-  /**
-   * `ACTIVE` · `SUSPENDED` · `BANNED` · `ALL`.
-   *
-   * ⚠️ `INACTIVE` is **not** accepted — deleted rows cannot be filtered
-   * server-side in either direction (staff_management_plan.md §3.4).
-   */
-  readonly status?: string | undefined
-  /** Undocumented but real: matches display name, username and email. */
-  readonly search?: string | undefined
-}
-
-/**
- * `GET /admin/staff`.
+/*
+ * `StaffListParams` and `fetchStaffList` now live in `api/staff.ts` and are
+ * re-exported here unchanged.
  *
- * ⚠️ Returns soft-deleted accounts. `DELETE /admin/staff/:id` sets `deletedAt`
- * and the doc claims the row is then "immediately hidden from staff listings";
- * it is not — the `deletedAt` filter is missing from this query and from
- * `fetchStaffMember` below, while every mutation *does* filter on it. The
- * directory filters them client-side instead.
+ * They moved because `features/feedback/` needs the staff list to populate its
+ * assignment control, and a feature may not import a sibling feature
+ * (`eslint.config.js`; feedback_management_plan.md §4.5). Nothing about the
+ * call changed, and every existing import of it still resolves through this
+ * module.
  */
-export function fetchStaffList(
-  params: StaffListParams,
-  signal?: AbortSignal,
-): Promise<Paginated<StaffMember>> {
-  return apiClient.get<Paginated<StaffMember>>('/admin/staff', {
-    params,
-    schema: staffListResponseSchema,
-    resource: 'staff',
-    ...(signal ? { signal } : {}),
-  })
-}
+export { fetchStaffList, type StaffListParams } from '@/api/staff'
 
 /**
  * `GET /admin/staff/:id`.
