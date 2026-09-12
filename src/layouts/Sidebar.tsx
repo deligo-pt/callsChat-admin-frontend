@@ -105,14 +105,13 @@ export function Sidebar({
         aria-current={active ? 'page' : undefined}
         className={cn(
           'group flex items-center gap-3 rounded-md px-3 py-2 text-body transition-colors',
-          'focus-visible:ring-2 focus-visible:ring-sidebar-active focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
           showLabels ? 'w-full' : 'w-11 justify-center px-0',
           active
-            ? 'bg-sidebar-active font-medium text-sidebar-active-foreground'
+            ? 'bg-sidebar-active text-body-strong text-sidebar-active-foreground'
             : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground',
         )}
       >
-        <Icon className="size-4 shrink-0" />
+        <Icon className="size-5 shrink-0" />
         {showLabels ? <span className="flex-1 truncate">{item.label}</span> : null}
         {!showLabels ? <span className="sr-only">{item.label}</span> : null}
       </NavLink>
@@ -131,16 +130,15 @@ export function Sidebar({
      */
     const toggleClassName = cn(
       'group flex items-center gap-3 rounded-md px-3 py-2 text-body transition-colors',
-      'focus-visible:ring-2 focus-visible:ring-sidebar-active focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none',
       showLabels ? 'w-full' : 'w-11 justify-center px-0',
       active
-        ? 'bg-sidebar-active font-medium text-sidebar-active-foreground'
+        ? 'bg-sidebar-active text-body-strong text-sidebar-active-foreground'
         : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground',
     )
 
     const toggleBody = (
       <>
-        <Icon className="size-4 shrink-0" />
+        <Icon className="size-5 shrink-0" />
         {showLabels ? (
           <>
             <span className="flex-1 truncate text-left">{item.label}</span>
@@ -208,7 +206,6 @@ export function Sidebar({
                         aria-current={childActive ? 'page' : undefined}
                         className={cn(
                           'flex items-center gap-2.5 rounded-md px-3 py-1.5 text-caption transition-colors',
-                          'focus-visible:ring-2 focus-visible:ring-sidebar-active focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
                           childActive
                             ? 'font-medium text-sidebar-foreground'
                             : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground',

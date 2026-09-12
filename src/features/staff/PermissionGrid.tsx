@@ -76,8 +76,10 @@ function GridRow({
   return (
     <li
       className={cn(
-        'flex items-start gap-3 rounded-md border border-border p-3',
-        locked ? 'bg-surface-muted' : 'bg-surface',
+        'flex items-start gap-3 rounded-md border p-3 transition-colors',
+        locked && 'border-border bg-surface-muted',
+        !locked && checked && 'border-primary/40 bg-primary-soft',
+        !locked && !checked && 'border-border bg-surface',
       )}
     >
       {locked ? (
@@ -100,7 +102,7 @@ function GridRow({
         <label
           htmlFor={locked ? undefined : id}
           className={cn(
-            'text-body-strong block',
+            'block text-body-strong',
             locked ? 'text-foreground-muted' : 'cursor-pointer',
           )}
         >

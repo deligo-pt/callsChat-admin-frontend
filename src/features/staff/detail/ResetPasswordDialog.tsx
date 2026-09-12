@@ -187,7 +187,7 @@ function ResetPasswordForm({
           </>
         ) : (
           <div className="space-y-2">
-            <span className="text-body-strong block">Generated password</span>
+            <span className="block text-body-strong">Generated password</span>
             <code className="block rounded-md border border-border bg-surface-muted px-3 py-2 font-mono text-body break-all">
               {generated}
             </code>

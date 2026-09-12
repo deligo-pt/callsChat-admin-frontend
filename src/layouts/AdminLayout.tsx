@@ -119,7 +119,11 @@ export function AdminLayout() {
         <MaintenanceBanner />
 
         {/* The only vertically scrolling region in the shell. */}
-        <main className={cn('min-w-0 flex-1 overflow-y-auto overscroll-contain py-6')}>
+        <main
+          className={cn(
+            'min-w-0 flex-1 overflow-y-auto overscroll-contain py-6 lg:py-8',
+          )}
+        >
           <div className="page-container">
             <Outlet />
           </div>

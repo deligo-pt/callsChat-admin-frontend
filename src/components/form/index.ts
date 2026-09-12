@@ -1,3 +1,5 @@
 export { fieldAria } from './fieldAria'
+export { FormActions } from './FormActions'
 export { FormField } from './FormField'
+export { FormGrid, FormSection } from './FormSection'
 export { PasswordRules } from './PasswordRules'

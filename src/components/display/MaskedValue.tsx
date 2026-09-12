@@ -47,7 +47,7 @@ export function MaskedValue({
 
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>
-      <span className={cn('tabular', revealed ? 'font-mono text-caption' : undefined)}>
+      <span className={cn('tabular', revealed ? 'font-mono text-mono' : undefined)}>
         {revealed ? value : maskValue(kind, value)}
       </span>
 

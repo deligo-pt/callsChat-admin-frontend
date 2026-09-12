@@ -91,9 +91,7 @@ export function RecordCardList<TRow>({
               }
               className={cn(
                 'min-w-0 rounded-lg border border-border bg-surface p-4',
-                interactive
-                  ? 'cursor-pointer hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                  : undefined,
+                interactive ? 'cursor-pointer hover:border-border-strong' : undefined,
               )}
             >
               {/*
@@ -104,7 +102,7 @@ export function RecordCardList<TRow>({
                 page scrolled sideways at 390px.
               */}
               <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                <div className="min-w-0 flex-1 text-body font-medium break-words">
+                <div className="min-w-0 flex-1 text-body-strong break-words">
                   {title ? title.cell(row) : null}
                 </div>
 
@@ -120,7 +118,7 @@ export function RecordCardList<TRow>({
                        * when read out of context.
                        */
                       aria-label={rowLabel ? `View ${rowLabel(row)}` : 'View record'}
-                      className="-m-1 touch-target rounded-sm p-1 text-foreground-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      className="-m-1 touch-target rounded-sm p-1 text-foreground-subtle hover:text-foreground"
                     >
                       <ChevronRight className="size-4" aria-hidden="true" />
                     </button>
@@ -132,12 +130,12 @@ export function RecordCardList<TRow>({
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
                   {meta.map((column) => (
                     <div key={column.id} className="min-w-0">
-                      <dt className="text-overline text-foreground-subtle uppercase">
+                      <dt className="text-overline text-foreground-muted uppercase">
                         {column.header}
                       </dt>
                       <dd
                         className={cn(
-                          'mt-0.5 text-caption break-words',
+                          'mt-0.5 text-body break-words',
                           column.align === 'right' ? 'tabular' : undefined,
                         )}
                       >

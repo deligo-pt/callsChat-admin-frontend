@@ -72,7 +72,10 @@ export function DataTable<TRow>({
     [columns, hiddenColumns],
   )
 
-  const cellPadding = density === 'compact' ? 'px-3 py-1.5' : 'px-4 py-3'
+  const cellPadding = density === 'compact' ? 'px-3 py-2' : 'px-4 py-3'
+  // An explicit row-height floor so a row of short cells (a bare date, a dash)
+  // is the same height as one carrying a badge — plan.md §5.4 vertical rhythm.
+  const rowHeight = density === 'compact' ? 'h-10' : 'h-13'
 
   function toggleColumn(id: string) {
     setHiddenColumns((current) => {
@@ -167,8 +170,7 @@ export function DataTable<TRow>({
                     scope="col"
                     style={column.width ? { width: column.width } : undefined}
                     className={cn(
-                      'border-b border-border align-middle text-overline whitespace-nowrap text-foreground-subtle uppercase',
-                      cellPadding,
+                      'border-b border-border-strong px-4 py-3 align-middle text-overline whitespace-nowrap text-foreground-muted uppercase',
                       alignRight ? 'text-right' : 'text-left',
                       column.sticky ? 'sticky left-0 z-20 bg-surface-muted' : undefined,
                     )}
@@ -219,7 +221,7 @@ export function DataTable<TRow>({
               })}
 
               {rowActions ? (
-                <th scope="col" className={cn('border-b border-border', cellPadding)}>
+                <th scope="col" className="border-b border-border-strong px-4 py-3">
                   <span className="sr-only">Actions</span>
                 </th>
               ) : null}
@@ -240,6 +242,7 @@ export function DataTable<TRow>({
                     : undefined
                 }
                 className={cn(
+                  rowHeight,
                   'border-b border-border bg-surface last:border-b-0',
                   onRowClick
                     ? 'cursor-pointer hover:bg-surface-muted focus-visible:bg-surface-muted'

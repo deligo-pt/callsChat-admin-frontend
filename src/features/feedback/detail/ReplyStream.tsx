@@ -47,7 +47,7 @@ function ReplyEntry({ reply }: { reply: FeedbackReply }) {
   return (
     <li className="space-y-1.5 rounded-md border border-border bg-surface-muted p-3">
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="text-body-strong truncate">{name}</span>
+        <span className="truncate text-body-strong">{name}</span>
         {/*
          * There is no user-side reply route, so every sender here is staff.
          * A role this domain does not know degrades to a neutral badge with a

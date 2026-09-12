@@ -129,7 +129,7 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
         updatedBy={policy.updatedBy}
       >
         <fieldset disabled={!canEdit} className="contents space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
             <FormField
               id={`${policy.platform}-latestVersion`}
               label="Latest version"

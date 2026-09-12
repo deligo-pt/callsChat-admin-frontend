@@ -51,11 +51,12 @@ export function SettingsPage() {
       />
 
       {/*
-       * `max-w-3xl` matches AccountSecurityPage — one column of cards, which is
-       * the right measure for forms. Sections holding a table opt out, or their
-       * right-hand columns fall off the edge of the reading column.
+       * `form-column` (~720px, plan.md §6.2) matches AccountSecurityPage and
+       * StaffCreatePage — one column of cards, the right measure for forms.
+       * Sections holding a table opt out (`wide`), or their right-hand columns
+       * fall off the edge of the reading column.
        */}
-      <div className={cn('space-y-6', !current?.wide && 'max-w-3xl')}>
+      <div className={cn('space-y-6', !current?.wide && 'form-column')}>
         <Outlet />
       </div>
     </div>

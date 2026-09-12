@@ -25,7 +25,11 @@ export function SectionTitle({ as, className, ...props }: TextProps<ElementType>
   return <Comp className={cn('text-h2', className)} {...props} />
 }
 
-export function CardTitle({ as, className, ...props }: TextProps<ElementType>) {
+/**
+ * Section / card heading. Named `SectionHeading` rather than `CardTitle` so it
+ * does not collide with `components/ui/card.tsx`'s own `CardTitle` export.
+ */
+export function SectionHeading({ as, className, ...props }: TextProps<ElementType>) {
   const Comp = as ?? 'h3'
   return <Comp className={cn('text-h3', className)} {...props} />
 }
@@ -38,6 +42,12 @@ export function SubTitle({ as, className, ...props }: TextProps<ElementType>) {
 export function Body({ as, className, ...props }: TextProps<ElementType>) {
   const Comp = as ?? 'p'
   return <Comp className={cn('text-body', className)} {...props} />
+}
+
+/** Emphasis and inline labels — body size, weight 500 (plan.md §5.2). */
+export function BodyStrong({ as, className, ...props }: TextProps<ElementType>) {
+  const Comp = as ?? 'p'
+  return <Comp className={cn('text-body-strong', className)} {...props} />
 }
 
 export function Muted({ as, className, ...props }: TextProps<ElementType>) {
@@ -68,5 +78,5 @@ export function Overline({ as, className, ...props }: TextProps<ElementType>) {
 /** IDs, correlation IDs, ledger references. */
 export function Mono({ as, className, ...props }: TextProps<ElementType>) {
   const Comp = as ?? 'span'
-  return <Comp className={cn('font-mono text-caption', className)} {...props} />
+  return <Comp className={cn('font-mono text-mono', className)} {...props} />
 }
