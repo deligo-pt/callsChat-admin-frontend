@@ -67,7 +67,12 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      className="flex h-9 items-center gap-2 border-b px-3"
+      /*
+       * `h-10`, matching the input inside it (below) — not the stock shadcn
+       * `h-9`. That mismatch let the input overflow this wrapper by 4px top
+       * and bottom, so its focus ring visibly crossed the border under it.
+       */
+      className="flex h-10 items-center gap-2 border-b px-3"
     >
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input

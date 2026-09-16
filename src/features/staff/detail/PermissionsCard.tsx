@@ -123,6 +123,7 @@ export function PermissionsCard({
           onChange={setDraft}
           disabled={readOnly || mutation.isPending}
           aria-labelledby="permissions-heading"
+          groupLayout="grid"
         />
       </CardContent>
 

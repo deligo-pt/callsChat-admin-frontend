@@ -68,7 +68,7 @@ export function StaffDetailPage() {
   const isDeleted = member.status === 'INACTIVE'
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       <PageHeader
         breadcrumbs={[
           { label: 'Staff', to: ROUTES.staff },
@@ -106,15 +106,36 @@ export function StaffDetailPage() {
         </Alert>
       ) : null}
 
-      <IdentityCard member={member} />
-      <PermissionsCard member={member} readOnly={isDeleted} />
       {/*
-       * Absent, not disabled, on a deleted record. Every one of these routes
-       * answers 404 for a deleted id (§3.4), so a greyed-out button would be
-       * offering something that cannot happen rather than something the
-       * operator lacks permission for.
+       * Main content + a narrow sticky rail, not a second content column
+       * (plan.md §6.2 detail-page pattern). `Module access` is most of this
+       * page's height — nine rows across six groups — so it gets the main
+       * column and the room to lay its groups out two-up. `Identity` and
+       * `Account actions` are short and glanceable, so they sit in a rail that
+       * stays in view while the permission grid scrolls, rather than pushing
+       * it further down the page.
+       *
+       * Below `lg` there is no room for a rail: everything stacks, in the same
+       * order a screen reader or keyboard user meets it here — main content
+       * first, rail second, which is also why nothing needs an explicit
+       * `order-*` override.
        */}
-      {isDeleted ? null : <LifecycleCard member={member} />}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
+        <div className="min-w-0">
+          <PermissionsCard member={member} readOnly={isDeleted} />
+        </div>
+
+        <div className="mt-6 min-w-0 space-y-6 lg:sticky lg:top-8 lg:mt-0">
+          <IdentityCard member={member} />
+          {/*
+           * Absent, not disabled, on a deleted record. Every one of these
+           * routes answers 404 for a deleted id (§3.4), so a greyed-out button
+           * would be offering something that cannot happen rather than
+           * something the operator lacks permission for.
+           */}
+          {isDeleted ? null : <LifecycleCard member={member} />}
+        </div>
+      </div>
     </div>
   )
 }

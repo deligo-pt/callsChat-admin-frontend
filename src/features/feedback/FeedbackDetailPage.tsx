@@ -27,9 +27,12 @@ import { useFeedbackTicketQuery } from './useFeedback'
  * it has to be linkable, because *"take a look at this one"* is the single most
  * common thing an operator wants to say about a ticket.
  *
- * `max-w-4xl` and a single column at every breakpoint. The content here is
- * prose the operator has to read carefully; a wider measure would make the
- * report harder to read, and a second column would compete with it.
+ * The report and the reply stream stay a single reading column at every
+ * breakpoint — that content is prose an operator has to read carefully, and a
+ * second column of it would compete with the first. `Triage` is the one part
+ * of the page that is not prose (a value beside the control that changes it),
+ * so at `lg` and up it moves into a narrow sticky rail instead — see the grid
+ * below.
  */
 export function FeedbackDetailPage() {
   const { id = '' } = useParams()
@@ -81,7 +84,7 @@ export function FeedbackDetailPage() {
   const ticket = query.data
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       <PageHeader
         breadcrumbs={[
           { label: 'Feedback', to: ROUTES.feedback },
@@ -96,16 +99,29 @@ export function FeedbackDetailPage() {
       <TicketHeader ticket={ticket} />
 
       {/*
-       * A fixed order that follows how a ticket is actually worked: read what
-       * happened, decide what to do about it, see what has been said, then
-       * check what has been done. `TriageCard` sits between the report and the
-       * conversation because that is the moment the decision is made — after
-       * reading the problem, before answering it.
+       * Main content + a narrow sticky rail (plan.md §6.2 detail-page
+       * pattern), not a second column of prose. The report and the reply
+       * stream keep the fixed order they always had — read what happened,
+       * then see what has been said, then what has been done. `Triage`
+       * carries the moment the decision gets made, and putting it in the
+       * rail means it stays visible the whole time an operator is reading
+       * and replying, not just at the one point it used to sit between them.
+       *
+       * Below `lg` there is no rail: everything stacks, main content first,
+       * then Triage — the same order a screen reader or keyboard user meets
+       * it here, which is why nothing needs an explicit `order-*` override.
        */}
-      <ReportCard ticket={ticket} />
-      <TriageCard ticket={ticket} />
-      <ReplyStream ticket={ticket} />
-      <HistoryCard ticket={ticket} />
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
+        <div className="min-w-0 space-y-6">
+          <ReportCard ticket={ticket} />
+          <ReplyStream ticket={ticket} />
+          <HistoryCard ticket={ticket} />
+        </div>
+
+        <div className="mt-6 min-w-0 lg:sticky lg:top-8 lg:mt-0">
+          <TriageCard ticket={ticket} />
+        </div>
+      </div>
     </div>
   )
 }

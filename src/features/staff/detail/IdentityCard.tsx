@@ -31,8 +31,13 @@ export function IdentityCard({ member }: { member: StaffMember }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/*
+         * `columns={1}` — this card now lives in the detail page's sticky
+         * rail (~320px), not the full page width, so the 2/3-column layout
+         * would squeeze every field into a column narrower than its own label.
+         */}
         <KeyValueGrid
-          columns={3}
+          columns={1}
           items={[
             { label: 'Display name', value: member.displayName },
             {
