@@ -171,7 +171,7 @@ export function LanguageEditor({
       </div>
 
       <div className="max-w-xs space-y-2">
-        <label htmlFor="defaultLanguage" className="text-body-strong block">
+        <label htmlFor="defaultLanguage" className="block text-body-strong">
           Default language
         </label>
         <Select

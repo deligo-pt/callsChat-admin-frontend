@@ -11,12 +11,19 @@ export interface KeyValueItem {
 
 export interface KeyValueGridProps {
   items: readonly KeyValueItem[]
-  /** Maximum columns at the widest breakpoint. */
-  columns?: 2 | 3
+  /**
+   * Maximum columns at the widest breakpoint. `1` stays single-column at every
+   * width — for a grid confined to a narrow sticky rail, where the viewport is
+   * wide but the grid's own box is not (Tailwind's breakpoints read the
+   * viewport, not the grid's rendered width, so `2`/`3` would still try to
+   * multi-column inside a 320px rail).
+   */
+  columns?: 1 | 2 | 3
   className?: string
 }
 
 const COLUMN_CLASSES = {
+  1: '',
   2: 'sm:grid-cols-2',
   3: 'sm:grid-cols-2 xl:grid-cols-3',
 } as const

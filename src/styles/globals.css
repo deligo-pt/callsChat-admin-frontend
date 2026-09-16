@@ -67,13 +67,6 @@
     text-wrap: pretty;
   }
 
-  /* Focus is never removed — plan.md §5.3 */
-  :focus-visible {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-  }
-
   /* Inputs inherit the type system */
   button,
   input,
@@ -94,6 +87,26 @@
   [hidden] {
     display: none !important;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Focus — the ONE focus indicator (plan.md §5.3, design_improvement_plan.md §2.3)
+ *
+ * Deliberately UNLAYERED so it beats every `@layer utilities` rule — including
+ * `outline-none` / `outline-hidden`, which shadcn primitives set on themselves.
+ * Components must not add their own `ring-*` / `border-ring` focus styles; this
+ * is the whole story. No `border-radius` here — it distorted `rounded-full`
+ * controls (switch, avatar) and cards.
+ * ------------------------------------------------------------------------ */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* On the dark sidebar the primary-blue ring is muddy against navy — a light
+ * accent reads cleanly. Same one indicator, re-tinted for the surface. */
+.sidebar-surface :focus-visible {
+  outline-color: var(--color-accent-400);
 }
 
 /* ---------------------------------------------------------------------------
@@ -128,6 +141,14 @@
   @media (width >= 80rem) {
     padding-inline: --spacing(8);
   }
+}
+
+/* The reading measure for a single-column form — plan.md §6.2 caps forms at
+ * ~720px so a two-column field grid never stretches a label away from its
+ * input. Table-bearing pages opt out. */
+@utility form-column {
+  width: 100%;
+  max-width: 46rem; /* 736 */
 }
 
 /* Only designated containers scroll horizontally — plan.md §6.3 */

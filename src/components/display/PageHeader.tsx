@@ -63,7 +63,7 @@ export function PageHeader({
                     </span>
                   )}
                   {!isLast ? (
-                    <ChevronRight className="size-3 shrink-0" aria-hidden="true" />
+                    <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />
                   ) : null}
                 </li>
               )

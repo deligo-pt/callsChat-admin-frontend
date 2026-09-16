@@ -189,7 +189,9 @@
   --color-secondary-foreground: var(--color-foreground);
   --color-destructive: var(--color-danger);
   --color-destructive-foreground: var(--color-foreground-inverse);
-  --color-input: var(--color-border);
+  /* Input borders read as a field edge, not a hairline — the plain border is
+   * too faint on white (design_improvement_plan.md §2.2). */
+  --color-input: var(--color-border-strong);
   --radius: var(--radius-md);
 
   /* Application shell */
@@ -205,13 +207,26 @@
   --color-ring: var(--color-primary-500);
 
   /* ---------------------------------------------------------------------
-   * 3. Typography (plan.md §5.2) — Roboto
+   * 3. Typography — Roboto  (plan.md §5.2)
+   *
+   * The standard admin-console scale: 14px body, the size Stripe, Linear,
+   * GitHub, Jira and shadcn all use for a data-dense operations tool. Kept
+   * verbatim from the Figma spec — this file's job is to make it the ONE scale
+   * the whole app renders from, not to invent a new one.
+   *
+   * `--text-body-strong` and `--text-mono` were specified in plan.md §5.2 but
+   * never declared here, so `text-body-strong` was a dead class (every form
+   * label rendered at weight 400) and mono text borrowed `--text-caption`.
+   * Both are now real tokens.
+   *
+   * Companion vars (`--text-*--line-height`, `--text-*--font-weight`,
+   * `--text-*--letter-spacing`) are applied automatically by the matching
+   * `text-*` utility in Tailwind v4.
    * ------------------------------------------------------------------- */
   --font-sans:
     'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Admin density scale — deliberately capped at 28px (see plan.md §5.2) */
   --text-overline: 0.625rem; /* 10 */
   --text-overline--line-height: 0.75rem; /* 12 */
   --text-overline--letter-spacing: 0.06em;
@@ -220,8 +235,18 @@
   --text-caption: 0.75rem; /* 12 */
   --text-caption--line-height: 1rem; /* 16 */
 
+  /* Default UI text, table cells, inputs. */
   --text-body: 0.875rem; /* 14 */
   --text-body--line-height: 1.25rem; /* 20 */
+
+  /* Emphasis, form labels, active nav. Same size as body, weight 500. */
+  --text-body-strong: 0.875rem; /* 14 */
+  --text-body-strong--line-height: 1.25rem; /* 20 */
+  --text-body-strong--font-weight: 500;
+
+  /* IDs, correlation IDs, ledger references. */
+  --text-mono: 0.8125rem; /* 13 */
+  --text-mono--line-height: 1.25rem; /* 20 */
 
   --text-h4: 1rem; /* 16 */
   --text-h4--line-height: 1.1875rem; /* 19 */

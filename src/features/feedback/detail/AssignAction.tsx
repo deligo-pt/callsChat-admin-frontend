@@ -71,7 +71,18 @@ export function AssignAction({ ticket }: { ticket: Feedback }) {
        */}
       <PopoverContent
         align="end"
-        className="w-72 p-0"
+        /*
+         * `w-(--radix-popover-trigger-width)`, not a fixed width. The trigger
+         * is now a full-width button inside `TriageRow` (which itself sits in
+         * the detail page's 320px triage rail below `lg`, or a plain
+         * full-width card above it — design_improvement_plan.md). A fixed
+         * `w-72`/`w-64` either overflowed the rail or, once the trigger became
+         * full-width, sat narrower than it with its left edge adrift from the
+         * button's — "aligned" only on the right. Matching the trigger's own
+         * measured width keeps both edges flush with the button at every
+         * width, in the rail or out of it, with no breakpoint to get wrong.
+         */
+        className="w-(--radix-popover-trigger-width) p-0"
         aria-label="Assign this ticket to a staff member"
       >
         {candidates.isPending ? (

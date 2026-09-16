@@ -51,7 +51,7 @@ export function MaintenanceBanner() {
   return (
     <div
       role="status"
-      className="text-body-strong flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-danger px-4 py-2 text-center text-white"
+      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-danger px-4 py-2 text-center text-body-strong text-white"
     >
       <span className="inline-flex items-center gap-2">
         <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />

@@ -276,7 +276,7 @@ export function LoadingState({
       role="status"
       aria-label="Loading records"
     >
-      <div className="flex gap-4 border-b border-border bg-surface-muted px-4 py-3">
+      <div className="flex gap-4 border-b border-border-strong bg-surface-muted px-4 py-3">
         <Skeleton className="h-3 w-32" />
         <Skeleton className="h-3 w-24" />
         <Skeleton className="ml-auto h-3 w-20" />
@@ -284,7 +284,7 @@ export function LoadingState({
       {items.map((index) => (
         <div
           key={index}
-          className="flex items-center gap-4 border-b border-border px-4 py-3 last:border-b-0"
+          className="flex h-13 items-center gap-4 border-b border-border px-4 last:border-b-0"
         >
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-28" />

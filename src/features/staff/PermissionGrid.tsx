@@ -47,6 +47,18 @@ export interface PermissionGridProps {
   /** Labels the group list for assistive tech. Required: it is a real control. */
   'aria-labelledby'?: string
   className?: string
+  /**
+   * `'stacked'` (default) — one column of groups. Used in staff provisioning,
+   * where the grid shares a 736px `form-column` and a second column would
+   * squeeze every description.
+   *
+   * `'grid'` — two columns from `xl`. Used on the staff detail page, where
+   * this was most of the page's height as one long vertical list; the detail
+   * page's main content column is wide enough (it gives up a 320px rail to
+   * the identity card and actions, not a second content column) to pair
+   * groups side by side instead.
+   */
+  groupLayout?: 'stacked' | 'grid'
 }
 
 function GridRow({
@@ -76,8 +88,10 @@ function GridRow({
   return (
     <li
       className={cn(
-        'flex items-start gap-3 rounded-md border border-border p-3',
-        locked ? 'bg-surface-muted' : 'bg-surface',
+        'flex items-start gap-3 rounded-md border p-3 transition-colors',
+        locked && 'border-border bg-surface-muted',
+        !locked && checked && 'border-primary/40 bg-primary-soft',
+        !locked && !checked && 'border-border bg-surface',
       )}
     >
       {locked ? (
@@ -100,7 +114,7 @@ function GridRow({
         <label
           htmlFor={locked ? undefined : id}
           className={cn(
-            'text-body-strong block',
+            'block text-body-strong',
             locked ? 'text-foreground-muted' : 'cursor-pointer',
           )}
         >
@@ -137,6 +151,7 @@ export function PermissionGrid({
   disabled = false,
   'aria-labelledby': labelledBy,
   className,
+  groupLayout = 'stacked',
 }: PermissionGridProps) {
   const granted = new Set(value)
 
@@ -151,7 +166,10 @@ export function PermissionGrid({
 
   return (
     <div
-      className={cn('space-y-5', className)}
+      className={cn(
+        groupLayout === 'grid' ? 'grid gap-x-6 gap-y-5 xl:grid-cols-2' : 'space-y-5',
+        className,
+      )}
       role="group"
       {...(labelledBy ? { 'aria-labelledby': labelledBy } : {})}
     >

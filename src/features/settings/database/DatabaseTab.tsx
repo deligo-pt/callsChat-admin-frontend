@@ -216,7 +216,7 @@ export function DatabaseTab() {
                          * forwards to a backend engineer — paraphrasing it into
                          * "something went wrong" throws away its only value.
                          */}
-                        <code className="mt-1 block scroll-x rounded-sm bg-surface-muted px-2 py-1 font-mono text-caption text-foreground">
+                        <code className="mt-1 block scroll-x rounded-sm bg-surface-muted px-2 py-1 font-mono text-mono text-foreground">
                           {row.error}
                         </code>
                       </>

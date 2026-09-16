@@ -82,19 +82,35 @@ function TriageRow({
   action: React.ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
-      <div className="flex min-w-0 flex-wrap items-center gap-3">
-        <span className="w-20 shrink-0 text-caption text-foreground-muted">
-          {label}
-        </span>
+    /*
+     * Label + value on one line, the control on its own full-width line below
+     * — always, not just below `md`.
+     *
+     * This card now lives in the detail page's 320px triage rail at `lg` and
+     * up (design_improvement_plan.md), not just on a phone. The previous
+     * layout put the control BESIDE the label+value in a `flex-wrap` row and
+     * relied on the browser wrapping it below when the row ran out of room —
+     * which the rail's ~270px content width does on every row. But a single
+     * flex item alone on a wrapped line is not re-centered or re-justified by
+     * `justify-between`; it just sits at the row's start. The result was a
+     * small, left-stranded button — not full-width, not aligned to the row's
+     * true right edge — which then threw off where its own dropdown opened
+     * (`align="end"` anchors to wherever the button actually ended up).
+     *
+     * Stacking on purpose, unconditionally, removes the guesswork: the
+     * control is always a deliberate full-width row, so its right edge is
+     * always the row's real right edge, at every width — a phone, this rail,
+     * or the plain full-width card below `lg`.
+     */
+    <div className="space-y-2 border-b border-border pb-3 last:border-0 last:pb-0">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-caption text-foreground-muted">{label}</span>
         {value}
       </div>
-      {/*
-       * `w-full sm:w-auto`: §6 requires a ≥44px full-width target below `md`.
-       * A 30px menu button squeezed to the right edge of a phone is the
-       * control an operator misses and then taps the row behind it.
-       */}
-      <div className="w-full sm:w-auto">{action}</div>
+      {/* `[&>*]:w-full` reaches the actual trigger button `action` renders,
+          rather than setting width on this wrapper alone — a block wrapper
+          being full-width does not itself stretch an inline-flex child. */}
+      <div className="[&>*]:w-full">{action}</div>
     </div>
   )
 }

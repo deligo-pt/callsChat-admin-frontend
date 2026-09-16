@@ -146,7 +146,7 @@ export function PlatformTab() {
           />
         </FormField>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
           <FormField
             id="playStoreUrl"
             label="Google Play listing"

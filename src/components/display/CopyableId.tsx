@@ -44,7 +44,7 @@ export function CopyableId({
             <code
               className={cn(
                 'truncate-id cursor-help font-mono text-foreground-muted',
-                size === 'sm' ? 'text-caption' : 'text-body',
+                size === 'sm' ? 'text-mono' : 'text-body',
               )}
             >
               {display}

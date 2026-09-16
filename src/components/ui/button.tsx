@@ -20,8 +20,7 @@ const buttonVariants = cva(
   [
     'inline-flex shrink-0 items-center justify-center gap-2 rounded-md',
     'text-body font-medium whitespace-nowrap',
-    'touch-target transition-colors outline-none',
-    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+    'touch-target transition-colors',
     'disabled:pointer-events-none disabled:opacity-50',
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   ].join(' '),
@@ -43,12 +42,12 @@ const buttonVariants = cva(
       },
       size: {
         sm: "h-8 gap-1.5 px-3 text-caption has-[>svg]:px-2.5 [&_svg:not([class*='size-'])]:size-3.5",
-        md: 'h-9 px-4 has-[>svg]:px-3',
-        default: 'h-9 px-4 has-[>svg]:px-3',
-        lg: 'h-10 px-6 has-[>svg]:px-4',
-        icon: 'size-9 px-0',
+        md: 'h-10 px-4 has-[>svg]:px-3',
+        default: 'h-10 px-4 has-[>svg]:px-3',
+        lg: 'h-11 px-6 has-[>svg]:px-4',
+        icon: 'size-10 px-0',
         'icon-sm': "size-8 px-0 [&_svg:not([class*='size-'])]:size-3.5",
-        'icon-lg': 'size-10 px-0',
+        'icon-lg': 'size-11 px-0',
       },
     },
     defaultVariants: {

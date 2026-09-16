@@ -42,7 +42,7 @@ export function FormField({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <label htmlFor={id} className="text-body-strong block">
+      <label htmlFor={id} className="block text-body-strong">
         {label}
         {required ? (
           <span className="text-danger" aria-hidden="true">

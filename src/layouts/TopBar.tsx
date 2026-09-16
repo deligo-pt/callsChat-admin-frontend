@@ -50,7 +50,8 @@ export function TopBar({
         className,
       )}
     >
-      {/* Drawer trigger — below lg only */}
+      {/* Left cluster — drawer trigger + brand below lg (no sidebar there),
+          then the environment badge as the bar's left anchor at every width. */}
       <Button
         variant="ghost"
         size="icon"
@@ -61,6 +62,31 @@ export function TopBar({
         <Menu />
       </Button>
 
+      <span className="flex min-w-0 items-center gap-2 lg:hidden">
+        <img
+          src="/logo-mark.png"
+          alt=""
+          aria-hidden="true"
+          width={24}
+          height={24}
+          className="size-6 shrink-0 object-contain"
+        />
+        <span className="truncate text-h4">
+          CallsChat<span className="font-normal text-foreground-muted"> Admin</span>
+        </span>
+      </span>
+
+      {label !== 'production' ? (
+        <span
+          className={cn(
+            'hidden shrink-0 rounded-sm px-2 py-1 text-overline uppercase sm:inline-flex',
+            ENV_BADGE[label] ?? ENV_BADGE['local'],
+          )}
+        >
+          {label}
+        </span>
+      ) : null}
+
       {/*
         Global search is not rendered: `GET /admin/search` returns 404 — there
         is no cross-module search endpoint yet, and only Users exists to search
@@ -70,18 +96,7 @@ export function TopBar({
       */}
       <div className="min-w-0 flex-1" />
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
-        {label !== 'production' ? (
-          <span
-            className={cn(
-              'hidden rounded-sm px-2 py-1 text-overline uppercase sm:inline-flex',
-              ENV_BADGE[label] ?? ENV_BADGE['local'],
-            )}
-          >
-            {label}
-          </span>
-        ) : null}
-
+      <div className="flex shrink-0 items-center gap-2">
         <Button variant="ghost" size="icon" aria-label="Alerts" className="relative">
           <Bell />
           {notificationCount > 0 ? (
@@ -102,7 +117,7 @@ export function TopBar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
-              <span className="block truncate font-medium">{adminName}</span>
+              <span className="block truncate text-body-strong">{adminName}</span>
               <span className="block text-caption text-foreground-muted">
                 {adminRole}
               </span>

@@ -6,10 +6,9 @@ import { toast } from 'sonner'
 import { isAppError, UnauthorizedError } from '@/api/errors'
 import { useAuth } from '@/auth/useAuth'
 import { changeEmail, changePassword, signOut } from '@/auth/session'
-import { PasswordRules } from '@/components/form'
+import { FormGrid, FormSection, PasswordRules } from '@/components/form'
 import { PageHeader } from '@/components/display'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
@@ -83,86 +82,76 @@ function ChangePasswordForm() {
     : null
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle asChild>
-          <h2>Change password</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-          className="space-y-5"
-          noValidate
-        >
-          {serverMessage ? (
-            <p
-              role="alert"
-              className="rounded-md bg-danger-soft px-3 py-2 text-body text-danger-foreground"
-            >
-              {serverMessage}
-            </p>
-          ) : null}
+    <FormSection title="Change password">
+      <form
+        onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+        className="space-y-5"
+        noValidate
+      >
+        {serverMessage ? (
+          <p
+            role="alert"
+            className="rounded-md bg-danger-soft px-3 py-2 text-body text-danger-foreground"
+          >
+            {serverMessage}
+          </p>
+        ) : null}
 
+        <div className="space-y-2">
+          <Label htmlFor="currentPassword">Current password</Label>
+          <PasswordInput
+            id="currentPassword"
+            autoComplete="current-password"
+            aria-invalid={Boolean(form.formState.errors.currentPassword) || undefined}
+            aria-describedby="currentPassword-error"
+            {...form.register('currentPassword')}
+          />
+          <FieldError
+            id="currentPassword-error"
+            message={form.formState.errors.currentPassword?.message}
+          />
+        </div>
+
+        <FormGrid>
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current password</Label>
+            <Label htmlFor="newPassword">New password</Label>
             <PasswordInput
-              id="currentPassword"
-              autoComplete="current-password"
-              aria-invalid={Boolean(form.formState.errors.currentPassword) || undefined}
-              aria-describedby="currentPassword-error"
-              {...form.register('currentPassword')}
+              id="newPassword"
+              autoComplete="new-password"
+              aria-invalid={Boolean(form.formState.errors.newPassword) || undefined}
+              aria-describedby="newPassword-error password-rules"
+              {...form.register('newPassword')}
             />
             <FieldError
-              id="currentPassword-error"
-              message={form.formState.errors.currentPassword?.message}
+              id="newPassword-error"
+              message={form.formState.errors.newPassword?.message}
             />
           </div>
 
-          {/* 1 column below md, 2 above (plan.md §6.3). */}
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New password</Label>
-              <PasswordInput
-                id="newPassword"
-                autoComplete="new-password"
-                aria-invalid={Boolean(form.formState.errors.newPassword) || undefined}
-                aria-describedby="newPassword-error password-rules"
-                {...form.register('newPassword')}
-              />
-              <FieldError
-                id="newPassword-error"
-                message={form.formState.errors.newPassword?.message}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm new password</Label>
-              <PasswordInput
-                id="confirmPassword"
-                autoComplete="new-password"
-                aria-invalid={
-                  Boolean(form.formState.errors.confirmPassword) || undefined
-                }
-                aria-describedby="confirmPassword-error"
-                {...form.register('confirmPassword')}
-              />
-              <FieldError
-                id="confirmPassword-error"
-                message={form.formState.errors.confirmPassword?.message}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm new password</Label>
+            <PasswordInput
+              id="confirmPassword"
+              autoComplete="new-password"
+              aria-invalid={Boolean(form.formState.errors.confirmPassword) || undefined}
+              aria-describedby="confirmPassword-error"
+              {...form.register('confirmPassword')}
+            />
+            <FieldError
+              id="confirmPassword-error"
+              message={form.formState.errors.confirmPassword?.message}
+            />
           </div>
+        </FormGrid>
 
-          {/* The policy, stated up front rather than discovered by rejection. */}
-          <PasswordRules id="password-rules" value={newPassword ?? ''} />
+        {/* The policy, stated up front rather than discovered by rejection. */}
+        <PasswordRules id="password-rules" value={newPassword ?? ''} />
 
-          <Button type="submit" loading={mutation.isPending}>
-            Change password
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" loading={mutation.isPending}>
+          Change password
+        </Button>
+      </form>
+    </FormSection>
   )
 }
 
@@ -190,72 +179,64 @@ function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
     : null
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle asChild>
-          <h2>Change email address</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
-          className="space-y-5"
-          noValidate
-        >
-          {serverMessage ? (
-            <p
-              role="alert"
-              className="rounded-md bg-danger-soft px-3 py-2 text-body text-danger-foreground"
-            >
-              {serverMessage}
-            </p>
-          ) : null}
-
-          <p className="text-caption text-foreground-muted">
-            Currently{' '}
-            <span className="font-medium text-foreground">{currentEmail}</span>. This is
-            the address you sign in with.
+    <FormSection title="Change email address">
+      <form
+        onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+        className="space-y-5"
+        noValidate
+      >
+        {serverMessage ? (
+          <p
+            role="alert"
+            className="rounded-md bg-danger-soft px-3 py-2 text-body text-danger-foreground"
+          >
+            {serverMessage}
           </p>
+        ) : null}
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="newEmail">New email address</Label>
-              <Input
-                id="newEmail"
-                type="email"
-                autoComplete="email"
-                aria-invalid={Boolean(form.formState.errors.newEmail) || undefined}
-                aria-describedby="newEmail-error"
-                {...form.register('newEmail')}
-              />
-              <FieldError
-                id="newEmail-error"
-                message={form.formState.errors.newEmail?.message}
-              />
-            </div>
+        <p className="text-caption text-foreground-muted">
+          Currently <span className="font-medium text-foreground">{currentEmail}</span>.
+          This is the address you sign in with.
+        </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="emailPassword">Confirm with your password</Label>
-              <PasswordInput
-                id="emailPassword"
-                autoComplete="current-password"
-                aria-invalid={Boolean(form.formState.errors.password) || undefined}
-                aria-describedby="emailPassword-error"
-                {...form.register('password')}
-              />
-              <FieldError
-                id="emailPassword-error"
-                message={form.formState.errors.password?.message}
-              />
-            </div>
+        <FormGrid>
+          <div className="space-y-2">
+            <Label htmlFor="newEmail">New email address</Label>
+            <Input
+              id="newEmail"
+              type="email"
+              autoComplete="email"
+              aria-invalid={Boolean(form.formState.errors.newEmail) || undefined}
+              aria-describedby="newEmail-error"
+              {...form.register('newEmail')}
+            />
+            <FieldError
+              id="newEmail-error"
+              message={form.formState.errors.newEmail?.message}
+            />
           </div>
 
-          <Button type="submit" loading={mutation.isPending}>
-            Update email
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <div className="space-y-2">
+            <Label htmlFor="emailPassword">Confirm with your password</Label>
+            <PasswordInput
+              id="emailPassword"
+              autoComplete="current-password"
+              aria-invalid={Boolean(form.formState.errors.password) || undefined}
+              aria-describedby="emailPassword-error"
+              {...form.register('password')}
+            />
+            <FieldError
+              id="emailPassword-error"
+              message={form.formState.errors.password?.message}
+            />
+          </div>
+        </FormGrid>
+
+        <Button type="submit" loading={mutation.isPending}>
+          Update email
+        </Button>
+      </form>
+    </FormSection>
   )
 }
 
@@ -288,9 +269,8 @@ export function AccountSecurityPage() {
         </p>
       ) : null}
 
-      {/* Single column throughout: these are short forms, and side-by-side
-          password fields on a wide screen invite filling the wrong one. */}
-      <div className="max-w-3xl space-y-6">
+      {/* One reading column — short forms, stacked, never a page-level 2-up. */}
+      <div className="form-column space-y-6">
         <ChangePasswordForm />
         {admin ? <ChangeEmailForm currentEmail={admin.email} /> : null}
         {/* Last: it is the one control on this page that ends the visit. */}
