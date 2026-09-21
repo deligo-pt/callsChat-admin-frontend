@@ -123,9 +123,14 @@ describe('the report', () => {
   it('splits device info for reading without parsing it into fields', async () => {
     renderTicket('fb_pending')
 
-    expect(await screen.findByText('device: Xiaomi 2201117TG')).toBeInTheDocument()
-    expect(screen.getByText('os: Android 13')).toBeInTheDocument()
-    expect(screen.getByText('appVersion: 2.3.0')).toBeInTheDocument()
+    /*
+     * The legacy comma format still renders, now as label/value rows — the
+     * label and value are separate nodes, so they are asserted separately.
+     */
+    expect(await screen.findByText('Xiaomi 2201117TG')).toBeInTheDocument()
+    expect(screen.getByText('device')).toBeInTheDocument()
+    expect(screen.getByText('Android 13')).toBeInTheDocument()
+    expect(screen.getByText('2.3.0')).toBeInTheDocument()
   })
 
   it('says so when no device details were sent', async () => {
@@ -133,6 +138,40 @@ describe('the report', () => {
     renderTicket('fb_hostile')
 
     expect(await screen.findByText(/did not send device details/i)).toBeInTheDocument()
+  })
+})
+
+describe('a ticket filed from the real app (2026-09-21)', () => {
+  it('renders a reporter with no email and no phone', async () => {
+    /*
+     * The shape that took the queue down: a display name, and no contact
+     * detail at all. The page must still render, with no masked-email slot.
+     */
+    renderTicket('fb_app')
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /Call drops/ }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'App Developer' })).toBeInTheDocument()
+    expect(screen.queryByText(/@/)).not.toBeInTheDocument()
+  })
+
+  it('shows the multi-line device info one line per row, values intact', async () => {
+    renderTicket('fb_app')
+
+    /*
+     * Waits on a value, not on "Device": that word is now both the section
+     * label and a line label inside the new format (`Device: Xiaomi …`).
+     */
+    await screen.findByText('Architecture')
+    /* Label and value are separate nodes, and the value keeps its commas. */
+    expect(
+      screen.getByText('Android 13 (SDK 33, Patch: 2024-10-01)'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('arm64-v8a, armeabi-v7a, armeabi')).toBeInTheDocument()
+    expect(screen.getByText('Architecture')).toBeInTheDocument()
+    /* The broken fragments the old comma split produced never appear. */
+    expect(screen.queryByText('armeabi-v7a')).not.toBeInTheDocument()
   })
 })
 

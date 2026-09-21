@@ -95,7 +95,8 @@ const STATE_KEY = 'callschat.mock.feedback'
 
 interface MockActor {
   id: string
-  email: string
+  /** Nullable: a real app account was seen with no email and no phone. */
+  email: string | null
   phone?: string | null
   role: string
   profile: {
@@ -235,7 +236,7 @@ const ACTIVE_STAFF = new Set(['stf_sarah', 'stf_marcus'])
 
 function reporter(
   id: string,
-  email: string,
+  email: string | null,
   displayName: string | null,
   username?: string,
 ): MockActor {
@@ -454,6 +455,47 @@ const SEED: MockTicket[] = [
     createdAt: '2026-08-28T07:00:00.000Z',
     updatedAt: '2026-09-06T08:00:00.000Z',
     user: reporter('usr_ravi', 'ravi.desai@example.com', 'Ravi Desai', 'ravid'),
+    attachments: [],
+    replies: [],
+    statusHistory: [],
+  },
+  {
+    /*
+     * A ticket filed from the **real mobile app**, captured live 2026-09-21.
+     * Two things about it broke the panel and neither existed in this mock
+     * before that date:
+     *
+     * - the reporter has `email: null` and `phone: null` — a display name and
+     *   no contact detail at all. A schema requiring `email` rejected the whole
+     *   list over this one row;
+     * - `userDeviceInfo` is the new **multi-line** format, with commas inside
+     *   its values, which the old comma splitter cut into five broken pieces.
+     */
+    id: 'fb_app',
+    userId: 'usr_app_dev',
+    type: 'BUG',
+    subject: 'Call drops when switching from Wi-Fi to mobile data',
+    description:
+      'Any call cuts out the moment the phone leaves Wi-Fi. It does not reconnect on its own.',
+    status: 'PENDING',
+    priority: 'MEDIUM',
+    userDeviceInfo: [
+      'App: CallsChat v1.1.19 (Build 12) [com.codextechit.callchat]',
+      'Network: Wi-Fi (Active)',
+      'Locale: en_GB',
+      'OS: Android 13 (SDK 33, Patch: 2024-10-01)',
+      'Device: Xiaomi 2201117TG (Brand: Redmi, Product: spes_global)',
+      'Hardware: qcom | Board: spes | Device: spes',
+      'Architecture: arm64-v8a, armeabi-v7a, armeabi',
+      'Type: Physical Device (Low RAM: No)',
+    ].join('\n'),
+    adminResponse: null,
+    assignedAdminId: null,
+    resolvedAt: null,
+    closedAt: null,
+    createdAt: '2026-09-21T12:40:00.000Z',
+    updatedAt: '2026-09-21T12:40:00.000Z',
+    user: reporter('usr_app_dev', null, 'App Developer'),
     attachments: [],
     replies: [],
     statusHistory: [],
@@ -900,7 +942,7 @@ export const feedbackHandlers = [
     }
     if (search) {
       rows = rows.filter((ticket) =>
-        [ticket.subject, ticket.description, ticket.user.email].some((field) =>
+        [ticket.subject, ticket.description, ticket.user.email ?? ''].some((field) =>
           field.toLowerCase().includes(search),
         ),
       )

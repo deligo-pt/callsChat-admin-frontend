@@ -302,15 +302,19 @@ describe('the module 403', () => {
 
 describe('stats', () => {
   it('are global, and move when a ticket moves', async () => {
+    /*
+     * Relative, not absolute. This asserted `total === 5` and `pending === 1`,
+     * and went red the moment a sixth seed ticket was added on 2026-09-21 —
+     * a test about the stats *moving* should not break when the seed grows.
+     */
     const before = await fetchFeedbackStats()
-    expect(before.total).toBe(5)
-    expect(before.pending).toBe(1)
+    expect(before.total).toBeGreaterThan(0)
 
     await transitionFeedbackStatus('fb_pending', { status: 'REVIEWING' })
 
     const after = await fetchFeedbackStats()
-    expect(after.total).toBe(5)
-    expect(after.pending).toBe(0)
+    expect(after.total).toBe(before.total)
+    expect(after.pending).toBe(before.pending - 1)
     expect(after.reviewing).toBe(before.reviewing + 1)
   })
 })

@@ -8,7 +8,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import type { Feedback } from '@/types/feedback'
 
-import { splitDeviceInfo } from '../labels'
+import { splitDeviceInfo, splitDeviceLine } from '../labels'
 import { AttachmentList } from './AttachmentList'
 
 /**
@@ -69,21 +69,49 @@ export function ReportCard({ ticket }: { ticket: Feedback }) {
           </p>
           {deviceSegments.length > 0 ? (
             /*
-             * Split on commas for readability and **never parsed into typed
-             * fields**. `userDeviceInfo` is one nullable free-text column that
-             * the mobile client happens to format as `key: value, key: value`;
-             * presenting `os` and `appVersion` as if they were columns would
-             * break silently the first time the app changes its format.
+             * One line per row, the label muted and the value in body colour —
+             * a reading aid, **never a parse into typed fields**. The app sends
+             * eight `Key: value` lines today and sent three comma-separated
+             * pairs last month (`splitDeviceInfo`); presenting `OS` or `App` as
+             * columns would break silently the next time it changes again.
+             *
+             * A line with no `": "` renders whole rather than being dropped.
+             *
+             * The key includes the index: two lines can be identical (the new
+             * format already repeats `Device:` in two places), and a text-only
+             * key would collide.
              */
-            <ul className="flex flex-wrap gap-x-4 gap-y-1">
-              {deviceSegments.map((segment) => (
-                <li
-                  key={segment}
-                  className="text-caption wrap-anywhere text-foreground-muted"
-                >
-                  {segment}
-                </li>
-              ))}
+            <ul className="space-y-1">
+              {deviceSegments.map((segment, index) => {
+                const pair = splitDeviceLine(segment)
+                return (
+                  /*
+                   * A `ul`, not a `dl`: a line with no separator has no term,
+                   * and a `dd` without a `dt` is invalid inside a `dl` — an
+                   * axe `dlitem` failure on exactly the unrecognised line this
+                   * fallback exists for.
+                   */
+                  <li
+                    key={`${index}-${segment}`}
+                    className="flex flex-col gap-x-3 text-caption sm:flex-row"
+                  >
+                    {pair ? (
+                      <>
+                        <span className="shrink-0 text-foreground-muted sm:w-28">
+                          {pair.label}
+                        </span>
+                        <span className="min-w-0 wrap-anywhere text-foreground">
+                          {pair.value}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="min-w-0 wrap-anywhere text-foreground">
+                        {segment}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           ) : (
             <p className="text-caption text-foreground-subtle">
