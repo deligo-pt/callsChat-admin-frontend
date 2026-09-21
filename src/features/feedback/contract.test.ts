@@ -308,6 +308,39 @@ describe('the four response shapes', () => {
   })
 })
 
+describe('a reporter with no contact detail at all', () => {
+  it('parses `email: null` and `phone: null` rather than rejecting the list', () => {
+    /*
+     * ⚠️ Captured live 2026-09-21 from tickets filed by the real Android app.
+     * The reporter carried a display name and **no email and no phone**. With
+     * `email` required, one such row rejected the entire list response and the
+     * queue rendered "Something went wrong" in place of all five tickets.
+     */
+    const row = {
+      ...LIVE_ROW,
+      user: {
+        id: 'cmsq9b8i8003f01pl9hv2t91w',
+        email: null,
+        phone: null,
+        role: 'USER',
+        profile: {
+          displayName: 'App Developer',
+          /* Relative, not a URL — also as captured. The panel never renders it. */
+          avatarUrl: 'avatars/avatar_cmsq9b8i8003f01pl9hv2t91w_1789991234.jpg',
+        },
+      },
+    }
+
+    const parsed = feedbackListResponseSchema.parse({
+      ...LIVE_LIST_RESPONSE,
+      data: { ...LIVE_LIST_RESPONSE.data, items: [row] },
+    })
+
+    expect(parsed.data.items[0]?.user?.email).toBeNull()
+    expect(parsed.data.items[0]?.user?.profile?.displayName).toBe('App Developer')
+  })
+})
+
 describe('a reporter without a profile', () => {
   it('parses `profile: null` rather than rejecting the whole ticket', () => {
     /*

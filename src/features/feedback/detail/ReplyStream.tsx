@@ -39,10 +39,13 @@ function byOldestFirst(a: FeedbackReply, b: FeedbackReply): number {
 
 function ReplyEntry({ reply }: { reply: FeedbackReply }) {
   /*
-   * `profile` is nullable, so the email is the fallback display name — and for
-   * a staff sender there is always one.
+   * `profile` is nullable and so is `email` — a real app account was seen with
+   * neither a phone nor an address on 2026-09-21. The chain ends on a neutral
+   * label rather than an empty span, because a reply with no visible author
+   * reads as a rendering fault.
    */
-  const name = reply.sender.profile?.displayName ?? reply.sender.email
+  const name =
+    reply.sender.profile?.displayName ?? reply.sender.email ?? 'Unknown sender'
 
   return (
     <li className="space-y-1.5 rounded-md border border-border bg-surface-muted p-3">

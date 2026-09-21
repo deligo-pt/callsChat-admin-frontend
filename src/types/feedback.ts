@@ -97,7 +97,17 @@ export const FEEDBACK_PRIORITY_VALUES = feedbackPrioritySchema.options
  */
 export const feedbackActorSchema = z.object({
   id: idSchema,
-  email: z.string(),
+  /**
+   * ⚠️ **Nullable.** Verified live 2026-09-21: tickets filed from the real
+   * mobile app carried a reporter with `email: null` *and* `phone: null` — an
+   * account with a display name and no contact detail at all. Requiring a
+   * string here rejected the **whole list response** over one reporter, and
+   * the queue rendered "Something went wrong" instead of five tickets.
+   *
+   * Every renderer falls back through `profile.displayName` → `email` → a
+   * neutral label, so a reporter with neither still renders.
+   */
+  email: z.string().nullable(),
   phone: z.string().nullable().optional(),
   /** Not narrowed to an enum: an actor's role is display-only here. */
   role: z.string(),
