@@ -109,6 +109,27 @@
   outline-color: var(--color-accent-400);
 }
 
+/* The command-palette search row draws the ring around the WHOLE field — icon
+ * and text — instead of around the bare input inside it.
+ *
+ * Same indicator, same colour and offset, moved one element up. Without this
+ * the input's ring wrapped only the text, so the search icon sat outside it,
+ * and it touched the top of an `overflow-hidden` popover, which clipped the
+ * ring's top edge off (`components/ui/command.tsx`).
+ *
+ * Unlayered, like the rule above, because a utility class cannot override an
+ * unlayered rule. `:has(:focus-visible)` rather than `:focus-within`, so the
+ * row follows exactly the same "show the ring" heuristic as every other control
+ * in the panel. */
+[data-slot='command-input']:focus-visible {
+  outline: none;
+}
+
+[data-slot='command-input-wrapper']:has([data-slot='command-input']:focus-visible) {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
 /* ---------------------------------------------------------------------------
  * Utilities
  * ------------------------------------------------------------------------ */
