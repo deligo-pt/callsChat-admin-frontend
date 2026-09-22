@@ -68,17 +68,32 @@ function CommandInput({
     <div
       data-slot="command-input-wrapper"
       /*
-       * `h-10`, matching the input inside it (below) — not the stock shadcn
-       * `h-9`. That mismatch let the input overflow this wrapper by 4px top
-       * and bottom, so its focus ring visibly crossed the border under it.
+       * One search **field**, not a bare input on a divider line.
+       *
+       * The stock shadcn row put the input flush against the top of `Command`,
+       * which is `overflow-hidden` to keep its rounded corners clean. The
+       * global focus ring (`globals.css`) is drawn 4px *outside* whatever is
+       * focused, so its top edge was clipped off by the popover — and it
+       * wrapped only the text, leaving the search icon outside the ring.
+       *
+       * Three changes, each doing one job:
+       *
+       * - `m-1.5` insets the field 6px from every clipping edge, so a ring
+       *   reaching 4px out can never be cut;
+       * - `rounded-md border border-input` gives it the same look as every
+       *   other `Input` in the panel;
+       * - the focus ring moves from the input to **this row**, so the icon
+       *   sits inside it. That is done in `globals.css`, not here, because the
+       *   global rule is deliberately unlayered and no utility class can
+       *   override it.
        */
-      className="flex h-10 items-center gap-2 border-b px-3"
+      className="m-1.5 flex h-9 items-center gap-2 rounded-md border border-input px-2.5"
     >
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          'flex h-10 w-full rounded-md bg-transparent py-3 text-body outline-hidden placeholder:text-foreground-muted disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-full w-full bg-transparent text-body placeholder:text-foreground-muted disabled:cursor-not-allowed disabled:opacity-50',
           className,
         )}
         {...props}
