@@ -14,6 +14,7 @@ import type { SystemSettings } from '@/types/settings'
 import { fieldAria, FormField } from '@/components/form'
 
 import { updateMaintenanceSettings } from '../api'
+import { ReachNotice } from '../ReachNotice'
 import { SettingsCard } from '../SettingsCard'
 import { buildMaintenancePayload, type MaintenanceFormValues } from '../serialize'
 import { useSettingsMutation, useSettingsQuery } from '../useSettings'
@@ -139,6 +140,16 @@ export function MaintenanceTab() {
         isSaving={mutation.isPending}
         saveLabel="Save message"
       >
+        {/*
+         * ⚠️ This switch does not black out the mobile app (plan.md §3.1).
+         *
+         * `settings.maintenanceMode` and `bootstrap.maintenanceMode` are
+         * separate records that do not move together, verified live. The one
+         * an operator reaches for during an outage is whichever screen they
+         * happen to be on, so each has to say which clients it stops.
+         */}
+        <ReachNotice reach="maintenance" />
+
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface-muted p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2">

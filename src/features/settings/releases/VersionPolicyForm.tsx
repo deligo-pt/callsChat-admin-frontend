@@ -9,6 +9,7 @@ import type { AppVersionPolicy } from '@/types/settings'
 import { fieldAria, FormField } from '@/components/form'
 
 import { updateVersionPolicy } from '../api'
+import { ReachNotice } from '../ReachNotice'
 import { SettingsCard } from '../SettingsCard'
 import { buildVersionPolicyPayload, type VersionPolicyFormValues } from '../serialize'
 import { useSettingsMutation } from '../useSettings'
@@ -128,6 +129,20 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
         updatedAt={policy.updatedAt}
         updatedBy={policy.updatedBy}
       >
+        {/*
+         * ⚠️ Which clients this record actually reaches (plan.md §3.1).
+         *
+         * Verified live 2026-09-28: this is a DIFFERENT record from the one
+         * mobile clients read at cold start. Writing here changes nothing a
+         * phone is told, and the save succeeds either way — so without this
+         * line an operator setting a force update during an incident watches
+         * nothing happen and has no way to find out why.
+         *
+         * Above the fields, not below them: it changes whether the form is the
+         * right place to be at all.
+         */}
+        <ReachNotice reach="versions" />
+
         <fieldset disabled={!canEdit} className="contents space-y-4">
           <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
             <FormField

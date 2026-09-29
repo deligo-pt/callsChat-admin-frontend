@@ -36,8 +36,15 @@ const buttonVariants = cva(
         outline:
           'border border-border-strong bg-surface text-foreground hover:bg-surface-muted',
         ghost: 'text-foreground hover:bg-surface-muted',
-        danger: 'bg-danger text-foreground-inverse hover:bg-danger-hover',
-        destructive: 'bg-danger text-foreground-inverse hover:bg-danger-hover',
+        /*
+         * `danger-strong`, not `danger`: white on `--color-danger` (red-500)
+         * measures 3.37:1, below the AA floor, and this variant paints the
+         * most consequential buttons in the panel — "Ban user", "Sign everyone
+         * out", "Turn on maintenance mode". Found by the B5 contrast pass.
+         */
+        danger: 'bg-danger-strong text-foreground-inverse hover:bg-danger-strong-hover',
+        destructive:
+          'bg-danger-strong text-foreground-inverse hover:bg-danger-strong-hover',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {

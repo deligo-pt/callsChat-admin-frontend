@@ -99,6 +99,14 @@ export const ROUTES = {
   settingsChat: '/settings/chat',
   settingsPlatform: '/settings/platform',
   settingsReleases: '/settings/releases',
+  /**
+   * Bootstrap Configuration (plan.md §4.1).
+   *
+   * Platform is a **query parameter**, not a route segment: it is a view of
+   * the same screen, and `?platform=IOS` round-trips through a deep link the
+   * way every other filter in this panel does.
+   */
+  settingsBootstrap: '/settings/bootstrap',
   settingsDatabase: '/settings/database',
   settingsSms: '/settings/sms',
 

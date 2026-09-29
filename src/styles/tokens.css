@@ -157,6 +157,20 @@
   --color-danger-hover: var(--color-red-600);
   --color-danger-soft: var(--color-red-50);
   --color-danger-foreground: var(--color-red-800);
+  /*
+   * The fill for a SOLID danger button, and it is deliberately darker than
+   * `--color-danger`.
+   *
+   * White on `red-500` measures **3.37:1**, below the 4.5:1 AA floor — found
+   * by the B5 contrast pass on the confirmation dialog's confirm button
+   * (plan.md B5). `red-600` is still only 4.01:1; `red-700` is 6.07:1.
+   *
+   * `--color-danger` itself is left alone on purpose: it paints dots, borders
+   * and icons, where a darker red would change the whole product's alarm
+   * colour to fix a problem that only exists behind white text.
+   */
+  --color-danger-strong: var(--color-red-700);
+  --color-danger-strong-hover: var(--color-red-800);
 
   --color-info: var(--color-accent-500);
   --color-info-soft: var(--color-accent-50);

@@ -284,3 +284,58 @@ test.describe('feedback.manage', () => {
     await expect(page.getByText('Audio cuts out during group call')).toHaveCount(0)
   })
 })
+
+test.describe('mobile bootstrap', () => {
+  /*
+   * Phase B5. Pinned separately from the feedback module's key because the
+   * reason differs: this section introduces **no new permission**. It reuses
+   * `configuration.view` to read and `configuration.configure` to write, which
+   * the API's own `SYSTEM_SETTINGS_EDIT` bridges to.
+   *
+   * ⚠️ The gate is asserted here at the ROLE level only. Whether an `ADMIN`
+   * holding `SYSTEM_SETTINGS_EDIT` is actually admitted by the API is
+   * unverified (plan.md §2.6, §8 R5) — the only credential available is a
+   * Super Admin, which bypasses module permissions. If that assumption is
+   * wrong, this section needs a Super-Admin-only flag and these tests change
+   * with it.
+   */
+
+  test('a Super Admin reaches it, and can edit, across a reload', async ({ page }) => {
+    await signIn(page, ACCOUNTS.superAdmin)
+
+    await page.goto('/settings/bootstrap')
+    await expect(page.getByText('Release policy')).toBeVisible()
+    /* Editing, not just reading — the write permission resolves too. */
+    await expect(page.getByLabel('Maintenance mode')).toBeEnabled()
+
+    await page.reload()
+    await expect(page.getByLabel('Maintenance mode')).toBeEnabled()
+    await expect(page.getByText(/do not have access/i)).toHaveCount(0)
+  })
+
+  test('a Moderator is refused, and no configuration leaks into the 403', async ({
+    page,
+  }) => {
+    await signIn(page, ACCOUNTS.moderator)
+
+    await page.goto('/settings/bootstrap')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    /* Nothing about the live configuration appears on the forbidden page. */
+    await expect(page.getByText('Release policy')).toHaveCount(0)
+    await expect(page.getByText(/javascript:/)).toHaveCount(0)
+  })
+
+  test('an Admin reaches the section, because settings are not Super-Admin-only', async ({
+    page,
+  }) => {
+    /*
+     * Unlike Staff and the feedback queue, System Settings is granted to
+     * ADMIN by role. Asserted so that narrowing this section later is a
+     * decision someone makes, not a side effect.
+     */
+    await signIn(page, ACCOUNTS.admin)
+
+    await page.goto('/settings/bootstrap')
+    await expect(page.getByText('Release policy')).toBeVisible()
+  })
+})

@@ -107,6 +107,13 @@ export const queryKeys = {
       ['configuration', 'backups', params ?? {}] as const,
     sms: ['configuration', 'sms'] as const,
     publicConfig: ['configuration', 'public'] as const,
+    /**
+     * Bootstrap is keyed **per platform**, because they are two independent
+     * records rather than two views of one (plan.md §1.1) — verified by
+     * writing to Android and watching iOS stay put. One shared key would let
+     * a write to one platform serve the other's cached record.
+     */
+    bootstrap: (platform: string) => ['configuration', 'bootstrap', platform] as const,
   },
 
   search: (term: string) => ['search', term] as const,
