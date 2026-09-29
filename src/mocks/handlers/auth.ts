@@ -82,6 +82,48 @@ function writeSession(admin: CurrentAdmin | null): void {
   else globalThis.localStorage?.removeItem(SESSION_KEY)
 }
 
+/**
+ * Sign an admin in **without going through the login form**, for component
+ * tests (added 2026-09-28, plan.md B2).
+ *
+ * `GET /admin/auth/me` reads the mock's own session store, which only the
+ * login handler writes — so `setSession()` on the client token store is not
+ * enough on its own: the request carries a bearer header the mock accepts and
+ * then finds no session behind it, and answers `401`. A screen that asks
+ * `can()` then renders as though the operator may do nothing.
+ *
+ * Page-level tests that sign in through the form do not need this. The
+ * settings tabs are the first surfaces with component tests that gate on a
+ * permission, which is why nothing needed it before.
+ */
+export function signInMockAdmin(role: AdminRole = 'SUPER_ADMIN'): void {
+  const entry = Object.entries(ACCOUNTS).find(([, account]) => account.role === role)
+  if (!entry) throw new Error(`No mock account with role ${role}`)
+  const [email, account] = entry
+
+  writeSession({
+    id: `adm_${account.username}`,
+    email,
+    phone: null,
+    phoneMasked: null,
+    role: account.role,
+    status: 'ACTIVE',
+    accountType: 'PERSONAL',
+    profile: {
+      displayName: account.displayName,
+      username: account.username,
+      avatarUrl: null,
+    },
+    createdAt: new Date().toISOString(),
+    isProfileSetupComplete: true,
+  })
+}
+
+/** Clear the mock session, for a test that needs a signed-out state. */
+export function signOutMockAdmin(): void {
+  writeSession(null)
+}
+
 export const authHandlers = [
   http.get(`${API_PREFIX}/admin/auth/me`, async ({ request }) => {
     const scenario = await applyScenario()

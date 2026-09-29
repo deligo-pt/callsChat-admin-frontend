@@ -9,8 +9,21 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: 'bg-card text-foreground',
+        /*
+         * `danger-foreground`, not `destructive`.
+         *
+         * `--color-destructive` is `--color-danger` is `red-500`, which is a
+         * FILL colour: as text on the card ground it measures ~3.4:1, below
+         * the 4.5:1 AA floor, and the `/90` on the description made it worse.
+         * Found by the B5 contrast pass on the bootstrap module's LIVE NOW
+         * banner (plan.md B5), and it applies to every destructive alert in
+         * the panel — the feedback module's triage error and the reply
+         * composer's form error among them.
+         *
+         * The icon keeps `text-current`, so it follows the same colour.
+         */
         destructive:
-          'bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current',
+          'bg-card text-danger-foreground *:data-[slot=alert-description]:text-danger-foreground [&>svg]:text-current',
       },
     },
     defaultVariants: {

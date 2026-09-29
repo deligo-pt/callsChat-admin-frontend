@@ -20,6 +20,11 @@ const DesignGallery = lazy(() =>
     default: m.DesignGallery,
   })),
 )
+const DashboardPage = lazy(() =>
+  import('@/features/dashboard/DashboardPage').then((m) => ({
+    default: m.DashboardPage,
+  })),
+)
 const Placeholder = lazy(() =>
   import('@/features/placeholder/ModulePlaceholder').then((m) => ({
     default: m.ModulePlaceholder,
@@ -62,6 +67,11 @@ const ChatTab = lazy(() =>
 const PlatformTab = lazy(() =>
   import('@/features/settings/platform/PlatformTab').then((m) => ({
     default: m.PlatformTab,
+  })),
+)
+const BootstrapTab = lazy(() =>
+  import('@/features/settings/bootstrap/BootstrapTab').then((m) => ({
+    default: m.BootstrapTab,
   })),
 )
 const ReleasesTab = lazy(() =>
@@ -123,15 +133,20 @@ function suspended(node: ReactNode) {
  */
 const moduleRoutes: RouteObject[] = [
   /*
-   * GET /admin/dashboard/snapshot · /trends · /admin/analytics all exist, but
-   * the screen itself is Phase 9 — so this stays a placeholder for now. It is
-   * the one placeholder with a real backend behind it.
+   * `GET /admin/dashboard/snapshot`, `/trends` and `/admin/analytics` all
+   * exist and are not consumed yet, so this screen shows **sample figures**
+   * and says so on the page.
+   *
+   * It replaced a `Placeholder module="Dashboard" phase={9}`, which printed
+   * "This module is delivered in Phase 9" — our build-plan vocabulary on an
+   * operator's screen. A shaped preview communicates the same state without
+   * asking anyone to know what a phase is.
    */
   {
     path: ROUTES.dashboard,
     element: (
       <RequirePermission permission={PERMISSIONS.analyticsView} resource="dashboard">
-        {suspended(<Placeholder module="Dashboard" phase={9} />)}
+        {suspended(<DashboardPage />)}
       </RequirePermission>
     ),
   },
@@ -192,6 +207,12 @@ const moduleRoutes: RouteObject[] = [
       { path: 'chat', element: suspended(<ChatTab />) },
       { path: 'platform', element: suspended(<PlatformTab />) },
       { path: 'releases', element: suspended(<ReleasesTab />) },
+      /*
+       * Bootstrap — what mobile clients actually read at cold start
+       * (plan.md §4.1). Same guard as every other section; the API's own
+       * `SYSTEM_SETTINGS_EDIT` bridges to these two panel permissions.
+       */
+      { path: 'bootstrap', element: suspended(<BootstrapTab />) },
       /*
        * Super Admin only, matching the route's `verifySuperAdmin` guard. Gated
        * here as well as in the sidebar so a typed URL gets the standard 403

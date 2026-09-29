@@ -322,3 +322,86 @@ test('every feedback status and priority badge is legible on its own background'
     ).toBeGreaterThan(4.5)
   }
 })
+
+test('the bootstrap screen has no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  /*
+   * Phase B5. This module adds two danger-toned surfaces nothing had measured:
+   * the **unsafe-URL warning** under a field — `text-danger-foreground` prose
+   * on the card ground — and the flagged **version tag**, which is
+   * `warning`-toned text on `warning-soft`. The F5 pass caught a real 2.9:1
+   * failure in exactly this shape, so it is checked here rather than assumed.
+   *
+   * The seeded Android record carries both: a `javascript:` store URL and a
+   * non-SemVer blocked version.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/settings/bootstrap')
+  await expect(page.getByText('Release policy')).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the LIVE NOW banner is legible when the product is down', async ({ page }) => {
+  /*
+   * The one surface an operator reads during an incident, and the only place
+   * this module paints a `destructive` alert.
+   *
+   * Driven through the UI rather than by calling the API and reloading: the
+   * mock's bootstrap records are in-memory, so a reload re-seeds them and the
+   * banner never appears. Turning the switch on the way an operator would is
+   * also the only path that proves the banner follows the switch.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/settings/bootstrap')
+  await expect(page.getByText('Release policy')).toBeVisible()
+
+  await page.getByLabel('Maintenance mode').click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/reason/i).fill('Contrast check, restored immediately.')
+  await dialog.getByRole('button', { name: /Turn on maintenance mode/ }).click()
+
+  await expect(page.getByText(/clients are affected right now/)).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+
+  /* Off again — one click, no dialog — so the next test inherits a healthy product. */
+  await page.getByLabel('Maintenance mode').click()
+  await expect(page.getByText(/clients are affected right now/)).toHaveCount(0)
+})
+
+test('the confirmation dialog for a dangerous switch is legible', async ({ page }) => {
+  /*
+   * A portal, so no page-level sweep has ever measured it — the same gap F5
+   * found on the feedback module's status dialog.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/settings/bootstrap')
+  await expect(page.getByText('Release policy')).toBeVisible()
+
+  await page.getByLabel('Maintenance mode').click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  /*
+   * ⚠️ Wait for the open animation to finish before measuring.
+   *
+   * The dialog fades and scales in, and axe blends a partially transparent
+   * element with whatever is behind it — which produced three failures that
+   * all vanished once it settled. A contrast suite that reports phantom
+   * defects is worse than one that reports none, because the next person
+   * learns to disbelieve it.
+   */
+  await expect(dialog).toHaveCSS('opacity', '1')
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})

@@ -1,4 +1,5 @@
 import { authHandlers } from './auth'
+import { bootstrapHandlers } from './bootstrap'
 import { feedbackHandlers } from './feedback'
 import { resourceHandlers } from './resources'
 import { searchHandlers } from './search'
@@ -7,6 +8,7 @@ import { staffHandlers } from './staff'
 
 export const handlers = [
   ...authHandlers,
+  ...bootstrapHandlers,
   ...searchHandlers,
   ...settingsHandlers,
   /*

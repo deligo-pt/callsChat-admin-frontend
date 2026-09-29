@@ -89,6 +89,34 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     shipped: true,
   },
   {
+    value: 'bootstrap',
+    label: 'Mobile bootstrap',
+    to: ROUTES.settingsBootstrap,
+    description:
+      'What the mobile app reads before it starts — maintenance, update policy and feature flags.',
+    /*
+     * ⚠️ Flipped to `true` in B2, when the cards became editable. It shipped
+     * `false` through B1 on the rule every section follows: an operator who
+     * found it in the sidebar would expect to edit it, and a read-only page
+     * reads as broken rather than unfinished.
+     *
+     * The three switches that can stop the product are still read-only and
+     * land in B3 — but the four safe cards save, which is what an operator
+     * arriving from the sidebar can now actually do.
+     */
+    shipped: true,
+    /*
+     * Full width, unlike the other form sections.
+     *
+     * `form-column` is right for a single stack of fields, and this section is
+     * six cards — the longest page in the panel inside it. At full width they
+     * become two columns (`BootstrapTab`), which shortens the page and, more
+     * usefully, puts the client preview beside the release policy it reports
+     * on rather than a screen below it.
+     */
+    wide: true,
+  },
+  {
     value: 'database',
     label: 'Database',
     to: ROUTES.settingsDatabase,
