@@ -18,8 +18,22 @@ test('an unauthenticated visitor is redirected to login', async ({ page }) => {
 test('signing in lands on the dashboard and shows the admin name', async ({ page }) => {
   await signIn(page, ACCOUNTS.superAdmin)
   await page.getByRole('button', { name: 'Account menu' }).click()
-  await expect(page.getByText('Nadia Chowdhury')).toBeVisible()
-  await expect(page.getByText('Super Admin')).toBeVisible()
+
+  /*
+   * ⚠️ Scoped to the menu, not to the page.
+   *
+   * A bare `getByText('Super Admin')` was a strict-mode violation from
+   * 2026-09-29: the dashboard's activity list labels each entry with the ROLE
+   * that performed it — never an invented person's name — so "Super Admin"
+   * appears three more times on the page behind this menu.
+   *
+   * Scoping is the right fix rather than renaming those labels. The assertion
+   * is about what the ACCOUNT MENU says the signed-in admin is, and it should
+   * never have matched text elsewhere on the page to begin with.
+   */
+  const accountMenu = page.getByRole('menu')
+  await expect(accountMenu.getByText('Nadia Chowdhury')).toBeVisible()
+  await expect(accountMenu.getByText('Super Admin')).toBeVisible()
 })
 
 test('login rejects an unknown account without leaking which part was wrong', async ({

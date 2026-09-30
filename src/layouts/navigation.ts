@@ -1,5 +1,6 @@
 import {
   Activity,
+  BadgeCheck,
   LayoutDashboard,
   MessageSquare,
   Settings2,
@@ -114,6 +115,44 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: MessageSquare,
         permission: PERMISSIONS.feedbackManage,
         matchPrefix: '/feedback',
+      },
+    ],
+  },
+  /*
+   * Added 2026-09-29 under the rule above: the `/admin/verifications/*`
+   * endpoints shipped and were verified live, so the section appears the same
+   * day (plan.md §4.2).
+   *
+   * **Its own section, unlike Feedback — and the contrast is the point.**
+   * Feedback sits inside Community because it shares Community's subject,
+   * consumer accounts, and an operator moves between a ticket and the
+   * reporter. Verification's subject is a legal identity document, its audience
+   * is a compliance officer rather than a support agent, and the work does not
+   * flow into or out of the other Community screens.
+   *
+   * A heading of its own is also a small, useful friction. This is not a place
+   * to wander into: every document opened here is recorded against the
+   * operator's name and IP address.
+   *
+   * ⚠️ `BadgeCheck`, not `ShieldCheck` — Staff already owns that glyph, and two
+   * sections sharing an icon in the same rail is how an operator clicks the
+   * wrong one.
+   *
+   * `verifications.review` is Super-Admin-only **today**, but unlike
+   * `feedback.manage` it is genuinely grantable: `BUSINESS_VERIFY` is in the
+   * staff enum, so this entry appears for a granted ADMIN the day
+   * `GET /admin/auth/me` returns `adminPermissions` (plan.md §4.3).
+   */
+  {
+    id: 'compliance',
+    label: 'Compliance',
+    items: [
+      {
+        label: 'Verifications',
+        to: ROUTES.verifications,
+        icon: BadgeCheck,
+        permission: PERMISSIONS.verificationsReview,
+        matchPrefix: '/verifications',
       },
     ],
   },

@@ -5,6 +5,7 @@ import { resourceHandlers } from './resources'
 import { searchHandlers } from './search'
 import { settingsHandlers } from './settings'
 import { staffHandlers } from './staff'
+import { verificationHandlers } from './verifications'
 
 export const handlers = [
   ...authHandlers,
@@ -17,5 +18,6 @@ export const handlers = [
    */
   ...staffHandlers,
   ...feedbackHandlers,
+  ...verificationHandlers,
   ...resourceHandlers,
 ]

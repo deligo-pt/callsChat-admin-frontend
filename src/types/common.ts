@@ -94,6 +94,60 @@ export interface ItemsPage<TItem> {
 }
 
 /**
+ * The THIRD list envelope: `{ success, data: { total, page, limit, totalPages, requests } }`.
+ *
+ * The page counters sit **beside** the rows rather than in a `pagination` or
+ * `meta` object, and the array is named after the resource — `requests` on
+ * `GET /admin/verifications`, verified live 2026-09-29 (plan.md §2.2).
+ *
+ * So this backend now ships three mutually incompatible list shapes:
+ *
+ * | Shape | Routes |
+ * |---|---|
+ * | `{ data: [], pagination }` | the users/clubs/finance family |
+ * | `{ data: { items, meta } }` | database backups, `GET /admin/feedbacks` |
+ * | `{ data: { …counters, <name>: [] } }` | `GET /admin/verifications` |
+ *
+ * There is no rule to derive which a route uses; it is a fact about that route,
+ * established by calling it. The array key is a parameter here for the same
+ * reason — the next route to use this shape will not call it `requests`.
+ *
+ * The counters are validated but deliberately **not** reshaped into
+ * {@link Pagination}: a caller that wants one can build it, and silently
+ * renaming server fields is how the first envelope came to be modelled wrongly.
+ */
+export function countEnvelopeSchema<TItem extends z.ZodType, TKey extends string>(
+  item: TItem,
+  arrayKey: TKey,
+) {
+  return z.object({
+    success: z.literal(true),
+    data: z
+      .object({
+        total: z.int().nonnegative(),
+        /*
+         * ⚠️ NOT `.positive()`, and not clamped. `?page=99` against a
+         * single-page result answers 200 with `page: 99` echoed back and an
+         * empty array (plan.md §3.9). A schema that rejected it would turn an
+         * out-of-range page into a contract error instead of an empty state.
+         */
+        page: z.int(),
+        limit: z.int().positive(),
+        totalPages: z.int().nonnegative(),
+      })
+      .extend({ [arrayKey]: z.array(item) } as Record<TKey, z.ZodArray<TItem>>),
+  })
+}
+
+/** The counters an {@link countEnvelopeSchema} response carries beside its rows. */
+export interface CountPage {
+  readonly total: number
+  readonly page: number
+  readonly limit: number
+  readonly totalPages: number
+}
+
+/**
  * The API caps `limit` at 100 — `limit=200` is rejected with a 400. Requesting
  * more than this is a client bug, so the constant lives beside the contract
  * rather than being rediscovered in a feature.

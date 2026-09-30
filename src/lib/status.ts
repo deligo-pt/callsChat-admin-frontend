@@ -40,6 +40,7 @@ export type StatusDomain =
   | 'staffRole'
   | 'feedback'
   | 'feedbackPriority'
+  | 'verification'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -253,6 +254,41 @@ const FEEDBACK_PRIORITY: DomainMap = {
   CRITICAL: { label: 'Critical', tone: 'danger' },
 }
 
+/**
+ * A verification application's lifecycle state (plan.md §5.2).
+ *
+ * Five values where `verification_doc.md` documents four, and the extra one is
+ * the one that matters: **`PENDING` is what every live row actually holds**,
+ * and the doc never mentions it. `PENDING_REVIEW` is documented and appears in
+ * the filter enum, and filtering by either returned the same rows.
+ *
+ * They therefore render **identically**, on purpose. The panel does not invent a
+ * distinction the data does not make, and it does not hide a value the API can
+ * return (plan.md §3.2).
+ *
+ * Both are `warning` rather than `neutral` for the reason `FEEDBACK.PENDING` is:
+ * a stranger has handed over their passport and cannot use the product until
+ * somebody looks at it. A queue of untouched applications must not read as a
+ * queue at rest.
+ *
+ * `REJECTED` is `danger` because a person was refused, and `REVOKED` is `danger`
+ * too — it is the one value meaning *this was granted and then taken away*,
+ * which is the most important thing to spot while scanning. Neither is
+ * `neutral`: a neutral badge would describe a refusal as an outcome with no
+ * weight.
+ *
+ * ⚠️ There is no tone map for `targetType`. Identity and business are
+ * categories, not states, and colouring one would imply a priority the record
+ * does not carry.
+ */
+const VERIFICATION: DomainMap = {
+  PENDING: { label: 'Pending review', tone: 'warning' },
+  PENDING_REVIEW: { label: 'Pending review', tone: 'warning' },
+  APPROVED: { label: 'Approved', tone: 'success' },
+  REJECTED: { label: 'Rejected', tone: 'danger' },
+  REVOKED: { label: 'Revoked', tone: 'danger' },
+}
+
 const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   user: USER,
   restriction: RESTRICTION,
@@ -272,6 +308,7 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   staffRole: STAFF_ROLE,
   feedback: FEEDBACK,
   feedbackPriority: FEEDBACK_PRIORITY,
+  verification: VERIFICATION,
 }
 
 /** The three states the maintenance card and the global banner can be in. */

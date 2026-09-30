@@ -56,12 +56,23 @@ describe('the Feedback nav entry', () => {
   })
 
   it('did not add a section', () => {
-    expect(NAV_SECTIONS.map((section) => section.id)).toEqual([
-      'overview',
-      'community',
-      'platform',
-      'access',
-    ])
+    /*
+     * ⚠️ Rewritten on 2026-09-29. This asserted the whole section list —
+     * `['overview', 'community', 'platform', 'access']` — which made it a
+     * global claim living inside one feature, and every new module broke it.
+     * `Compliance` shipping in plan.md phase V1 is what forced the issue.
+     *
+     * The claim worth keeping is narrower and is Feedback's own: it lives
+     * inside an existing section and did not earn a heading of its own (§4.2).
+     * Stated that way it survives an unrelated module shipping, and still fails
+     * if somebody moves Feedback out into a section.
+     */
+    expect(community?.items).toContain(feedback)
+
+    const feedbackOwnSection = NAV_SECTIONS.find((section) =>
+      section.items.every((item) => item.label === 'Feedback'),
+    )
+    expect(feedbackOwnSection).toBeUndefined()
   })
 })
 

@@ -6,7 +6,7 @@ import { AuthProvider } from '@/auth/AuthProvider'
 import { setSession } from '@/auth/tokenStore'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { signInMockAdmin } from '@/mocks/handlers/auth'
-import { render, screen, setViewport, within } from '@tests/render'
+import { render, screen, setViewport, waitFor, within } from '@tests/render'
 
 import { MaintenanceTab } from './general/MaintenanceTab'
 import { ReleasesTab } from './releases/ReleasesTab'
@@ -85,7 +85,17 @@ describe('Settings › Releases', () => {
 
     /* Two platform forms, so two of each field — the first is Android's. */
     const inputs = await screen.findAllByLabelText(/Latest version/)
-    expect(inputs[0]).toBeEnabled()
+    /*
+     * ⚠️ `waitFor`, not a bare assertion. Every editable control on this tab is
+     * `disabled` until `AuthProvider` has resolved `GET /admin/auth/me` and
+     * `canEdit` turns true, while the labels and the notice render immediately —
+     * so a `find*` query can return the field a tick before it is enabled. The
+     * bare `expect` passed only because the session query usually won the race,
+     * and it started failing once the handler list grew by one module.
+     */
+    await waitFor(() => {
+      expect(inputs[0]).toBeEnabled()
+    })
     expect(
       (await screen.findAllByRole('button', { name: /save/i })).length,
     ).toBeGreaterThan(0)
@@ -121,8 +131,18 @@ describe('Settings › Maintenance', () => {
      */
     mount(<MaintenanceTab />, '/settings/maintenance')
 
+    /*
+     * ⚠️ The button is waited for, not queried synchronously after the notice.
+     * The notice is static text and renders on the first paint; the button is
+     * behind `canEdit`, which is false until `AuthProvider` has resolved
+     * `GET /admin/auth/me`. Querying it right after the notice was a race that
+     * the session query usually won — and began losing once the mock handler
+     * list grew, which is how it was found.
+     */
     await screen.findByText(/does not black out the mobile app/)
-    expect(screen.getByRole('button', { name: /Start maintenance/ })).toBeEnabled()
+    expect(
+      await screen.findByRole('button', { name: /Start maintenance/ }),
+    ).toBeEnabled()
   })
 })
 

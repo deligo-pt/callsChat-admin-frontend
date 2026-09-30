@@ -79,6 +79,22 @@ export const ROUTES = {
   feedback: '/feedback',
   feedbackTicket: (id: string) => `/feedback/${id}`,
 
+  /**
+   * Verification & Compliance (plan.md §4.1).
+   *
+   * Two routes and no `/new`: there is no admin submit endpoint, and an admin
+   * filing a verification would be submitting their own identity documents.
+   *
+   * A route rather than a drawer for the application, because it holds
+   * documents, a decision and an audit trail — and because it must be linkable:
+   * *"take a look at this one"* is how compliance work gets shared.
+   *
+   * Status is a query parameter, so a filtered queue round-trips through a deep
+   * link the way every other list in the panel does.
+   */
+  verifications: '/verifications',
+  verification: (id: string) => `/verifications/${id}`,
+
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,
 

@@ -6,9 +6,9 @@ import { CopyableId, DateTime } from '@/components/display'
 import { ErrorState, LoadingState } from '@/components/feedback'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { cn } from '@/lib/cn'
+import { useActorName } from '@/lib/hooks/useActorName'
 import type { BootstrapConfig, BootstrapPlatform } from '@/types/bootstrap'
 
-import { ClientPreview } from './ClientPreview'
 import { activeDangers } from './evaluate'
 import { FeatureFlagsCard } from './FeatureFlagsCard'
 import { LegalCard } from './LegalCard'
@@ -99,10 +99,17 @@ function PlatformSwitch({
  * Who changed it, when, and which revision this is.
  *
  * Not decoration. `configVersion` is the only signal that somebody else wrote
- * while this tab was open (§3.5), and `updatedBy` is a **bare id** the panel
- * must not guess a name for (§3.6).
+ * while this tab was open (§3.5).
+ *
+ * `updatedBy` is a **bare id** on the wire. `useActorName` resolves it where it
+ * can — from the signed-in admin at no cost, then from the staff directory — and
+ * falls back to the copyable id, which is still the only traceable thing when no
+ * name is available. The panel never *guesses* a name (§3.6); it either knows
+ * one or shows the id.
  */
 function StatusLine({ config }: { config: BootstrapConfig }) {
+  const actorName = useActorName()(config.updatedBy)
+
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-caption text-foreground-muted">
       <span className="tabular">Revision {config.configVersion}</span>
@@ -113,7 +120,12 @@ function StatusLine({ config }: { config: BootstrapConfig }) {
       <span aria-hidden="true">·</span>
       {config.updatedBy ? (
         <span className="flex min-w-0 items-center gap-1.5">
-          by <CopyableId value={config.updatedBy} />
+          by{' '}
+          {actorName ? (
+            <span className="font-medium text-foreground">{actorName}</span>
+          ) : (
+            <CopyableId value={config.updatedBy} />
+          )}
         </span>
       ) : (
         <span>never changed from this panel</span>
@@ -217,7 +229,6 @@ export function BootstrapTab() {
            * safe would be a column with nothing beneath it. Being adjacent is
            * worth less than not covering the controls underneath.
            */}
-          <ClientPreview config={config} />
           <FeatureFlagsCard config={config} canEdit={canEdit} />
           <LegalCard config={config} canEdit={canEdit} />
         </div>

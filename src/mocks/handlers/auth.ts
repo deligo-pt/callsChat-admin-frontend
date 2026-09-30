@@ -17,19 +17,38 @@ import { API_PREFIX, applyScenario, errorResponse } from './shared'
  * previously assumed `OPERATIONS_ADMIN`.
  */
 const ACCOUNTS: Readonly<
-  Record<string, { displayName: string; username: string; role: AdminRole }>
+  Record<string, { id: string; displayName: string; username: string; role: AdminRole }>
 > = {
   'nadia@callschat.app': {
+    /*
+     * ⚠️ The real super admin's id, not a synthetic `adm_` one.
+     *
+     * Every settings and bootstrap record the mock seeds carries
+     * `updatedBy: 'cmt8orkov00004upco3oifg2v'`, which on the live service IS the
+     * signed-in super admin — the same account this fixture represents. While
+     * `/admin/auth/me` answered `adm_nadia`, the mock claimed the person reading
+     * the screen was someone other than the person who wrote every setting on
+     * it, which is false on the live service and hid the whole actor-name
+     * resolution behind a mismatch that only existed here.
+     *
+     * The staff directory deliberately never returns this account (see
+     * `handlers/staff.ts`, and verified live), so `/admin/auth/me` is the ONLY
+     * route by which its name can be known. That is exactly the path this
+     * fixture now exercises.
+     */
+    id: 'cmt8orkov00004upco3oifg2v',
     displayName: 'Nadia Chowdhury',
     username: 'nadia',
     role: 'SUPER_ADMIN',
   },
   'tomas@callschat.app': {
+    id: 'adm_tomas',
     displayName: 'Tomas Ricci',
     username: 'tomas',
     role: 'ADMIN',
   },
   'elena@callschat.app': {
+    id: 'adm_elena',
     displayName: 'Elena Petrova',
     username: 'elena',
     role: 'MODERATOR',
@@ -102,7 +121,7 @@ export function signInMockAdmin(role: AdminRole = 'SUPER_ADMIN'): void {
   const [email, account] = entry
 
   writeSession({
-    id: `adm_${account.username}`,
+    id: account.id,
     email,
     phone: null,
     phoneMasked: null,
@@ -178,7 +197,7 @@ export const authHandlers = [
     }
 
     const admin: CurrentAdmin = {
-      id: `adm_${account.username}`,
+      id: account.id,
       email: identifier,
       phone: null,
       phoneMasked: null,
