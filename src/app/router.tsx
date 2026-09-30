@@ -94,6 +94,16 @@ const FeedbackDetailPage = lazy(() =>
     default: m.FeedbackDetailPage,
   })),
 )
+const VerificationQueuePage = lazy(() =>
+  import('@/features/verifications/VerificationQueuePage').then((m) => ({
+    default: m.VerificationQueuePage,
+  })),
+)
+const VerificationDetailPage = lazy(() =>
+  import('@/features/verifications/VerificationDetailPage').then((m) => ({
+    default: m.VerificationDetailPage,
+  })),
+)
 const StaffListPage = lazy(() =>
   import('@/features/staff/StaffListPage').then((m) => ({
     default: m.StaffListPage,
@@ -258,6 +268,44 @@ const moduleRoutes: RouteObject[] = [
     element: (
       <RequirePermission permission={PERMISSIONS.feedbackManage} resource="feedback">
         {suspended(<FeedbackDetailPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase V1 — Verification & Compliance (plan.md §4.1).
+   *
+   * Guarded by `verifications.review`, which — unlike every other guard in this
+   * file — is a permission a colleague can actually be granted. `BUSINESS_VERIFY`
+   * is in the staff enum, so `features/staff/permissionMap.ts` bridges it, and
+   * the day `GET /admin/auth/me` returns `adminPermissions` a granted ADMIN
+   * reaches this route with no change here (plan.md §4.3).
+   *
+   * Until then only a SUPER_ADMIN holds it, through the wildcard. Guarding here
+   * as well as in the sidebar means a typed URL gets the standard 403 rather
+   * than a vault screen that 403s on its first request.
+   */
+  {
+    path: ROUTES.verifications,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.verificationsReview}
+        resource="verifications"
+      >
+        {suspended(<VerificationQueuePage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /* Phase V2 — the application. Guarded identically; there is no `/new`. */
+  {
+    path: '/verifications/:id',
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.verificationsReview}
+        resource="verifications"
+      >
+        {suspended(<VerificationDetailPage />)}
       </RequirePermission>
     ),
   },

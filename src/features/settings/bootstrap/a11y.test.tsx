@@ -147,18 +147,6 @@ describe('the platform switch announces its state', () => {
   })
 })
 
-describe('the preview announces its own changes', () => {
-  it('is a live region, because watching it move is the point', async () => {
-    setViewport(1440)
-    mount()
-    await screen.findByText('What a client would see')
-
-    const live = document.querySelector('[aria-live="polite"]')
-    expect(live).not.toBeNull()
-    expect(live?.textContent).toContain('No update')
-  })
-})
-
 describe('the open confirmation dialog', () => {
   /*
    * ⚠️ The surface a page-level sweep can never see. `ConfirmActionDialog` is

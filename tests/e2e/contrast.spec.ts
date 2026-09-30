@@ -58,6 +58,27 @@ async function contrastViolations(page: Page) {
  */
 const KNOWN_SUBTLE_TOKEN = 'rgb(145, 148, 157)'
 
+/*
+ * `--color-danger` (red-500, #fe4b18) used as TEXT resolves to 3.35:1 on the
+ * page ground — below the 4.5:1 AA floor. Found by the V5 pass, on the shared
+ * `ConfirmActionDialog`'s validation message: *"A reason of at least 10
+ * characters is required."*
+ *
+ * ⚠️ **Pre-existing, app-wide, and not this module's to fix.** The same
+ * `text-danger` prose appears on the login form's two field errors, the account
+ * security page, four settings editors, the user create/edit forms and every
+ * required-field asterisk in the panel — roughly fifteen surfaces. `tokens.css`
+ * already documents red-500 as unfit behind white text and deliberately keeps
+ * `--color-danger` for dots, borders and icons, which is why B5 introduced
+ * `--color-danger-strong` for button fills rather than darkening the base. Prose
+ * needs the same treatment with `--color-danger-foreground` (red-800, 6.07:1),
+ * and doing it repaints every validation message in the product.
+ *
+ * So it is excluded here BY COMPUTED COLOUR and reported (plan.md O16), exactly
+ * as the subtle token above is. Any violation in a different colour still fails.
+ */
+const KNOWN_DANGER_TEXT_TOKEN = 'rgb(254, 75, 24)'
+
 test('the user directory has no contrast violations beyond known token debt', async ({
   page,
 }) => {
@@ -404,4 +425,166 @@ test('the confirmation dialog for a dangerous switch is legible', async ({ page 
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
   expect(unexpected).toEqual([])
+})
+
+test('the verification queue has no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  /*
+   * Phase V5. This module adds the `verification` badge domain — five values
+   * across three tones — plus two surfaces nothing had measured: the
+   * **zero-document warning badge** in the Documents column, which is
+   * `warning`-toned text on `warning-soft`, and the **filter notice** strip,
+   * which is muted prose on `surface-muted` with emphasised spans inside it.
+   *
+   * Opened at `?status=ALL` so every tone is painted at once; the default view
+   * shows only the pending ones.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/verifications?status=ALL')
+  await expect(page.getByText('DeliGo').first()).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the application, with every warning painted, has no contrast violations', async ({
+  page,
+}) => {
+  /*
+   * The rejected identity record is the worst case this module renders: the
+   * §3.6 "no explanation was recorded" warning, a reason code, the
+   * zero-evidence notice and an audit disclosure, all `warning`- or
+   * `danger`-toned on soft fills. The F5 pass caught a real 2.9:1 failure in
+   * exactly this shape, so it is measured rather than assumed.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/verifications/cmulfjl62000301r33hha40xj')
+  await expect(page.getByText(/No explanation was recorded/)).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the open document viewer has no contrast violations', async ({ page }) => {
+  /*
+   * The viewer's own chrome — the header's audit line and the size/type caption
+   * over `surface-sunken`, a fill no other dialog in the panel sits on.
+   *
+   * ⚠️ Opening a document is an audited act even here: the mock records the
+   * view, and against the live service this would write a `VIEWED_DOCUMENT` row.
+   * That is why the panel states it, and why this test opens exactly one.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/verifications/cmulfjl62000201r33hha40xi')
+  await page.getByRole('button', { name: /^View/ }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the reject dialog has no contrast violations, including its error state', async ({
+  page,
+}) => {
+  /*
+   * The richest form in the module, and the only place `text-danger` marks a
+   * required field beside a `danger`-variant confirm button.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/verifications/cmu04s71l003701oi3wvzvbdp')
+  await page.getByRole('button', { name: /^Reject/ }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+
+  /* Confirm with nothing filled in, to paint the validation message. */
+  await page.getByRole('button', { name: 'Reject', exact: true }).last().click()
+  await expect(page.getByRole('alert')).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) =>
+      node.color !== KNOWN_SUBTLE_TOKEN && node.color !== KNOWN_DANGER_TEXT_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('every verification status tone is legible on its own background', async ({
+  page,
+}) => {
+  /*
+   * Measured per badge rather than through axe, so a regression names which tone
+   * broke instead of reporting "a violation on the page".
+   *
+   * ⚠️ **Three of the five values are on screen, which covers all three tones.**
+   * The live service holds no `REVOKED` or `PENDING_REVIEW` row, and the mock
+   * deliberately mirrors the live distribution (plan.md §7, V2) rather than
+   * inventing rows to make a test look thorough. Contrast is a property of the
+   * tone, not the label: `PENDING` is the `warning` tone that `PENDING_REVIEW`
+   * shares, and `REJECTED` is the `danger` tone that `REVOKED` shares. So every
+   * colour pair this domain can paint IS measured here — but if a future value
+   * introduces a fourth tone, this test will not know about it.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/verifications?status=ALL')
+  await expect(page.getByText('DeliGo').first()).toBeVisible()
+
+  const ratios = await page.evaluate(() => {
+    function luminance(rgb: string): number {
+      const [r, g, b] = (rgb.match(/\d+/g) ?? ['0', '0', '0']).map(Number) as [
+        number,
+        number,
+        number,
+      ]
+      const channel = (value: number) => {
+        const c = value / 255
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    }
+
+    function painted(el: Element): string {
+      let node: Element | null = el
+      while (node) {
+        const bg = getComputedStyle(node).backgroundColor
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg
+        node = node.parentElement
+      }
+      return 'rgb(255, 255, 255)'
+    }
+
+    const badges = Array.from(
+      document.querySelectorAll('span.text-overline.uppercase'),
+    ).filter((el) => {
+      const own = getComputedStyle(el).backgroundColor
+      const isPainted = own && own !== 'rgba(0, 0, 0, 0)' && own !== 'transparent'
+      return isPainted && (el.textContent ?? '').trim().length > 0
+    })
+
+    return badges.map((el) => {
+      const fg = luminance(getComputedStyle(el).color)
+      const bg = luminance(painted(el))
+      const ratio = (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)
+      return { label: (el.textContent ?? '').trim(), ratio }
+    })
+  })
+
+  expect(ratios.length).toBeGreaterThan(0)
+
+  /* All three tones must actually be present, or this measured nothing. */
+  const labels = ratios.map((badge) => badge.label.toLowerCase())
+  expect(labels.some((label) => label.includes('pending'))).toBe(true)
+  expect(labels.some((label) => label.includes('approved'))).toBe(true)
+  expect(labels.some((label) => label.includes('rejected'))).toBe(true)
+
+  for (const badge of ratios) {
+    expect(
+      badge.ratio,
+      `${badge.label} at ${badge.ratio.toFixed(2)}:1`,
+    ).toBeGreaterThan(4.5)
+  }
 })

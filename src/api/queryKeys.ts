@@ -91,6 +91,23 @@ export const queryKeys = {
   },
 
   /**
+   * Verification & Compliance (plan.md §4.4).
+   *
+   * `all` is the invalidation root every decision targets, and — as with staff
+   * and feedback — that is a correctness requirement. A decision rewrites the
+   * application, appends to its audit trail and touches the applicant's account
+   * in one transaction, while the response carries three keys
+   * (`verificationDecisionResponseSchema`). Nothing may be patched from it.
+   *
+   * ⚠️ There is deliberately **no key for a document**. The stream is not query
+   * data: every fetch writes a `VIEWED_DOCUMENT` audit row naming the acting
+   * admin and their IP, so caching one would let a remount, a refocus or a
+   * background refetch forge a record of a human opening someone's passport
+   * (plan.md §3.3). Documents are fetched imperatively, once, on a click.
+   */
+  verifications: domain('verifications'),
+
+  /**
    * System Settings (system_settings_plan.md §4.4).
    *
    * `all` is the invalidation root every settings mutation targets, so a save

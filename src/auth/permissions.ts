@@ -80,6 +80,24 @@ export const PERMISSIONS = {
    */
   feedbackManage: 'feedback.manage',
 
+  /**
+   * Verification & Compliance — `/admin/verifications/*` (plan.md §4.3).
+   *
+   * One key, like `feedbackManage`: the backend guards the queue, the detail,
+   * the decrypted document stream and the decision with the same
+   * `BUSINESS_VERIFY`, so there is no read-only tier to express. A compliance
+   * officer either reviews identity documents or cannot see them.
+   *
+   * ⚠️ Unlike `feedbackManage`, this one **is grantable**. `BUSINESS_VERIFY` is
+   * a member of the eight-value enum `POST /admin/staff` and
+   * `PATCH /admin/staff/:id/permissions` validate against — confirmed live
+   * 2026-09-29 by a differential probe whose only rejection named the
+   * deliberately invalid password. It is the first module in this panel whose
+   * permission the staff grid can actually hand to a colleague, which is why
+   * the bridge in `features/staff/permissionMap.ts` has a real row for it.
+   */
+  verificationsReview: 'verifications.review',
+
   auditLogsView: 'audit_logs.view',
 
   configurationView: 'configuration.view',
@@ -223,6 +241,28 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
    * its first request — the same lie `configurationConfigure` told, in the same
    * direction. It comes back the day backend ask #1 lands, and by then it will
    * arrive through `adminPermissions` rather than through this role list.
+   */
+  /*
+   * `verificationsReview` is absent too, and this is the case the file's own
+   * rule decides rather than a judgement call (plan.md §4.3).
+   *
+   * `/admin/verifications/*` is guarded by `BUSINESS_VERIFY`, a per-account
+   * module grant. An ADMIN who has not been granted it gets the same
+   * `403 Missing required module permission` that retired the
+   * `configurationConfigure` grant above. Granting it by role would put a vault
+   * of identity documents in an ADMIN's sidebar that 403s on its first request
+   * — the identical lie, about a more sensitive screen.
+   *
+   * ⚠️ plan.md §4.3 as originally written said to grant this to ADMIN by role,
+   * on the strength of the doc's "role: ADMIN" requirement. That reading was
+   * wrong: the doc requires the role AND the module permission, and it is the
+   * permission that is per-account. The plan was corrected in V0 rather than
+   * the code bent to match it.
+   *
+   * Unlike `feedbackManage`, this permission has somewhere real to come from:
+   * `BUSINESS_VERIFY` → `verificationsReview` is a live row in
+   * `features/staff/permissionMap.ts`, so the day `GET /admin/auth/me` returns
+   * `adminPermissions`, a granted ADMIN gets the module with no change here.
    */
 ]
 

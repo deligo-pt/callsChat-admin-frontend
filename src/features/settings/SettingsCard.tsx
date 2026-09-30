@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { cn } from '@/lib/cn'
+import { useActorName } from '@/lib/hooks/useActorName'
 
 import { formLevelMessage } from '@/api/formErrors'
 
@@ -78,6 +79,7 @@ export function SettingsCard({
 }: SettingsCardProps) {
   const formError = formLevelMessage(error)
   const isReadOnly = !onSubmit
+  const actorName = useActorName()(updatedBy)
 
   const body = (
     <>
@@ -119,12 +121,22 @@ export function SettingsCard({
                 <>
                   {' by '}
                   {/*
-                   * A bare admin ID is all the API returns for `updatedBy` —
-                   * no name, no email (system_settings_plan.md §8 O2). Showing
-                   * it truncated and copyable is more useful than hiding it:
-                   * an operator can at least trace who made the change.
+                   * A bare admin ID is all the API returns for `updatedBy` — no
+                   * name, no email (system_settings_plan.md §8 O2). `useActorName`
+                   * resolves it where it can: from the signed-in admin, which
+                   * costs nothing and covers most rows, then from the staff
+                   * directory.
+                   *
+                   * ⚠️ The id remains the fallback, not an error state. An Admin
+                   * cannot read the staff directory at all, and the previous
+                   * behaviour — truncated and copyable, so a change can still be
+                   * traced — is exactly right when no name is available.
                    */}
-                  <CopyableId value={updatedBy} maxLength={14} label="Updated by" />
+                  {actorName ? (
+                    <span className="font-medium text-foreground">{actorName}</span>
+                  ) : (
+                    <CopyableId value={updatedBy} maxLength={14} label="Updated by" />
+                  )}
                 </>
               ) : null}
             </>

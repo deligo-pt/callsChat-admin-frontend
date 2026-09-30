@@ -115,6 +115,28 @@ describe('permissionsForRole', () => {
     expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.feedbackManage)
   })
 
+  it('withholds verification review from Admin — but for a grantable reason', () => {
+    /*
+     * The mirror image of the feedback case above, and the distinction is the
+     * whole point of plan.md §4.3.
+     *
+     * Both permissions are absent from the ADMIN role list, so this assertion
+     * looks identical to the one before it. The reason is opposite:
+     * `FEEDBACK_MANAGEMENT` is absent because it **cannot** be granted to
+     * anybody, while `BUSINESS_VERIFY` is in the staff enum and can — so
+     * `verifications.review` is withheld here only because access to it is a
+     * per-account grant made in Staff, exactly as `SYSTEM_SETTINGS_EDIT` is.
+     *
+     * `features/staff/permissionMap.ts` is therefore where a granted ADMIN
+     * actually gets it, and this file is not expected to change when they do.
+     */
+    expect(permissionsForRole('ADMIN')).not.toContain(PERMISSIONS.verificationsReview)
+    expect(permissionsForRole('MODERATOR')).not.toContain(
+      PERMISSIONS.verificationsReview,
+    )
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.verificationsReview)
+  })
+
   it('reserves the database and SMS suites for Super Admin alone', () => {
     // These two are guarded with `verifySuperAdmin`, unlike the six above.
     for (const role of ['ADMIN', 'MODERATOR']) {

@@ -173,8 +173,51 @@ test.describe('permission bootstrap', () => {
    * introduces it.
    */
 
+  /**
+   * The sidebar's links, at any viewport.
+   *
+   * ⚠️ Rewritten on 2026-09-29, when this returned **zero links at 360 and
+   * 768** and the test failed on its first assertion, before any reload. Two
+   * separate faults, both of which had to be fixed for it to mean anything:
+   *
+   * 1. `getByRole('navigation').first()` is ambiguous. There are two
+   *    `<nav>` landmarks on an admin page — the sidebar (`aria-label="Modules"`)
+   *    and the breadcrumb (`aria-label="Breadcrumb"`) — and which one comes
+   *    first in the DOM depends on whether the sidebar is rendered at all.
+   *    Below `lg` it is not, so `.first()` matched the breadcrumb and read its
+   *    zero links. Now named explicitly.
+   * 2. Below `lg` the sidebar lives behind an "Open navigation" toggle and is
+   *    not in the DOM until it is opened. Reading links without opening it is a
+   *    statement about the viewport, not about permissions — which is exactly
+   *    what the sibling test below already says in its own comment. So the
+   *    drawer is opened when the toggle is present.
+   */
   async function navLabels(page: Page): Promise<string[]> {
-    const nav = page.getByRole('navigation').first()
+    /*
+     * Driven by the viewport, not by probing the DOM. `isVisible()` does NOT
+     * auto-wait — it answers about this instant — so asking it right after a
+     * sign-in returned `false` before the top bar had painted, the drawer was
+     * never opened, and the wait below then timed out against a sidebar that
+     * was never going to appear.
+     */
+    const belowLg = (page.viewportSize()?.width ?? 0) < 1024
+
+    if (belowLg) {
+      // `click()` auto-waits for the toggle, which removes the race entirely.
+      await page.getByRole('button', { name: 'Open navigation' }).click()
+    }
+
+    /*
+     * ⚠️ Scoped to the drawer below `lg`, because the desktop `<aside>` is
+     * rendered at every width and merely hidden with `lg:block`. Once the
+     * drawer opens there are TWO `aria-label="Modules"` landmarks in the DOM —
+     * one hidden, one visible — and an unscoped locator is a strict-mode
+     * violation rather than an honest read.
+     */
+    const nav = belowLg
+      ? page.getByRole('dialog').getByRole('navigation', { name: 'Modules' })
+      : page.getByRole('navigation', { name: 'Modules' })
+
     await nav.waitFor()
     return (await nav.getByRole('link').allInnerTexts()).map((text) => text.trim())
   }
@@ -337,5 +380,93 @@ test.describe('mobile bootstrap', () => {
 
     await page.goto('/settings/bootstrap')
     await expect(page.getByText('Release policy')).toBeVisible()
+  })
+})
+
+test.describe('verifications.review', () => {
+  /*
+   * Phase V5. Pinned separately again, because this permission is
+   * Super-Admin-only for a **third** distinct reason — and unlike the other two,
+   * this one is expected to change.
+   *
+   * - `staff.manage` is withheld because all eight `/admin/staff/*` routes are
+   *   `verifySuperAdmin`-guarded. A deliberate backend rule.
+   * - `feedback.manage` is withheld because `FEEDBACK_MANAGEMENT` is absent from
+   *   the enum the staff write routes validate against, so nobody can be granted
+   *   it at all.
+   * - `verifications.review` is **grantable**: `BUSINESS_VERIFY` is in that enum,
+   *   and `features/staff/permissionMap.ts` bridges the two (plan.md §4.3). It is
+   *   deliberately NOT granted to `ADMIN` by role, because the API requires the
+   *   role *and* the per-account module permission — so a role grant would put a
+   *   vault of identity documents in an Admin's sidebar that 403s on its first
+   *   request. That is the same lie that retired the `configurationConfigure`
+   *   role grant on 2026-09-03.
+   *
+   * ⚠️ So today only a Super Admin reaches this module, through the wildcard —
+   * and that is a limitation, not a design goal (plan.md O8). The day
+   * `GET /admin/auth/me` returns `adminPermissions`, a granted Admin is admitted
+   * with **no change to this panel**, and these two refusal tests are what will
+   * fail loudly rather than silently start over-granting.
+   */
+
+  test('a Super Admin reaches the queue and the application, across a reload', async ({
+    page,
+  }) => {
+    await signIn(page, ACCOUNTS.superAdmin)
+
+    await page.goto('/verifications')
+    await expect(
+      page.getByRole('heading', { name: 'Verifications', level: 1 }),
+    ).toBeVisible()
+
+    await page.reload()
+    await expect(
+      page.getByRole('heading', { name: 'Verifications', level: 1 }),
+    ).toBeVisible()
+    await expect(page.getByText(/do not have access/i)).toHaveCount(0)
+
+    /* The application route is guarded independently of the queue. */
+    await page.goto('/verifications/cmulfjl62000201r33hha40xi')
+    await expect(page.getByRole('button', { name: /^View/ })).toBeVisible()
+  })
+
+  test('an Admin is refused both routes, and no applicant data leaks', async ({
+    page,
+  }) => {
+    /*
+     * Asserted on the guarded PAGES rather than the sidebar: below `lg` the nav
+     * is a closed drawer, so link absence would be a statement about the
+     * viewport rather than about permissions.
+     *
+     * ⚠️ The leak assertions matter more here than anywhere else in this file.
+     * A forbidden page that still rendered a file name or a company name would
+     * expose which strangers have filed identity documents.
+     */
+    await signIn(page, ACCOUNTS.admin)
+
+    await page.goto('/verifications')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    await expect(page.getByText('DeliGo')).toHaveCount(0)
+
+    await page.reload()
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+
+    await page.goto('/verifications/cmulfjl62000201r33hha40xi')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    /* Not the document name, and not a View control that could fetch it. */
+    await expect(page.getByText('_Weil_ Full.pdf')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^View/ })).toHaveCount(0)
+  })
+
+  test('a Moderator is refused, exactly as an Admin is', async ({ page }) => {
+    await signIn(page, ACCOUNTS.moderator)
+
+    await page.goto('/verifications')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    await expect(page.getByText('DeliGo')).toHaveCount(0)
+
+    await page.goto('/verifications/cmulfjl62000201r33hha40xi')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    await expect(page.getByText('_Weil_ Full.pdf')).toHaveCount(0)
   })
 })

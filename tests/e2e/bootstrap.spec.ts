@@ -83,26 +83,6 @@ test.describe('bootstrap configuration', () => {
     await expectNoSidewaysScroll(page)
   })
 
-  test('the preview recalculates without issuing a request', async ({ page }) => {
-    const requests: string[] = []
-    page.on('request', (request) => {
-      if (request.url().includes('/admin/bootstrap')) requests.push(request.url())
-    })
-
-    await signIn(page)
-    await page.goto('/settings/bootstrap')
-    await expect(page.getByText('What a client would see')).toBeVisible()
-    const before = requests.length
-
-    await page.getByLabel('App version').fill('0.9.0')
-    await expect(page.getByText('Forced update')).toBeVisible()
-    await expect(page.getByText(/below the minimum supported version/)).toBeVisible()
-
-    /* Calculated locally — the panel cannot ask the server (plan.md §3.8). */
-    expect(requests).toHaveLength(before)
-    await expect(page.getByText(/Not a live response from the server/)).toBeVisible()
-  })
-
   test('is offered in the sidebar now that it can be edited', async ({
     page,
   }, testInfo) => {

@@ -16,8 +16,12 @@ import { MODULE_PERMISSION_VALUES, type ModulePermission } from '@/types/staff'
  * ours (`usersSuspend`, `usersBan`, `usersRestrict`, `sessionsRevoke`). We
  * carry whole domains the backend has no key for — diamonds, payments,
  * withdrawals, clubs, hosts, notifications, audit logs — consistent with those
- * endpoints still answering 404. And the backend has `BUSINESS_VERIFY`, for a
- * module the panel has not built.
+ * endpoints still answering 404.
+ *
+ * `BUSINESS_VERIFY` used to be the third mismatch: a backend key for a module
+ * the panel had not built. **It is no longer** — as of 2026-09-29 it maps to
+ * `verificationsReview`, and it is the only row in this bridge that can put a
+ * whole module in a colleague's hands today (plan.md §4.3).
  *
  * Keeping them separate with one explicit, tested bridge is the only honest
  * arrangement. Collapsing them would mean either inventing backend keys that
@@ -129,9 +133,20 @@ export const MODULE_PERMISSIONS: readonly ModulePermissionDescriptor[] = [
   },
   {
     key: 'BUSINESS_VERIFY',
-    label: 'Business verification',
+    label: 'Identity & business verification',
     group: 'Business',
-    description: 'Review, approve and reject business verification requests.',
+    /*
+     * ⚠️ The description names the documents, deliberately. This key is the
+     * only one in the grid that grants sight of passports, national IDs and
+     * trade licences, and every view is audited against the holder's name and
+     * IP. A Super Admin deciding whether to hand it to a colleague should not
+     * have to infer that from the words "verification requests".
+     *
+     * It also covers identity (KYC) as well as business (KYB), which the key's
+     * name does not say — the same mislabelling trap as `SYSTEM_SETTINGS_EDIT`.
+     */
+    description:
+      'Open applicants’ decrypted identity and business documents, and approve, reject or revoke their verification. Every document view is recorded against the holder’s name and IP address.',
     superAdminOnly: false,
   },
   {
@@ -239,9 +254,15 @@ export function sortModulePermissions(
 /**
  * What each backend key unlocks in the panel's own vocabulary.
  *
- * One-to-many in most rows, because ours are finer. `BUSINESS_VERIFY` maps to
- * nothing: the panel has no business-verification module yet, and inventing a
- * permission for it would put an entry in the map that no guard reads.
+ * One-to-many in most rows, because ours are finer.
+ *
+ * ⚠️ `BUSINESS_VERIFY` was the one row that mapped to **nothing**, on the
+ * grounds that the panel had no such module and inventing a permission would
+ * put an entry here that no guard reads. That was true until 2026-09-29, when
+ * the Verification & Compliance module landed (plan.md §4.3). It is now a real
+ * row, and the first one in this bridge that can hand an ADMIN or MODERATOR a
+ * whole module — every other grantable key either widens something they already
+ * reach by role, or is inert.
  */
 const MODULE_TO_PANEL: Readonly<Record<ModulePermission, readonly Permission[]>> = {
   DASHBOARD_VIEW: [PERMISSIONS.analyticsView],
@@ -260,8 +281,23 @@ const MODULE_TO_PANEL: Readonly<Record<ModulePermission, readonly Permission[]>>
     PERMISSIONS.sessionsRevoke,
   ],
 
-  /* No panel module exists for this yet — staff_management_plan.md §8 O9. */
-  BUSINESS_VERIFY: [],
+  /*
+   * One key, one permission — and the module it unlocks is a vault of identity
+   * documents (plan.md §4.3).
+   *
+   * There is no finer split to make: the backend guards the queue, the detail,
+   * the decrypted document stream and the decision with this same key, so
+   * `verificationsReview` covers all four. A view-only tier is not expressible
+   * against this API, and pretending otherwise would let a Super Admin believe
+   * they had granted read-only access to a screen that can approve a stranger's
+   * identity.
+   *
+   * ⚠️ This row is why `auth/permissions.ts` does NOT grant
+   * `verificationsReview` to ADMIN by role. Access to this module is a
+   * per-account grant made here, in Staff, exactly as `SYSTEM_SETTINGS_EDIT` is
+   * — it is not a property of the role.
+   */
+  BUSINESS_VERIFY: [PERMISSIONS.verificationsReview],
 
   /* Gates the GET as well as the writes, hence both. */
   SYSTEM_SETTINGS_EDIT: [

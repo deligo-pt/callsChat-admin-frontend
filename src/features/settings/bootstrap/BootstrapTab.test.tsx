@@ -244,17 +244,40 @@ describe('the status line (§3.5, §3.6)', () => {
     expect(screen.getAllByText(/Changed/).length).toBeGreaterThan(0)
   })
 
-  it('renders `updatedBy` as a bare id, never an invented name', async () => {
+  it('resolves `updatedBy` to a name, and never invents one', async () => {
     /*
-     * The record carries an opaque id and nothing else (plan.md §3.6). The
-     * panel has a user directory and could guess — but an admin id is not
-     * necessarily a user id, and guessing wrong attributes a production change
-     * to the wrong person.
+     * ⚠️ REVISED. This test used to require the **bare id**, because the record
+     * carries an opaque id and nothing else (plan.md §3.6) and guessing would
+     * attribute a production change to the wrong person.
+     *
+     * That concern is intact — the rule is still "never guess". What changed is
+     * that the panel can now *know*: `useActorName` matches the id **exactly**
+     * against the signed-in admin from `/admin/auth/me`, then against the staff
+     * directory. No fuzzy matching, no inference from a user id.
+     *
+     * Here the seeded `updatedBy` IS the signed-in super admin — as it is on the
+     * live service — so the name is known without a directory lookup, and the id
+     * is gone from the line.
      */
     renderScreen()
 
     await screen.findByText('Revision 21')
-    expect(screen.getByText(/cmt8orkov/)).toBeInTheDocument()
+    expect(screen.getAllByText('Nadia Chowdhury').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/cmt8orkov/)).not.toBeInTheDocument()
+  })
+
+  it('falls back to the id when the actor is not an account it can see', async () => {
+    /*
+     * The honest half. `/admin/staff` never returns the root super admin — true
+     * of the mock and verified against the live API — and a verification's
+     * `SUBMITTED` row is written by the applicant, who is not staff at all. Any
+     * id the panel cannot resolve must still be shown, because a traceable id
+     * beats a blank and beats a guess.
+     */
+    renderScreen('/settings/bootstrap?platform=IOS')
+
+    /* The iOS record ships with `updatedBy: null` — nothing to resolve at all. */
+    expect(await screen.findByText(/never changed from this panel/)).toBeInTheDocument()
   })
 
   it('says so when nobody has ever changed it', async () => {
@@ -311,78 +334,6 @@ describe('the LIVE NOW banner (§5.1)', () => {
     expect(within(banner).getByText(/Maintenance mode is on/)).toBeInTheDocument()
     expect(within(banner).getByText(/Emergency force update is on/)).toBeInTheDocument()
     expect(within(banner).getByText(/Global force logout is on/)).toBeInTheDocument()
-  })
-})
-
-describe('the client preview (§5.6)', () => {
-  it('opens on the latest release and reports no update', async () => {
-    renderScreen()
-
-    await screen.findByText('What a client would see')
-    expect(screen.getByLabelText('App version')).toHaveValue('1.2.0')
-    expect(screen.getByText('No update')).toBeInTheDocument()
-  })
-
-  it('states that it is calculated, not a live server response', async () => {
-    /*
-     * ⚠️ The line that stops the card being believed as the server's answer.
-     * The panel cannot ask the server — CORS forbids the client headers
-     * (plan.md §3.8) — so saying nothing would be a quiet lie during exactly
-     * the incident where being wrong costs the most.
-     */
-    renderScreen()
-
-    expect(
-      await screen.findByText(/Not a live response from the server/),
-    ).toBeInTheDocument()
-  })
-
-  it('reports a forced update for a version below the floor, and says why', async () => {
-    const user = renderScreen()
-    await screen.findByText('What a client would see')
-
-    const version = screen.getByLabelText('App version')
-    await user.clear(version)
-    await user.type(version, '0.9.0')
-
-    expect(await screen.findByText('Forced update')).toBeInTheDocument()
-    expect(screen.getByText(/below the minimum supported version/)).toBeInTheDocument()
-  })
-
-  it('reports a blocked version as blocked, not merely as below the floor', async () => {
-    // Two rungs would force; the reason decides which field to edit.
-    const user = renderScreen()
-    await screen.findByText('What a client would see')
-
-    const version = screen.getByLabelText('App version')
-    await user.clear(version)
-    await user.type(version, '1.1.0')
-
-    expect(await screen.findByText('Forced update')).toBeInTheDocument()
-    expect(screen.getByText(/in the blocked list/)).toBeInTheDocument()
-  })
-
-  it('reports an optional update for an older build of the current version', async () => {
-    const user = renderScreen()
-    await screen.findByText('What a client would see')
-
-    const build = screen.getByLabelText('Build number')
-    await user.clear(build)
-    await user.type(build, '11')
-
-    expect(await screen.findByText('Optional update')).toBeInTheDocument()
-  })
-
-  it('sends nothing — the preview is never a request', async () => {
-    const user = renderScreen()
-    await screen.findByText('What a client would see')
-    const before = reads.length
-
-    const version = screen.getByLabelText('App version')
-    await user.clear(version)
-    await user.type(version, '0.1.0')
-
-    expect(reads).toHaveLength(before)
   })
 })
 

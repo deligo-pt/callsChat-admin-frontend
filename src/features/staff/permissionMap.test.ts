@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { PERMISSIONS } from '@/auth/permissions'
+import { PERMISSIONS, permissionsForRole } from '@/auth/permissions'
 import { MODULE_PERMISSION_VALUES } from '@/types/staff'
 
 import {
@@ -150,9 +150,62 @@ describe('modulePermissionsToPanel', () => {
     expect(granted).not.toContain(PERMISSIONS.configurationConfigure)
   })
 
-  it('maps BUSINESS_VERIFY to nothing, because no such module exists yet', () => {
-    // staff_management_plan.md §8 O9 — honest emptiness beats an invented key.
-    expect(modulePermissionsToPanel(['BUSINESS_VERIFY'], 'ADMIN')).toEqual([])
+  it('maps BUSINESS_VERIFY to the verification module', () => {
+    /*
+     * ⚠️ **This assertion was INVERTED on 2026-09-29**, and the sentence it
+     * used to carry is worth keeping: it asserted that `BUSINESS_VERIFY` mapped
+     * to nothing, "because no such module exists yet"
+     * (staff_management_plan.md §8 O9). Honest emptiness beat an invented key,
+     * and it was right for as long as it was true.
+     *
+     * The Verification & Compliance module now exists (plan.md §4.3), so the
+     * empty row would be the dishonest one — a Super Admin ticking this box
+     * would grant a key the backend enforces and the panel ignored.
+     *
+     * It is also the FIRST row in this bridge that hands a non-Super-Admin a
+     * whole module rather than widening something they already reach by role,
+     * which is why it gets its own test rather than joining a loop.
+     */
+    expect(modulePermissionsToPanel(['BUSINESS_VERIFY'], 'ADMIN')).toEqual([
+      PERMISSIONS.verificationsReview,
+    ])
+    expect(modulePermissionsToPanel(['BUSINESS_VERIFY'], 'MODERATOR')).toEqual([
+      PERMISSIONS.verificationsReview,
+    ])
+  })
+
+  it('is the only way a non-Super-Admin can reach the verification module', () => {
+    /*
+     * The contrast with `feedbackManage` is the point (plan.md §4.3).
+     *
+     * `FEEDBACK_MANAGEMENT` is rejected by every staff write route, so no
+     * combination of keys can produce `feedback.manage` — it is reachable only
+     * through the SUPER_ADMIN wildcard. `BUSINESS_VERIFY` is in the enum, so
+     * `verifications.review` genuinely can be delegated. If this test ever
+     * starts passing for a key OTHER than `BUSINESS_VERIFY`, two module
+     * permissions have been crossed.
+     */
+    for (const key of MODULE_PERMISSION_VALUES) {
+      const granted = modulePermissionsToPanel([key], 'ADMIN')
+      expect(granted.includes(PERMISSIONS.verificationsReview)).toBe(
+        key === 'BUSINESS_VERIFY',
+      )
+    }
+  })
+
+  it('does not let verification access follow from the ADMIN role alone', () => {
+    /*
+     * ⚠️ The reason the grid row above matters. `/admin/verifications/*` is
+     * guarded by the module permission, so an ADMIN without the grant is
+     * refused — and a role-granted permission would put a vault of identity
+     * documents in their sidebar that 403s on its first request. Verified by
+     * the same rule that retired the `configurationConfigure` grant.
+     */
+    expect(permissionsForRole('ADMIN')).not.toContain(PERMISSIONS.verificationsReview)
+    expect(permissionsForRole('MODERATOR')).not.toContain(
+      PERMISSIONS.verificationsReview,
+    )
+    expect(permissionsForRole('SUPER_ADMIN')).toContain(PERMISSIONS.verificationsReview)
   })
 
   it('never grants feedback management to a non-Super-Admin', () => {
