@@ -87,6 +87,17 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     to: ROUTES.settingsReleases,
     description: 'Backend build information and the mobile app version policy.',
     shipped: true,
+    /*
+     * Full width, for the same reason as Mobile bootstrap below.
+     *
+     * ⚠️ Added when the Android and iOS policies moved side by side. Inside
+     * `form-column` the page was capped at 46rem, so the two cards had to share
+     * 736px — about 355px each — which squeezed every field and defeated the
+     * point of the change. The forms themselves still read narrow: each card
+     * container-queries its own field grid, so the measure is protected per
+     * card rather than by capping the whole page.
+     */
+    wide: true,
   },
   {
     value: 'bootstrap',
@@ -109,10 +120,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
      * Full width, unlike the other form sections.
      *
      * `form-column` is right for a single stack of fields, and this section is
-     * six cards — the longest page in the panel inside it. At full width they
-     * become two columns (`BootstrapTab`), which shortens the page and, more
-     * usefully, puts the client preview beside the release policy it reports
-     * on rather than a screen below it.
+     * several cards — one of the longest pages in the panel. At full width they
+     * become two columns (`BootstrapTab`), which shortens the page.
+     *
+     * ⚠️ The original reason named the client preview card sitting beside the
+     * release policy it reported on. That card was removed on 2026-09-30, so
+     * the remaining reason is simply the length.
      */
     wide: true,
   },

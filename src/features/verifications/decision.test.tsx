@@ -187,35 +187,74 @@ describe('a rejection cannot be sent without both halves (§3.6)', () => {
   })
 })
 
-describe('an approval says where the operator’s words go', () => {
-  it('puts them in adminNotes and sends no applicant-facing text at all', async () => {
+describe('an approval collects nothing and sends nothing but the action', () => {
+  /*
+   * ⚠️ REVISED 2026-10-01, and this is a deliberate loosening. V4 routed the
+   * dialog's mandatory reason into `adminNotes`, so every approval carried a
+   * typed justification. The reason field was removed on request: approving is
+   * now two clicks and records no stated reason.
+   *
+   * These tests pin what that means on the wire, because the risk is silent —
+   * the dialog still looks careful, and nothing on screen says the panel stopped
+   * asking why.
+   */
+  it('sends only the action, with no notes and nothing applicant-facing', async () => {
     const sent = captureDecision()
     const user = userEvent.setup()
     mount(PENDING_BUSINESS)
 
     const dialog = await openDialog(user, /^Approve/)
-    await user.type(reasonBox(dialog), 'Companies House record matches.')
     await user.click(within(dialog).getByRole('button', { name: /^Approve/ }))
 
     await waitFor(() => {
       expect(sent).toHaveLength(1)
     })
-    expect(sent[0]).toEqual({
-      action: 'APPROVE',
-      adminNotes: 'Companies House record matches.',
+    expect(sent[0]).toEqual({ action: 'APPROVE' })
+  })
+
+  it('omits adminNotes rather than sending an empty string', async () => {
+    /*
+     * ⚠️ The distinction that matters. `adminNotes: ""` would blank whatever note
+     * is already on the record — the approve payload's only text field, wiped by
+     * an action that no longer collects text. Omitting the key leaves it alone.
+     */
+    const sent = captureDecision()
+    const user = userEvent.setup()
+    mount(PENDING_BUSINESS)
+
+    const dialog = await openDialog(user, /^Approve/)
+    await user.click(within(dialog).getByRole('button', { name: /^Approve/ }))
+
+    await waitFor(() => {
+      expect(sent).toHaveLength(1)
     })
-    /* Nothing the applicant reads is invented on an approval. */
+    expect(sent[0]).not.toHaveProperty('adminNotes')
     expect(sent[0]).not.toHaveProperty('rejectionReason')
     expect(sent[0]).not.toHaveProperty('rejectionCode')
   })
 
-  it('says the note is internal, correcting the dialog’s default promise', async () => {
+  it('offers no reason field at all, so nothing blocks the confirm', async () => {
     const user = userEvent.setup()
     mount(PENDING_BUSINESS)
 
     const dialog = await openDialog(user, /^Approve/)
 
-    expect(dialog).toHaveTextContent(/The applicant does not see it/)
+    expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument()
+    expect(dialog).not.toHaveTextContent(/at least 10 characters/)
+  })
+
+  it('still states what approving does, which is now the only safeguard left', async () => {
+    /*
+     * With no typed justification, the copy is all that stands between an
+     * operator and an evidence-free approval. If this goes quiet, nothing warns.
+     */
+    const user = userEvent.setup()
+    mount(PENDING_BUSINESS)
+
+    const dialog = await openDialog(user, /^Approve/)
+
+    expect(dialog).toHaveTextContent(/no evidence at all/)
+    expect(dialog).toHaveTextContent(/will be marked verified/)
   })
 })
 
@@ -294,19 +333,19 @@ describe('the screen is drawn from a refetch, never from the write', () => {
     mount(PENDING_BUSINESS)
 
     const dialog = await openDialog(user, /^Approve/)
-    await user.type(reasonBox(dialog), 'Verified against the register.')
     await user.click(within(dialog).getByRole('button', { name: /^Approve/ }))
 
     /* The decision card flips to its already-decided copy. */
     expect(await screen.findByText('Change this decision')).toBeInTheDocument()
     /*
-     * ⚠️ The strongest available proof of a refetch: the note comes back from
-     * `GET /:id`, and the write's three-key response never carried it. If the
-     * screen had painted itself from the mutation, this text could not exist.
+     * ⚠️ Proof of a refetch, now that there is no typed note to look for: the
+     * audit trail gains an `Approved` row, and the write's three-key response
+     * never carried audit data. `getAllByText` because `Approved` is also the
+     * status badge — the point is that it now appears MORE than once.
      */
-    expect(
-      await screen.findByText('Verified against the register.'),
-    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getAllByText('Approved').length).toBeGreaterThan(1)
+    })
   })
 
   it('keeps the dialog and the typed reason when the write fails', async () => {

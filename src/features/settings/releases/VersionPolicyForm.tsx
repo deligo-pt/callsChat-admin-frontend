@@ -9,7 +9,6 @@ import type { AppVersionPolicy } from '@/types/settings'
 import { fieldAria, FormField } from '@/components/form'
 
 import { updateVersionPolicy } from '../api'
-import { ReachNotice } from '../ReachNotice'
 import { SettingsCard } from '../SettingsCard'
 import { buildVersionPolicyPayload, type VersionPolicyFormValues } from '../serialize'
 import { useSettingsMutation } from '../useSettings'
@@ -129,75 +128,81 @@ export function VersionPolicyForm({ policy, canEdit }: VersionPolicyFormProps) {
         updatedAt={policy.updatedAt}
         updatedBy={policy.updatedBy}
       >
-        {/*
-         * ⚠️ Which clients this record actually reaches (plan.md §3.1).
-         *
-         * Verified live 2026-09-28: this is a DIFFERENT record from the one
-         * mobile clients read at cold start. Writing here changes nothing a
-         * phone is told, and the save succeeds either way — so without this
-         * line an operator setting a force update during an incident watches
-         * nothing happen and has no way to find out why.
-         *
-         * Above the fields, not below them: it changes whether the form is the
-         * right place to be at all.
-         */}
-        <ReachNotice reach="versions" />
-
         <fieldset disabled={!canEdit} className="contents space-y-4">
-          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
-            <FormField
-              id={`${policy.platform}-latestVersion`}
-              label="Latest version"
-              required
-              hint={`The build users are asked to install from the ${STORE_NAME[policy.platform]}.`}
-            >
-              <Input
-                {...fieldAria(`${policy.platform}-latestVersion`, true, false)}
-                value={draft.latestVersion}
-                onChange={(event) => patch({ latestVersion: event.target.value })}
-                autoComplete="off"
-              />
-            </FormField>
+          {/*
+           * ⚠️ `@container` + `@lg:` rather than `md:` — this grid must respond
+           * to the width of the CARD, not of the window. Since the tab places
+           * Android and iOS side by side above `xl`, a viewport-keyed `md:`
+           * would force two columns into a half-width card and squeeze both
+           * version fields. The container query stacks them instead, and opens
+           * back to two columns once the card itself is wide enough.
+           */}
+          <div className="@container">
+            <div className="grid gap-x-6 gap-y-5 @lg:grid-cols-2">
+              <FormField
+                id={`${policy.platform}-latestVersion`}
+                label="Latest version"
+                required
+                hint={`The build users are asked to install from the ${STORE_NAME[policy.platform]}.`}
+              >
+                <Input
+                  {...fieldAria(`${policy.platform}-latestVersion`, true, false)}
+                  value={draft.latestVersion}
+                  onChange={(event) => patch({ latestVersion: event.target.value })}
+                  autoComplete="off"
+                />
+              </FormField>
 
-            <FormField
-              id={`${policy.platform}-minRequiredVersion`}
-              label="Minimum required version"
-              required
-              hint="Anything below this is out of date."
-              error={
-                !coherent && draft.minRequiredVersion.trim() !== ''
-                  ? 'This is above the latest release — nobody could satisfy it.'
-                  : undefined
-              }
-            >
-              <Input
-                {...fieldAria(`${policy.platform}-minRequiredVersion`, true, !coherent)}
-                value={draft.minRequiredVersion}
-                onChange={(event) => patch({ minRequiredVersion: event.target.value })}
-                autoComplete="off"
-              />
-            </FormField>
+              <FormField
+                id={`${policy.platform}-minRequiredVersion`}
+                label="Minimum required version"
+                required
+                hint="Anything below this is out of date."
+                error={
+                  !coherent && draft.minRequiredVersion.trim() !== ''
+                    ? 'This is above the latest release — nobody could satisfy it.'
+                    : undefined
+                }
+              >
+                <Input
+                  {...fieldAria(
+                    `${policy.platform}-minRequiredVersion`,
+                    true,
+                    !coherent,
+                  )}
+                  value={draft.minRequiredVersion}
+                  onChange={(event) =>
+                    patch({ minRequiredVersion: event.target.value })
+                  }
+                  autoComplete="off"
+                />
+              </FormField>
+
+              {/*
+               * Moved INTO the grid. It used to sit alone below it at `max-w-xs`,
+               * leaving a wide gap beside a short field; as a third cell it fills
+               * the row the two version fields leave open.
+               */}
+              <FormField
+                id={`${policy.platform}-buildNumber`}
+                label="Build number"
+                /*
+                 * Both facts are stated because both bite. The API rejects a
+                 * numeric `buildNumber` outright, and this route replaces rather
+                 * than merges — so a field cleared here is cleared on the server.
+                 */
+                hint="Optional, and stored as text. Clearing it removes it from the policy."
+              >
+                <Input
+                  {...fieldAria(`${policy.platform}-buildNumber`, true, false)}
+                  value={draft.buildNumber}
+                  onChange={(event) => patch({ buildNumber: event.target.value })}
+                  autoComplete="off"
+                  inputMode="numeric"
+                />
+              </FormField>
+            </div>
           </div>
-
-          <FormField
-            id={`${policy.platform}-buildNumber`}
-            label="Build number"
-            /*
-             * Both facts are stated because both bite. The API rejects a
-             * numeric `buildNumber` outright, and this route replaces rather
-             * than merges — so a field cleared here is cleared on the server.
-             */
-            hint="Optional, and stored as text. Clearing it removes it from the policy."
-            className="max-w-xs"
-          >
-            <Input
-              {...fieldAria(`${policy.platform}-buildNumber`, true, false)}
-              value={draft.buildNumber}
-              onChange={(event) => patch({ buildNumber: event.target.value })}
-              autoComplete="off"
-              inputMode="numeric"
-            />
-          </FormField>
 
           <FormField
             id={`${policy.platform}-releaseNotes`}
