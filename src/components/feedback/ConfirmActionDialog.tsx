@@ -235,7 +235,22 @@ function ConfirmActionForm({
         </div>
       </DialogHeader>
 
-      <div className="min-h-0 space-y-4 overflow-y-auto">
+      {/*
+       * ⚠️ `-mx-1.5 px-1.5` is the focus ring's clearance, not decoration.
+       *
+       * `globals.css` draws focus as `outline: 2px` at `outline-offset: 2px`, so
+       * the ring sits **4px outside** the field it belongs to. And
+       * `overflow-y: auto` promotes `overflow-x` to `auto` as well — per spec, a
+       * non-`visible` value on one axis forces the other — which makes this a
+       * clipping box on BOTH axes. With the fields flush against its edges the
+       * ring had nowhere to render and was sliced off down the left and right of
+       * every focused input.
+       *
+       * The negative margin cancels the padding, so the fields keep the width
+       * they had and only the clip box grows. plan.md §6 states the rule this
+       * broke: no control may sit flush against a clipping edge.
+       */}
+      <div className="-mx-1.5 min-h-0 space-y-4 overflow-y-auto px-1.5">
         {/* Target — the operator must see exactly what they are acting on. */}
         <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
           <span className="block text-overline text-foreground-subtle uppercase">

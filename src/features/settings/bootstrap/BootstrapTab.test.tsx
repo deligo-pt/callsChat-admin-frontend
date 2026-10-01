@@ -261,8 +261,15 @@ describe('the status line (§3.5, §3.6)', () => {
      */
     renderScreen()
 
+    /*
+     * ⚠️ `findAllBy`, not a sync check after awaiting the revision. The name
+     * comes from `/admin/auth/me`, which `AuthProvider` resolves on its OWN
+     * schedule — awaiting `Revision 21` only proves the bootstrap query landed.
+     * Asserting synchronously after it raced, and passed or failed on timing.
+     * The same trap `reachNotice.test.tsx` cost V0.
+     */
     await screen.findByText('Revision 21')
-    expect(screen.getAllByText('Nadia Chowdhury').length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('Nadia Chowdhury')).length).toBeGreaterThan(0)
     expect(screen.queryByText(/cmt8orkov/)).not.toBeInTheDocument()
   })
 

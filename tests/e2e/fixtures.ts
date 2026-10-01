@@ -68,3 +68,56 @@ export async function expectNoSidewaysScroll(page: Page): Promise<void> {
   expect(overflow.offenders).toEqual([])
   expect(overflow.scrolls).toBe(false)
 }
+
+/**
+ * A focused control's ring must be fully inside every box that clips it.
+ *
+ * ⚠️ `globals.css` draws focus as `outline: 2px` at `outline-offset: 2px`, so the
+ * indicator sits **4px outside** the element. Any scrolling ancestor is a
+ * clipping box on BOTH axes — `overflow-y: auto` promotes `overflow-x` to `auto`
+ * per spec — so a field flush against one has its ring sliced off.
+ *
+ * This measures the ring's box, not the element's, and walks every scrollable
+ * ancestor. Content assertions cannot see this: the fix is a margin/padding pair
+ * that changes no text and no layout width.
+ */
+export async function expectFocusRingNotClipped(
+  page: Page,
+  selector: string,
+): Promise<void> {
+  const clipped = await page.evaluate((target) => {
+    const element = document.querySelector(target)
+    if (!element) return ['no element matched ' + target]
+
+    const style = getComputedStyle(element)
+    const reach =
+      parseFloat(style.outlineWidth || '0') + parseFloat(style.outlineOffset || '0')
+    if (reach <= 0) return ['element is not showing a focus outline']
+
+    const box = element.getBoundingClientRect()
+    const ring = {
+      left: box.left - reach,
+      right: box.right + reach,
+      top: box.top - reach,
+      bottom: box.bottom + reach,
+    }
+
+    const offenders: string[] = []
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      const overflow = getComputedStyle(node)
+      const clips = overflow.overflowX !== 'visible' || overflow.overflowY !== 'visible'
+      if (!clips) continue
+
+      const edge = node.getBoundingClientRect()
+      /* 0.5px of slack for sub-pixel layout, not for a missing 4px of padding. */
+      if (ring.left < edge.left - 0.5) offenders.push('left clipped by ' + node.tagName)
+      if (ring.right > edge.right + 0.5)
+        offenders.push('right clipped by ' + node.tagName)
+      /* Only the nearest clipping ancestor matters for this check. */
+      break
+    }
+    return offenders
+  }, selector)
+
+  expect(clipped).toEqual([])
+}

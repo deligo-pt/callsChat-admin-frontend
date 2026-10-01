@@ -204,8 +204,23 @@ export function DecisionCard({ record }: { record: Verification }) {
       </Card>
 
       {/* ---------------------------------------------------------------- *
-       * Approve — the dialog's mandatory reason becomes `adminNotes`,
-       * the only text field the approve payload has.
+       * Approve — no reason field.
+       *
+       * ⚠️ Removed on request, 2026-10-01, and it is a real loosening worth
+       * naming. V4 routed the dialog's mandatory reason into `adminNotes`, the
+       * only text field the approve payload has, so an approval carried a typed
+       * justification. It no longer does: approving is now two clicks and
+       * records nothing about why.
+       *
+       * That matters most on the case this dialog was escalated for — every
+       * pending business application on the live service has zero documents
+       * (§3.5), so the common approval grants verified status on no evidence AND
+       * no stated reason. The `critical` severity and the copy naming the
+       * absence are what remain of the mitigation.
+       *
+       * `reason="none"` is documented for endpoints with nowhere to put the
+       * text. That is not the case here — `adminNotes` exists and the server
+       * accepts it — so this is a product decision, not a contract one.
        * ---------------------------------------------------------------- */}
       <ConfirmActionDialog
         open={pending === 'APPROVE'}
@@ -228,22 +243,16 @@ export function DecisionCard({ record }: { record: Verification }) {
           `${subjectName} will be marked verified and told so in the app.`
         }
         confirmLabel={record.status === 'APPROVED' ? 'Approve again' : 'Approve'}
-        /*
-         * The reason lands in `adminNotes`, so the hint corrects the dialog's
-         * default promise that it goes to the audit log under that name.
-         */
-        reasonHint={
-          <>
-            Kept on this application as an internal note with your name.{' '}
-            <span className="font-medium">The applicant does not see it.</span>
-          </>
-        }
+        reason="none"
         loading={mutation.isPending}
-        onConfirm={(reason) => {
-          decide(
-            { action: 'APPROVE', adminNotes: reason },
-            `${subjectName} is now verified.`,
-          )
+        onConfirm={() => {
+          /*
+           * No `adminNotes`. Sending `""` would overwrite any note already on
+           * the record with an empty string — the approve payload's only text
+           * field, blanked by an action that no longer collects text. Omitting
+           * the key leaves whatever is there alone.
+           */
+          decide({ action: 'APPROVE' }, `${subjectName} is now verified.`)
         }}
       />
 

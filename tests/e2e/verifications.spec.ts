@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { ACCOUNTS, expectNoSidewaysScroll, signIn } from './fixtures'
+import {
+  ACCOUNTS,
+  expectFocusRingNotClipped,
+  expectNoSidewaysScroll,
+  signIn,
+} from './fixtures'
 
 /**
  * Layout and responsiveness of the verification surfaces — phase V5.
@@ -175,5 +180,45 @@ test.describe('nothing overflows at any viewport', () => {
     await expect(page.getByRole('dialog')).toBeVisible()
 
     await expectNoSidewaysScroll(page)
+  })
+})
+
+test.describe('a focused field shows its whole focus ring', () => {
+  /*
+   * ⚠️ Reported from a screenshot: the focus outline on the reject dialog's
+   * fields was sliced off down the left and right. The dialog's scrolling body
+   * clips on both axes — `overflow-y: auto` promotes `overflow-x` to `auto` —
+   * and the fields sat flush against it, while `globals.css` draws the ring 4px
+   * outside the element.
+   *
+   * ⚠️ **No content assertion can catch this.** The fix is a margin/padding pair
+   * that changes no text and no layout width, so only geometry sees it.
+   *
+   * Asserted on the shared `ConfirmActionDialog`, so it covers every dialog in
+   * the panel that carries fields, not only this one.
+   */
+  test('the reject dialog’s internal note', async ({ page }) => {
+    await signIn(page, ACCOUNTS.superAdmin)
+    await page.goto(BUSINESS)
+    await page.getByRole('button', { name: /^Reject/ }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+
+    await page.getByLabel(/Internal note/).focus()
+
+    await expectFocusRingNotClipped(page, '#verification-admin-notes')
+  })
+
+  test('the reject dialog’s applicant-facing reason', async ({ page }) => {
+    await signIn(page, ACCOUNTS.superAdmin)
+    await page.goto(BUSINESS)
+    await page.getByRole('button', { name: /^Reject/ }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    const reason = dialog.getByRole('textbox', { name: /^Reason/ })
+    await reason.focus()
+    const id = await reason.getAttribute('id')
+
+    await expectFocusRingNotClipped(page, `#${String(id)}`)
   })
 })

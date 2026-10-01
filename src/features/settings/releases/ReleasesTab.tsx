@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn'
 import { formatUptime } from './formatUptime'
 
 import { useDeploymentQuery } from '../useSettings'
+import { ReachNotice } from '../ReachNotice'
 import { VersionPolicyForm } from './VersionPolicyForm'
 
 /**
@@ -94,12 +95,38 @@ export function ReleasesTab() {
       </Card>
 
       {/*
+       * ⚠️ Which clients these records actually reach (plan.md §3.1).
+       *
+       * Verified live 2026-09-28: this is a DIFFERENT record from the one mobile
+       * clients read at cold start. Writing here changes nothing a phone is
+       * told, and the save succeeds either way — so without this line an
+       * operator setting a force update during an incident watches nothing
+       * happen and has no way to find out why.
+       *
+       * ⚠️ **Hoisted out of `VersionPolicyForm`**, where it rendered once per
+       * platform. Stacked that was merely repetitive; side by side it put the
+       * same paragraph on screen twice, next to itself. It is a statement about
+       * this screen, not about Android — so it belongs here, once, above both.
+       */}
+      <ReachNotice reach="versions" />
+
+      {/*
        * Two independent forms, one per platform. The API takes one platform per
        * request, and pairing them behind a single save would mean a half-failed
        * write with no honest way to report which half.
+       *
+       * Side by side from `xl` up. They are the same form twice, and comparing
+       * the two policies is the work this screen exists for — stacked, that
+       * comparison needed a scroll. `xl` rather than `lg` because at 1024 the
+       * sidebar is already showing, which would leave each form under 380px.
+       *
+       * `items-start` so a taller card does not stretch the shorter one, and
+       * below `xl` they stack in source order exactly as before.
        */}
-      <VersionPolicyForm policy={mobileApps.android} canEdit={canEdit} />
-      <VersionPolicyForm policy={mobileApps.ios} canEdit={canEdit} />
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <VersionPolicyForm policy={mobileApps.android} canEdit={canEdit} />
+        <VersionPolicyForm policy={mobileApps.ios} canEdit={canEdit} />
+      </div>
 
       {!canEdit ? (
         <p className="text-caption text-foreground-muted">
