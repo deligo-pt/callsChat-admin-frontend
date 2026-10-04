@@ -95,6 +95,23 @@ export const ROUTES = {
   verifications: '/verifications',
   verification: (id: string) => `/verifications/${id}`,
 
+  /**
+   * Official Announcements (plan.md §4.1).
+   *
+   * **One route, and deliberately no `/announcements/:id`.** There is no
+   * `GET /admin/announcements/:id` to hang a detail page on — it answers
+   * `ROUTE_NOT_FOUND` — and the list row already carries the whole record, so
+   * there is nothing a detail page could show that the queue does not (§3.2).
+   *
+   * No `/new` either: composing is a dialog over the list. Staff earned a route
+   * because it has six fields plus an eight-key permission grid that needs room
+   * to explain itself; an announcement is a headline, a body and four selects.
+   *
+   * Filters round-trip as query parameters (`?status=DRAFT`), the way every
+   * other list in this panel does.
+   */
+  announcements: '/announcements',
+
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,
 

@@ -41,6 +41,8 @@ export type StatusDomain =
   | 'feedback'
   | 'feedbackPriority'
   | 'verification'
+  | 'announcement'
+  | 'announcementPriority'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -289,6 +291,54 @@ const VERIFICATION: DomainMap = {
   REVOKED: { label: 'Revoked', tone: 'danger' },
 }
 
+/**
+ * An official announcement's lifecycle state (plan.md §5.2).
+ *
+ * Three values, and **no scheduled state** — `publishedAt` is not in the write
+ * schema, so an announcement is a draft or it is live now (plan.md §3.5).
+ *
+ * ⚠️ **`DRAFT` is `neutral`, which is the opposite of what the two sibling
+ * domains chose, and the difference is the whole point.** `FEEDBACK.PENDING`
+ * and `VERIFICATION.PENDING` are both `warning` because each one is a debt to a
+ * person who is waiting — a ticket nobody has answered, a passport nobody has
+ * looked at. **Nobody is waiting on a draft announcement.** It is our own
+ * unfinished work, owed to no one, and colouring it as a backlog would make a
+ * shelf of half-written copy read as an obligation.
+ *
+ * `PUBLISHED` is `success` because it is the state the work is *for*: the
+ * message is live and reaching users. `ARCHIVED` is `locked` rather than
+ * `neutral` or `danger` — it is withdrawn from the feed but intact and
+ * recoverable by setting the status back, which is exactly what `locked` means
+ * everywhere else in this file. `danger` would claim something went wrong.
+ */
+const ANNOUNCEMENT: DomainMap = {
+  DRAFT: { label: 'Draft', tone: 'neutral' },
+  PUBLISHED: { label: 'Published', tone: 'success' },
+  ARCHIVED: { label: 'Archived', tone: 'locked' },
+}
+
+/**
+ * How loudly an announcement presents itself in the client.
+ *
+ * ⚠️ **This is not a state, it is a decision about someone else's attention.**
+ * `URGENT` makes a rose banner appear in every user's chat list, so the tones
+ * here deliberately match what `broadcast.md` §5.2 tells the mobile client to
+ * render — URGENT rose, HIGH amber, NORMAL indigo — so an operator picking a
+ * priority in the panel sees the same severity the recipient will.
+ *
+ * `LOW` has no mapping in the doc at all; `neutral` is the honest answer rather
+ * than inventing a fourth colour the phone will not use.
+ *
+ * Same scale direction as `FEEDBACK_PRIORITY`: `neutral` is the low end,
+ * because an unremarkable priority is genuinely unremarkable.
+ */
+const ANNOUNCEMENT_PRIORITY: DomainMap = {
+  LOW: { label: 'Low', tone: 'neutral' },
+  NORMAL: { label: 'Normal', tone: 'info' },
+  HIGH: { label: 'High', tone: 'warning' },
+  URGENT: { label: 'Urgent', tone: 'danger' },
+}
+
 const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   user: USER,
   restriction: RESTRICTION,
@@ -309,6 +359,8 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   feedback: FEEDBACK,
   feedbackPriority: FEEDBACK_PRIORITY,
   verification: VERIFICATION,
+  announcement: ANNOUNCEMENT,
+  announcementPriority: ANNOUNCEMENT_PRIORITY,
 }
 
 /** The three states the maintenance card and the global banner can be in. */

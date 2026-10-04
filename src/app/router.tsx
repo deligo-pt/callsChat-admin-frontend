@@ -104,6 +104,11 @@ const VerificationDetailPage = lazy(() =>
     default: m.VerificationDetailPage,
   })),
 )
+const AnnouncementsPage = lazy(() =>
+  import('@/features/announcements/AnnouncementsPage').then((m) => ({
+    default: m.AnnouncementsPage,
+  })),
+)
 const StaffListPage = lazy(() =>
   import('@/features/staff/StaffListPage').then((m) => ({
     default: m.StaffListPage,
@@ -293,6 +298,37 @@ const moduleRoutes: RouteObject[] = [
         resource="verifications"
       >
         {suspended(<VerificationQueuePage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase B2 — Official Announcements (plan.md §4.1).
+   *
+   * Guarded by `notifications.broadcast`, which **B4 granted to `ADMIN`** to
+   * match the backend: `broadcast.md` §4 admits `ADMIN` or `SUPER_ADMIN`, and
+   * there is no announcement module in the staff permission enum, so these
+   * routes are role-guarded rather than grant-guarded (§3.6).
+   *
+   * That makes this the one route in this file whose guard is a *role* decision
+   * rather than a per-account grant — the opposite of `/verifications` below,
+   * where the API needs the role AND `BUSINESS_VERIFY`.
+   *
+   * ⚠️ An ADMIN actually being admitted by the live service is read from the
+   * doc, not measured: it needs an ADMIN bearer token and none exists
+   * (plan.md O3). If the route turns out to be Super-Admin-only, the fix is to
+   * drop one line from `ADMIN_PERMISSIONS`, and
+   * `features/announcements/navigation.test.ts` is what will have to change
+   * with it.
+   */
+  {
+    path: ROUTES.announcements,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.notificationsBroadcast}
+        resource="announcements"
+      >
+        {suspended(<AnnouncementsPage />)}
       </RequirePermission>
     ),
   },

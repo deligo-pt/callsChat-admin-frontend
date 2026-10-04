@@ -58,8 +58,29 @@ test.describe('Super Admin', () => {
   })
 
   test('reaches every module route the backend serves', async ({ page }) => {
+    /*
+     * ⚠️ **Each route is asserted POSITIVELY before it is asserted negatively,
+     * and both halves of that are load-bearing.**
+     *
+     * This test used to be three bare `page.goto`s followed by
+     * `expect(…/do not have access/i).toHaveCount(0)`, which was wrong twice
+     * over:
+     *
+     * 1. **It passed against a blank page.** A route that rendered nothing at
+     *    all also contains zero "do not have access" text, so the assertion
+     *    could not tell "the Super Admin got in" from "nothing loaded". The
+     *    test named reachability and never checked it.
+     * 2. **It raced the dev server.** Three navigations fired back to back with
+     *    nothing settling between them, and under parallel load the third came
+     *    back `net::ERR_ABORTED at /account` — a rotating failure that moved
+     *    between viewports from run to run (plan.md O12).
+     *
+     * Waiting for the page's own `h1` fixes both: it is the evidence the route
+     * actually rendered, and it stops the next `goto` starting mid-navigation.
+     */
     for (const route of ['/users', '/dashboard', '/account']) {
       await page.goto(route)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
       await expect(page.getByText(/do not have access/i)).toHaveCount(0)
     }
   })
@@ -468,5 +489,92 @@ test.describe('verifications.review', () => {
     await page.goto('/verifications/cmulfjl62000201r33hha40xi')
     await expect(page.getByText(/do not have access/i)).toBeVisible()
     await expect(page.getByText('_Weil_ Full.pdf')).toHaveCount(0)
+  })
+})
+
+test.describe('notifications.broadcast', () => {
+  /**
+   * Official Announcements — `/announcements` (plan.md §3.6, phase B4).
+   *
+   * ⚠️ **This is the first module in this panel granted to `ADMIN` by role, and
+   * the only guard in this file taken from a document rather than a
+   * measurement** (plan.md O3).
+   *
+   * The reasoning is the mirror image of `verifications.review` above. There
+   * the API needs the role *and* a per-account module permission, so a role
+   * grant would put a vault of identity documents in an Admin's sidebar that
+   * 403s on its first request. Here there is **no announcement key in the staff
+   * module enum at all** — verified live 2026-10-04 by a validation probe whose
+   * rejection listed all eight and named none of them — so the role is the
+   * whole story, and `broadcast.md` §4 says that role is `ADMIN` or
+   * `SUPER_ADMIN`.
+   *
+   * ⚠️ What is NOT verified is an ADMIN actually being admitted by the live
+   * service. That needs an ADMIN bearer token, and none exists: the only live
+   * `ADMIN` staff account is `INACTIVE` with no credentials, and resetting its
+   * password would be a write to an account nobody here owns. **So the Admin
+   * test below encodes the rule we believe, and it is the test that will fail
+   * loudly if the belief turns out to be wrong** — rather than an Admin
+   * discovering it as a 403 in production.
+   */
+
+  test('a Super Admin reaches the queue, across a reload', async ({ page }) => {
+    await signIn(page, ACCOUNTS.superAdmin)
+
+    await page.goto('/announcements')
+    await expect(
+      page.getByRole('heading', { name: 'Announcements', level: 1 }),
+    ).toBeVisible()
+
+    await page.reload()
+    await expect(
+      page.getByRole('heading', { name: 'Announcements', level: 1 }),
+    ).toBeVisible()
+    await expect(page.getByText(/do not have access/i)).toHaveCount(0)
+  })
+
+  test('an Admin reaches it too, and can compose', async ({ page }) => {
+    /*
+     * ⚠️ Asserting the **write control**, not just the heading. A read-only
+     * landing would be the subtler failure: `broadcast.md` §4 gives an ADMIN
+     * the same routes as a SUPER_ADMIN, so an Admin who could see the queue but
+     * not compose would mean the panel had invented a tier the API does not
+     * have.
+     */
+    await signIn(page, ACCOUNTS.admin)
+
+    await page.goto('/announcements')
+    await expect(
+      page.getByRole('heading', { name: 'Announcements', level: 1 }),
+    ).toBeVisible()
+    await expect(page.getByText(/do not have access/i)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /new announcement/i })).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByRole('button', { name: /new announcement/i })).toBeVisible()
+  })
+
+  test('a Moderator is refused, and no announcement copy leaks', async ({ page }) => {
+    /*
+     * Asserted on the guarded PAGE rather than the sidebar: below `lg` the nav
+     * is a closed drawer, so link absence would be a statement about the
+     * viewport rather than about permissions.
+     *
+     * ⚠️ The leak assertion is the point of the second half. A forbidden page
+     * that still rendered a headline would show a Moderator unpublished draft
+     * copy — the one thing on this screen that is not already public.
+     */
+    await signIn(page, ACCOUNTS.moderator)
+
+    await page.goto('/announcements')
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
+    /* The seeded draft, which nobody outside this module should ever see. */
+    await expect(
+      page.getByText('Business tools are coming to your workspace'),
+    ).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /new announcement/i })).toHaveCount(0)
+
+    await page.reload()
+    await expect(page.getByText(/do not have access/i)).toBeVisible()
   })
 })

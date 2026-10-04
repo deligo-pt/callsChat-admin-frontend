@@ -4,7 +4,6 @@ import type { Paginated } from '@/types/common'
 
 import { queryCollection, type QueryConfig } from '../query'
 import {
-  announcements,
   auditLogs,
   configuration,
   diamondPackages,
@@ -643,15 +642,18 @@ export const resourceHandlers = [
   }),
   detailHandler('/admin/audit-logs', auditLogs, 'Audit entry'),
 
-  listHandler('/admin/announcements', announcements, {
-    searchFields: ['id', 'title'],
-    sortFields: ['publishedAt', 'title', 'status'],
-    filters: {
-      status: (row, value) => row.status === value,
-      channel: (row, value) => row.channel === value,
-    },
-  }),
-  detailHandler('/admin/announcements', announcements, 'Announcement'),
+  /*
+   * `/admin/announcements` was removed from this file on 2026-10-04
+   * (plan.md §3.1).
+   *
+   * The generic pair here was actively misleading: it served the invented
+   * `types/ops.ts` shape, filtered on a `channel` field the API does not have,
+   * sorted on fields the API cannot sort by at all, and — worst — mocked
+   * `GET /admin/announcements/:id`, a route that answers `ROUTE_NOT_FOUND`.
+   * A UI built against it would have passed its own tests and failed live.
+   *
+   * `handlers/announcements.ts` replaces it, built from measured responses.
+   */
 
   /*
    * `/admin/admin-users` was removed on 2026-09-03. That route never existed;

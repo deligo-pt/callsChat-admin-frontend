@@ -188,6 +188,47 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.analyticsView,
   PERMISSIONS.exportData,
   PERMISSIONS.notificationsSend,
+  /*
+   * Official Announcements — `/admin/announcements/*` (plan.md §3.6, phase B4).
+   *
+   * **Granted to ADMIN, and the grant is the correction.** B2 shipped the
+   * module gated on this key while the key was Super-Admin-only, which meant an
+   * ADMIN saw no nav entry and got a 403 page for a route the API would have
+   * served. That is the same lie about capability this file removed once
+   * before, in the opposite direction, for `configurationConfigure` — and the
+   * rule it follows either way is: match the backend.
+   *
+   * The backend here is role-guarded, not grant-guarded. There is **no
+   * announcement key in the staff module enum** — verified live 2026-10-04 by
+   * a validation probe against `PATCH /admin/staff/:id/permissions`, whose
+   * rejection listed all eight and named none of them announcements:
+   *
+   *     'DASHBOARD_VIEW' | 'USER_VIEW' | 'USER_MODERATE' | 'BUSINESS_VERIFY' |
+   *     'SYSTEM_SETTINGS_EDIT' | 'DEPLOYMENT_EDIT' | 'DATABASE_BACKUP' |
+   *     'SMS_GATEWAY_EDIT'
+   *
+   * So unlike `verificationsReview` there is nothing for
+   * `features/staff/permissionMap.ts` to bridge, and no per-account grant to
+   * wait for: the role is the whole story, and `broadcast.md` §4 says that role
+   * is `ADMIN` or `SUPER_ADMIN`.
+   *
+   * ⚠️ **This is the one grant in this file taken from a document rather than
+   * from a measurement, and it is not for want of trying** (plan.md O3). It
+   * needs an ADMIN bearer token to confirm, and none exists: the only live
+   * `ADMIN` staff account is `INACTIVE` with no credentials to hand, and
+   * resetting its password would be a write to an account nobody here owns.
+   *
+   * If the route turns out to be `verifySuperAdmin`-guarded after all, the
+   * failure mode flips — an ADMIN would see the entry and get a 403 on the
+   * queue's first request — and the fix is to delete this one line. Which way
+   * to be wrong was a real choice: showing a capable operator nothing is a
+   * silent loss, while showing an incapable one a 403 is loud, self-explaining
+   * and survives a single-line revert.
+   *
+   * `notificationsSend` above is untouched. It describes targeted sends to
+   * named recipients, which this API cannot do at all, and nothing consumes it.
+   */
+  PERMISSIONS.notificationsBroadcast,
   PERMISSIONS.auditLogsView,
   PERMISSIONS.configurationView,
   /*

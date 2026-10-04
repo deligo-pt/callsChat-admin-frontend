@@ -179,6 +179,18 @@ export const errorCodeSchema = z.enum([
   'UNAUTHORIZED',
   'FORBIDDEN',
   'NOT_FOUND',
+  /**
+   * Verified live 2026-10-04. Fastify's own 404 for a path with no route at
+   * all, distinct from `NOT_FOUND` — which means "the route exists, the record
+   * does not". The message names the method and path:
+   * `"Cannot GET /api/v1/admin/announcements/<id> – the requested route does
+   * not exist."`
+   *
+   * Worth telling apart, because the two answer different questions. A
+   * `NOT_FOUND` is an empty state; a `ROUTE_NOT_FOUND` means the panel called
+   * something that was never built, which is a bug in the panel.
+   */
+  'ROUTE_NOT_FOUND',
   'CONFLICT',
   'INVALID_STATE_TRANSITION',
   'IDEMPOTENCY_CONFLICT',

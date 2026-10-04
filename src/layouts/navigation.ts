@@ -2,6 +2,7 @@ import {
   Activity,
   BadgeCheck,
   LayoutDashboard,
+  Megaphone,
   MessageSquare,
   Settings2,
   ShieldCheck,
@@ -168,6 +169,43 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     id: 'platform',
     label: 'Platform',
     items: [
+      /*
+       * Added 2026-10-04 under the rule above: the `/admin/announcements/*`
+       * endpoints shipped and were verified live, so the entry appears the same
+       * day (plan.md §4.2).
+       *
+       * **In Platform, not Community, and not a section of its own.**
+       * Community's entries share one subject — a consumer account — and an
+       * operator moves between a ticket and the reporter who filed it. An
+       * announcement has no such subject: it is addressed to a *segment*, and
+       * nothing about it leads back to an individual user's record. Platform is
+       * where operator-side, platform-wide levers already live.
+       *
+       * A one-item section was rejected for Feedback and earned only by Staff,
+       * whose subject is the panel's own operators. This does not clear that bar.
+       *
+       * ⚠️ `Megaphone` was unused — the rail already owns `Activity`,
+       * `BadgeCheck`, `LayoutDashboard`, `MessageSquare`, `Settings2`,
+       * `ShieldCheck` and `Users`, and two sections sharing a glyph is how an
+       * operator clicks the wrong one. It is also the icon `broadcast.md` §5.1
+       * specifies for the mobile tile, so both surfaces agree.
+       *
+       * ⚠️ `notifications.broadcast` is granted to `ADMIN` as of B4, matching
+       * `broadcast.md` §4 — so unlike every other gated entry in this rail, an
+       * ADMIN sees this one. A MODERATOR does not.
+       *
+       * It is the only entry here gated on a role alone rather than on a
+       * grantable module key, because the staff enum has no announcement key to
+       * grant (§3.6). That an ADMIN is really admitted is doc-derived rather
+       * than measured — see plan.md O3.
+       */
+      {
+        label: 'Announcements',
+        to: ROUTES.announcements,
+        icon: Megaphone,
+        permission: PERMISSIONS.notificationsBroadcast,
+        matchPrefix: '/announcements',
+      },
       {
         label: 'System Settings',
         to: ROUTES.settings,

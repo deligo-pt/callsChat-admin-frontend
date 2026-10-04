@@ -1,3 +1,4 @@
+import { announcementHandlers } from './announcements'
 import { authHandlers } from './auth'
 import { bootstrapHandlers } from './bootstrap'
 import { feedbackHandlers } from './feedback'
@@ -19,5 +20,12 @@ export const handlers = [
   ...staffHandlers,
   ...feedbackHandlers,
   ...verificationHandlers,
+  /*
+   * Also before `resourceHandlers`, and for a sharper reason than the others:
+   * the catch-all there would answer `GET /admin/announcements/:id` with a
+   * plausible record, hiding the fact that the route does not exist at all
+   * (plan.md §3.2).
+   */
+  ...announcementHandlers,
   ...resourceHandlers,
 ]

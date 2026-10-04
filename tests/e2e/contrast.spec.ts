@@ -15,15 +15,31 @@ import { ACCOUNTS, signIn } from './fixtures'
  * This closes that gap for the shipped surfaces.
  */
 
-async function contrastViolations(page: Page) {
+/**
+ * Colour-contrast violations, optionally scoped to one subtree.
+ *
+ * ⚠️ **Pass a `selector` whenever the subject is a dialog.** Without one axe
+ * scans the whole document, which for an open dialog means scanning the page
+ * *behind* it as well — and that page is full of the known `foreground-subtle`
+ * debt below. The `KNOWN_*` filters exist to tolerate that, but they match on a
+ * colour resolved from `target[0]`, and for some nodes that resolves to the
+ * wrong element, so the exclusion leaks and the dialog gets blamed for prose it
+ * does not own. B5 hit exactly that: the announcement editor failed at
+ * wide-1920 and nowhere else, on three nodes that turned out to be queue rows
+ * showing through.
+ *
+ * Scoping is also simply more honest — a test named for the editor should fail
+ * only for the editor.
+ */
+async function contrastViolations(page: Page, selector?: string) {
   // `axe.source` is the library as a string — no filesystem access needed.
   await page.addScriptTag({ content: axe.source })
-  return page.evaluate(async () => {
+  return page.evaluate(async (scope) => {
     const results = await (
       window as unknown as {
         axe: {
           run: (
-            ctx: Document,
+            ctx: Document | Element,
             opts: unknown,
           ) => Promise<{
             violations: Array<{
@@ -33,7 +49,7 @@ async function contrastViolations(page: Page) {
           }>
         }
       }
-    ).axe.run(document, {
+    ).axe.run((scope ? document.querySelector(scope) : document) ?? document, {
       runOnly: { type: 'rule', values: ['color-contrast'] },
       resultTypes: ['violations'],
     })
@@ -46,7 +62,7 @@ async function contrastViolations(page: Page) {
         }
       }),
     )
-  })
+  }, selector)
 }
 
 /*
@@ -587,4 +603,118 @@ test('every verification status tone is legible on its own background', async ({
       `${badge.label} at ${badge.ratio.toFixed(2)}:1`,
     ).toBeGreaterThan(4.5)
   }
+})
+
+test('the announcements queue has no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  /*
+   * Phase B5. This module introduced **two new tone maps at once** —
+   * `announcement` (where `DRAFT` is the only `neutral` lifecycle state in the
+   * panel, and `ARCHIVED` borrows `locked`) and `announcementPriority` (four
+   * tones chosen to match what `broadcast.md` §5.2 renders on the phone). The
+   * stats strip also uses `primary` for Pinned, which is not a status tone and
+   * appears nowhere else as a tile.
+   *
+   * Nothing in the user, staff or verification passes covered any of that.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/announcements')
+  await expect(page.getByRole('button', { name: /new announcement/i })).toBeVisible()
+  /* A row, so the badges are actually painted rather than skeletons. */
+  await expect(page.getByText('Important Security Update')).toBeVisible()
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the announcement editor has no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  /*
+   * The richest form in the module: two text fields with live character counts,
+   * two selects, two optional CTA inputs with their own hints, a file control
+   * and a switch — all muted prose, which is where contrast debt hides.
+   *
+   * ⚠️ `KNOWN_DANGER_TEXT_TOKEN` is permitted here and nowhere else in this
+   * file so far. The editor renders `FormField` errors in `text-danger`, which
+   * is the same app-wide prose debt documented above (plan.md O16) — roughly
+   * fifteen surfaces, `tokens.css` already flags the token, and fixing it
+   * repaints every validation message in the product. Excluded by computed
+   * colour, so a violation in any other colour still fails.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/announcements')
+  await page.getByRole('button', { name: /new announcement/i }).click()
+
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByLabel(/headline/i)).toBeVisible()
+
+  const unexpected = (
+    await contrastViolations(page, '[data-slot="dialog-content"]')
+  ).filter(
+    (node) =>
+      node.color !== KNOWN_SUBTLE_TOKEN && node.color !== KNOWN_DANGER_TEXT_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the publish confirmation is legible, since it is the last thing read before a broadcast', async ({
+  page,
+}) => {
+  /*
+   * ⚠️ Measured directly rather than through axe, because this one sentence is
+   * the entire guard between an operator and an irreversible broadcast to every
+   * user on the platform. If it is the one thing on screen that is hard to
+   * read, the confirmation is theatre.
+   *
+   * The contrast ratio is computed rather than compared against a fixed string:
+   * the tone may legitimately be retuned, and what must not change is that it
+   * stays readable.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/announcements')
+  await page.getByRole('button', { name: /new announcement/i }).click()
+
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/headline/i).fill('A perfectly ordinary headline')
+  await dialog.getByLabel(/^body/i).fill('Ordinary body copy.')
+  await dialog.getByRole('button', { name: /publish now/i }).click()
+
+  const warning = dialog.getByText(/publish to every matching user now/i)
+  await expect(warning).toBeVisible()
+
+  const ratio = await warning.evaluate((node) => {
+    function parse(value: string): [number, number, number] {
+      const [r = 0, g = 0, b = 0] = value.match(/\d+(\.\d+)?/g)!.map(Number)
+      return [r, g, b]
+    }
+    function luminance([r, g, b]: [number, number, number]) {
+      const channel = (raw: number) => {
+        const c = raw / 255
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    }
+    /** The nearest ancestor that actually paints, so the ratio is real. */
+    function background(element: Element): [number, number, number] {
+      for (let n: Element | null = element; n; n = n.parentElement) {
+        const value = getComputedStyle(n).backgroundColor
+        const alpha = value.match(/[\d.]+/g)?.[3]
+        if (value !== 'transparent' && alpha !== '0') return parse(value)
+      }
+      return [255, 255, 255]
+    }
+
+    const element = node as HTMLElement
+    const fg = luminance(parse(getComputedStyle(element).color))
+    const bg = luminance(background(element))
+    const [light, dark] = fg > bg ? [fg, bg] : [bg, fg]
+    return (light! + 0.05) / (dark! + 0.05)
+  })
+
+  /* AA for normal-size text. */
+  expect(ratio).toBeGreaterThanOrEqual(4.5)
 })
