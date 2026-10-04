@@ -58,7 +58,29 @@ export const queryKeys = {
   withdrawals: domain('withdrawals'),
 
   auditLogs: domain('audit-logs'),
-  announcements: domain('announcements'),
+
+  /**
+   * Official Announcements (plan.md §4.4).
+   *
+   * `all` is the invalidation root every write targets, and here that is a
+   * correctness requirement rather than a convenience. There is **no
+   * `GET /admin/announcements/:id`** (plan.md §3.2), so the list is the only
+   * thing that can show the result of a write — nothing may be patched from a
+   * create, an update or a pin response, because those shapes are unobserved.
+   *
+   * `stats` sits under the same root so a publish refreshes the counters the
+   * queue header shows. It takes no parameters: the endpoint is platform-wide
+   * and ignores every filter.
+   *
+   * ⚠️ `details()` and `detail()` come along from {@link domain} and are
+   * **unusable** — there is no route behind them. Left rather than carved out
+   * because a hand-rolled object would drift from every sibling, but nothing
+   * should ever reference them.
+   */
+  announcements: {
+    ...domain('announcements'),
+    stats: () => ['announcements', 'stats'] as const,
+  },
   /**
    * Staff & Access Control (staff_management_plan.md §4.5).
    *

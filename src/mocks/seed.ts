@@ -1,6 +1,5 @@
 import { maskPhone, maskReference } from '@/lib/mask'
 import type {
-  Announcement,
   AuditLog,
   ConfigurationEntry,
   DiamondPackage,
@@ -749,50 +748,16 @@ export const auditLogs: AuditLog[] = Array.from({ length: 400 }, (_, index) => {
  * same question, one of them made up.
  */
 
-export const announcements: Announcement[] = Array.from({ length: 24 }, (_, index) => {
-  const status = rng.pick([
-    'DRAFT',
-    'SCHEDULED',
-    'QUEUED',
-    'SENT_TO_PROVIDER',
-    'DELIVERED',
-    'FAILED',
-    'EXPIRED',
-  ] as const)
-  const estimated = rng.int(500, 48000)
-
-  return {
-    id: id('ann', index),
-    title: `Scheduled maintenance notice #${index + 1}`,
-    body: 'CallsChat will be briefly unavailable while we complete planned maintenance.',
-    channel: rng.bool(0.6) ? 'PUSH' : 'IN_APP_BANNER',
-    audience: rng.pick([
-      'ALL_USERS',
-      'HOSTS_ONLY',
-      'BY_STATUS',
-      'EXPLICIT_IDS',
-    ] as const),
-    audienceDescription: 'All active users',
-    status,
-    deepLink: rng.bool(0.3) ? 'callschat://settings' : null,
-    createdByName: rng.pick(ADMIN_ACTORS).name,
-    version: 1,
-    scheduledAt: status === 'SCHEDULED' ? rng.pastDate(-10, -20) : null,
-    publishedAt: ['DELIVERED', 'SENT_TO_PROVIDER', 'FAILED'].includes(status)
-      ? rng.pastDate(30, 0)
-      : null,
-    expiresAt: status === 'EXPIRED' ? rng.pastDate(5, 0) : null,
-    delivery: {
-      estimatedRecipients: estimated,
-      queued: status === 'QUEUED' ? estimated : 0,
-      sentToProvider: ['SENT_TO_PROVIDER', 'DELIVERED', 'FAILED'].includes(status)
-        ? estimated
-        : 0,
-      delivered: status === 'DELIVERED' ? Math.floor(estimated * 0.94) : 0,
-      failed: status === 'FAILED' ? Math.floor(estimated * 0.12) : 0,
-    },
-  } satisfies Announcement
-})
+/*
+ * The `announcements` fixture was removed on 2026-10-04 along with
+ * `Announcement` (plan.md §3.1).
+ *
+ * It seeded 24 rows of a shape the announcements API never produces — a
+ * seven-value status enum, a `channel`, and a `delivery{}` counter block, none
+ * of which exist. `handlers/announcements.ts` replaces it with a mock built
+ * from the service's own measured validation rejections, and the live table is
+ * genuinely empty, which that mock can represent and this fixture could not.
+ */
 
 export const configuration: ConfigurationEntry[] = [
   {

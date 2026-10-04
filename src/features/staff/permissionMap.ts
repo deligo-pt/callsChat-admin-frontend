@@ -15,8 +15,23 @@ import { MODULE_PERMISSION_VALUES, type ModulePermission } from '@/types/staff'
  * They do not line up, in both directions. One `USER_MODERATE` covers four of
  * ours (`usersSuspend`, `usersBan`, `usersRestrict`, `sessionsRevoke`). We
  * carry whole domains the backend has no key for — diamonds, payments,
- * withdrawals, clubs, hosts, notifications, audit logs — consistent with those
- * endpoints still answering 404.
+ * withdrawals, clubs, hosts, audit logs — consistent with those endpoints still
+ * answering 404.
+ *
+ * ⚠️ **`notifications` was in that list and has been taken out of it, because
+ * the reason no longer holds.** As of 2026-10-04 `/admin/announcements/*` is
+ * live and consumed by `features/announcements`, yet there is still no module
+ * key for it — verified by a validation probe whose rejection listed all eight
+ * and named none of them. So it is a third kind of mismatch, distinct from both
+ * of the above: **a built module with working endpoints and no grantable key.**
+ *
+ * That makes it the one module gated on the *role alone*
+ * (`notificationsBroadcast` is granted to `ADMIN` in `auth/permissions.ts`,
+ * phase B4), and it is why this bridge has nothing to add for it. If a key ever
+ * appears in the enum, the role grant has to be reconsidered — the API would
+ * then be requiring the role *and* a permission, which is exactly the situation
+ * that retired the `configurationConfigure` role grant.
+ * `features/announcements/navigation.test.ts` is the tripwire for that.
  *
  * `BUSINESS_VERIFY` used to be the third mismatch: a backend key for a module
  * the panel had not built. **It is no longer** — as of 2026-09-29 it maps to

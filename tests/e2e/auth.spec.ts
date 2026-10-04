@@ -69,6 +69,18 @@ test('navigation lists only modules the backend actually serves', async ({ page 
 
   await expect(nav.getByRole('link', { name: 'Users', exact: true })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Dashboard' })).toBeVisible()
+  /*
+   * ⚠️ **`Announcements` moved from the absent list to here on 2026-10-04, and
+   * it failed this test on the way** — which is the test working, not breaking.
+   *
+   * It was listed below as a module that "returns 404 server-side", and that
+   * was true when it was written. `/admin/announcements/*` now exists and was
+   * verified live, so `layouts/navigation.ts` gained the entry under its own
+   * standing rule — *restore a route the same day its endpoints ship* — and
+   * this assertion had to flip with it. Leaving it in the absent list would
+   * have meant the suite enforcing the absence of a module that works.
+   */
+  await expect(nav.getByRole('link', { name: 'Announcements' })).toBeVisible()
 
   /*
    * Every module below returns 404 server-side, so it must not appear even for
@@ -83,7 +95,6 @@ test('navigation lists only modules the backend actually serves', async ({ page 
     'Payments',
     'Withdrawals',
     'Reports',
-    'Announcements',
     'Admin Users',
     'Audit Logs',
     'Configuration',
