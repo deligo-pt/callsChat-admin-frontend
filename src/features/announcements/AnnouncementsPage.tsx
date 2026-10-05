@@ -618,12 +618,26 @@ export function AnnouncementsPage() {
         severity="critical"
         reason="none"
         /*
-         * ⚠️ A typed confirmation, reserved for irreversible actions. The
-         * headline rather than the id: it is what the operator can see on the
-         * row, and typing it means they looked at which row they are on — which
-         * is the mistake this guards against, not a slip of the finger.
+         * ⚠️ A typed confirmation, reserved for irreversible actions.
+         *
+         * **`DELETE`, not the headline — and that reverses B3's reasoning,
+         * which was wrong on both counts.** The argument then was that typing
+         * the headline proves the operator looked at which row they are on.
+         * Two things break it:
+         *
+         * 1. **Headlines are not unique.** Three announcements in one live
+         *    queue were all "CallsChat 4.0 Live Host Application Now", so
+         *    typing one identifies nothing.
+         * 2. **Headlines are often untypeable.** A real title contained an en
+         *    dash (`–`), which cannot be entered on a normal keyboard — so
+         *    Delete could not be confirmed for that row at all. A guard that
+         *    blocks the action outright is not a guard, it is a defect.
+         *
+         * Identity is carried by `target` directly above, which shows the full
+         * headline and is the thing to read. This field is a speed bump against
+         * a reflex click, which is all it can honestly be.
          */
-        {...(deleting ? { typedConfirmation: deleting.title } : {})}
+        typedConfirmation="DELETE"
         confirmLabel="Delete permanently"
         loading={deleteMutation.isPending}
         onConfirm={() => {

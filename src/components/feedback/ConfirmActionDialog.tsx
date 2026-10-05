@@ -77,6 +77,19 @@ export interface ConfirmActionDialogProps {
   /**
    * Require the operator to type this exact string before confirming.
    * Reserved for irreversible actions (plan.md §Recommended Screen Pattern).
+   *
+   * ⚠️ **Keep it short, and keep it typeable on a plain keyboard.** The
+   * announcements module passed a record's headline here and produced a
+   * confirmation that could not be satisfied at all: the title contained an en
+   * dash (`–`), which an operator cannot type, so Delete was unreachable for
+   * that row. A long value also used to break this dialog's layout.
+   *
+   * ⚠️ **It is a speed bump, not proof of identity.** Resist the temptation to
+   * pass a record's name so the operator "has to look at the right row" —
+   * names are rarely unique (three announcements in the same queue shared one),
+   * so typing it proves nothing about *which* record is selected. {@link target}
+   * above is what shows the operator what they are acting on, and it is
+   * directly above this field. A constant like `DELETE` is the honest choice.
    */
   typedConfirmation?: string
 
@@ -236,7 +249,7 @@ function ConfirmActionForm({
       </DialogHeader>
 
       {/*
-       * ⚠️ `-mx-1.5 px-1.5` is the focus ring's clearance, not decoration.
+       * ⚠️ `-m-1.5 p-1.5` is the focus ring's clearance, not decoration.
        *
        * `globals.css` draws focus as `outline: 2px` at `outline-offset: 2px`, so
        * the ring sits **4px outside** the field it belongs to. And
@@ -249,8 +262,32 @@ function ConfirmActionForm({
        * The negative margin cancels the padding, so the fields keep the width
        * they had and only the clip box grows. plan.md §6 states the rule this
        * broke: no control may sit flush against a clipping edge.
+       *
+       * ⚠️ **It was `-mx-1.5 px-1.5` — horizontal only — until 2026-10-05, and
+       * the bottom edge had exactly the same defect the whole time.** The last
+       * field in the body sat flush against the clip box, so its ring was
+       * sliced off along the bottom; on the announcements delete dialog, where
+       * the typed-confirmation input IS the last field, that was every single
+       * use of it.
+       *
+       * It survived five focus-ring tests across five viewports because
+       * `expectFocusRingNotClipped` only ever checked left and right — it was
+       * written for the original left/right report and grew no further. Both
+       * the helper and this class are fixed together; the helper first, so it
+       * could be watched failing on this exact dialog before the CSS changed.
+       *
+       * `gap-4` on the dialog means the 6px negative margin eats 6px of a 16px
+       * gap top and bottom. Nothing visibly moves.
+       *
+       * ⚠️ **`scroll-p-2` is the other half, and padding alone cannot replace
+       * it.** When a keyboard user tabs to a field below the fold, the browser
+       * scrolls it *just* into view — measured flush, a gap of exactly 0 to the
+       * clip edge — so the ring is sliced off no matter how much padding the
+       * box carries. `scroll-padding` is what tells the browser to stop short
+       * when scrolling something into view; the padding then covers the fields
+       * that were already visible. Both are needed.
        */}
-      <div className="-mx-1.5 min-h-0 space-y-4 overflow-y-auto px-1.5">
+      <div className="-m-1.5 min-h-0 scroll-p-2 space-y-4 overflow-y-auto p-1.5">
         {/* Target — the operator must see exactly what they are acting on. */}
         <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
           <span className="block text-overline text-foreground-subtle uppercase">
@@ -319,10 +356,27 @@ function ConfirmActionForm({
         {/* Typed confirmation for irreversible actions. */}
         {typedConfirmation !== undefined ? (
           <div className="space-y-2">
-            <Label htmlFor={typedId}>
-              Type <code className="font-mono font-semibold">{typedConfirmation}</code>{' '}
-              to confirm
+            {/*
+             * ⚠️ **The value sits on its own line, not inside the sentence.**
+             *
+             * It used to read `Type <code>{value}</code> to confirm` as one
+             * inline run. That is fine for `DELETE`, and falls apart for
+             * anything longer: when the monospace `<code>` wrapped, "to" was
+             * stranded at the end of the first line and "confirm" at the end of
+             * the second, with the value broken across the middle. Reported
+             * from a screenshot of the announcements delete dialog, where the
+             * value was a 62-character headline.
+             *
+             * Callers should still pass something short — see the note on
+             * `typedConfirmation` — but the component must not come apart when
+             * they do not.
+             */}
+            <Label htmlFor={typedId} className="block">
+              Type this to confirm
             </Label>
+            <code className="block rounded-md border border-border bg-surface-muted px-3 py-2 font-mono text-body font-semibold wrap-anywhere">
+              {typedConfirmation}
+            </code>
             <Input
               id={typedId}
               value={typed}

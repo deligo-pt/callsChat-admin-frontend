@@ -113,6 +113,23 @@ export async function expectFocusRingNotClipped(
       if (ring.left < edge.left - 0.5) offenders.push('left clipped by ' + node.tagName)
       if (ring.right > edge.right + 0.5)
         offenders.push('right clipped by ' + node.tagName)
+      /*
+       * ⚠️ **Top and bottom were missing until 2026-10-05, and their absence is
+       * what let a real defect ship.** This helper was written for a reported
+       * left/right clipping bug and only ever grew the two checks that bug
+       * needed. Five focus-ring tests then passed across five viewports while
+       * the bottom of every ring in `ConfirmActionDialog` was being sliced off
+       * — the dialog's scrolling body had `-mx-1.5 px-1.5` and no vertical
+       * counterpart, so the last field's ring fell outside the clip box.
+       *
+       * Reported from a screenshot, not caught here, which is the whole reason
+       * these two lines exist. An outline does not contribute to scrollable
+       * overflow, so a clipped ring cannot be scrolled into view either — there
+       * is nothing to find later.
+       */
+      if (ring.top < edge.top - 0.5) offenders.push('top clipped by ' + node.tagName)
+      if (ring.bottom > edge.bottom + 0.5)
+        offenders.push('bottom clipped by ' + node.tagName)
       /* Only the nearest clipping ancestor matters for this check. */
       break
     }

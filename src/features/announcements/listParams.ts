@@ -58,9 +58,25 @@ export const MAX_LIMIT = MAX_PAGE_SIZE
  * The sentinel for "no filter on this facet".
  *
  * Shared by all four selects so one constant governs every "is this narrowed?"
- * check. It is **never sent to the API** — see point 2 above.
+ * check. It is **never sent to the API** and never written to the URL — a facet
+ * at `ANY` has its key deleted — so the exact string is internal.
+ *
+ * ⚠️ **It was `'ALL'` until 2026-10-05, and that collided with a real enum
+ * value.** `announcementAudienceSchema` has a member called `ALL` (meaning
+ * "every account mode"), so the Audience select rendered **two `SelectItem`s
+ * with `value="ALL"`** — "Any audience" and "Everyone". Radix mirrors every
+ * matching item's children into the trigger, so the closed control read
+ * *"Any audienceEveryone"*, clipped mid-word.
+ *
+ * The cosmetic bug was the visible half. The functional half was worse:
+ * choosing "Everyone" set the facet to `ALL`, which this file defines as *no
+ * filter* — so `targetAudience=ALL` could never be sent, and announcements
+ * addressed to everyone could not be filtered for at all.
+ *
+ * The sentinel is now a string no backend enum can contain. `status` and
+ * `priority` never collided; Audience was the only broken facet.
  */
-export const ANY = 'ALL' as const
+export const ANY = '__ANY__' as const
 
 /**
  * What the queue opens on: **everything**.

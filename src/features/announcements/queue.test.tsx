@@ -146,6 +146,70 @@ describe('filters live in the URL', () => {
   })
 })
 
+describe('the filter sentinel does not collide with a real enum value', () => {
+  it('shows one label in the Audience trigger, not two', async () => {
+    /*
+     * ⚠️ **The visible half of a bug that shipped through B2–B5 untested.**
+     *
+     * The "no filter" sentinel was the string `ALL`, and
+     * `announcementAudienceSchema` has a real member called `ALL` meaning
+     * "every account mode". So the Audience select rendered two `SelectItem`s
+     * with the same value — "Any audience" and "Everyone" — and Radix mirrors
+     * every matching item's children into the trigger, which therefore read
+     * *"Any audienceEveryone"*, clipped mid-word.
+     *
+     * Asserted on the trigger's text rather than on the item count, because the
+     * duplicate-value collision is what matters and a future facet could
+     * reintroduce it from a different enum.
+     */
+    mount()
+    await screen.findByText(PINNED_ROW)
+
+    const trigger = screen.getByLabelText('Audience')
+
+    expect(trigger).toHaveTextContent('Any audience')
+    expect(trigger).not.toHaveTextContent('Everyone')
+  })
+
+  it('can actually filter to announcements addressed to everyone', async () => {
+    /*
+     * ⚠️ The functional half, and the worse one. With the sentinel set to
+     * `ALL`, choosing "Everyone" wrote the sentinel — which this module defines
+     * as *no filter* — so `targetAudience=ALL` could never be sent and the
+     * Everyone-only view was unreachable. The control looked like it worked and
+     * silently returned every row.
+     *
+     * Two fixtures are addressed to `ALL` and three are not, so a working
+     * filter must narrow.
+     */
+    mount('/announcements?targetAudience=ALL')
+
+    expect(await screen.findByText(PINNED_ROW)).toBeInTheDocument()
+    /* A BUSINESS-only announcement must be gone. */
+    expect(screen.queryByText(DRAFT_ROW)).not.toBeInTheDocument()
+  })
+
+  it('keeps the sentinel out of the URL entirely', async () => {
+    /*
+     * The sentinel is internal: a facet at "any" deletes its key rather than
+     * writing a value. That is what lets it be renamed freely — and what stops
+     * `__ANY__` ever reaching the API, which validates these enums strictly and
+     * would 400 the whole page.
+     */
+    const user = userEvent.setup()
+    mount('/announcements?targetAudience=BUSINESS')
+    await screen.findByText(DRAFT_ROW)
+
+    await user.click(screen.getByRole('button', { name: /clear all/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(PINNED_ROW)).toBeInTheDocument()
+    })
+    expect(window.location.search).not.toContain('__ANY__')
+    expect(window.location.search).not.toContain('targetAudience')
+  })
+})
+
 describe('the pin toggle', () => {
   it('names the outcome, not the current state', async () => {
     mount()
