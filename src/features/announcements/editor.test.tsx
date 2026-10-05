@@ -414,12 +414,22 @@ describe('the destructive actions', () => {
     expect(screen.queryByRole('menuitem', { name: /archive/i })).not.toBeInTheDocument()
   })
 
-  it('demands the headline typed out before deleting', async () => {
+  it('demands a typed confirmation before deleting', async () => {
     /*
-     * ⚠️ A typed confirmation, and the headline rather than the id, because the
-     * mistake this guards against is acting on the wrong row — not a slip of
-     * the finger. Typing what is printed on the row means the operator looked
-     * at which row they are on.
+     * ⚠️ **`DELETE`, not the headline — this test reverses what B3 asserted,
+     * and B3 was wrong on both counts.**
+     *
+     * The old version typed the record's title, on the reasoning that doing so
+     * proved the operator had looked at which row they were on. Reported from a
+     * screenshot:
+     *
+     * 1. **Titles are not unique.** Three announcements in one live queue were
+     *    all "CallsChat 4.0 Live Host Application Now", so typing one proves
+     *    nothing about which is selected.
+     * 2. **Titles are often untypeable.** A real one contained an en dash
+     *    (`–`), which cannot be entered on a normal keyboard — so Delete could
+     *    not be confirmed for that row at all. A guard that blocks the action
+     *    outright is a defect, not a guard.
      */
     const user = userEvent.setup()
     mount()
@@ -438,7 +448,7 @@ describe('the destructive actions', () => {
     /* Nothing happened: the typed confirmation is still empty. */
     expect(mockAnnouncements().some((row) => row.title === DRAFT_ROW)).toBe(true)
 
-    await user.type(within(dialog).getByLabelText(/to confirm/i), DRAFT_ROW)
+    await user.type(within(dialog).getByLabelText(/to confirm/i), 'DELETE')
     await user.click(
       within(dialog).getByRole('button', { name: /delete permanently/i }),
     )
@@ -446,6 +456,50 @@ describe('the destructive actions', () => {
     await waitFor(() => {
       expect(mockAnnouncements().some((row) => row.title === DRAFT_ROW)).toBe(false)
     })
+  })
+
+  it('still names the record being deleted, so identity is not lost', async () => {
+    /*
+     * ⚠️ The other half of the change above. Dropping the headline from the
+     * typed field is only safe because `target` shows it directly over the
+     * input — that is what the operator reads to check they are on the right
+     * row. If this ever stops rendering, the confirmation becomes a speed bump
+     * attached to nothing.
+     */
+    const user = userEvent.setup()
+    mount()
+    await screen.findByText(DRAFT_ROW)
+
+    await user.click(
+      screen.getByRole('button', { name: `More actions for ${DRAFT_ROW}` }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: /delete/i }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText(DRAFT_ROW)).toBeInTheDocument()
+  })
+
+  it('asks for something a plain keyboard can produce', async () => {
+    /*
+     * ⚠️ The regression guard for the untypeable-title defect. Whatever the
+     * confirmation is, it must be ASCII and short — a value carrying an en
+     * dash, a curly quote or an emoji makes the action unreachable, and nothing
+     * else in the dialog would reveal that.
+     */
+    const user = userEvent.setup()
+    mount()
+    await screen.findByText(DRAFT_ROW)
+
+    await user.click(
+      screen.getByRole('button', { name: `More actions for ${DRAFT_ROW}` }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: /delete/i }))
+
+    const dialog = await screen.findByRole('dialog')
+    const prompt = within(dialog).getByText('DELETE')
+
+    expect(prompt.textContent).toMatch(/^[\x20-\x7E]+$/)
+    expect(prompt.textContent!.length).toBeLessThanOrEqual(24)
   })
 
   it('says that deleting a published announcement recalls nothing', async () => {

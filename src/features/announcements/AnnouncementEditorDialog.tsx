@@ -292,14 +292,30 @@ function EditorForm({
       </DialogHeader>
 
       {/*
-       * `-mx-1.5 px-1.5` is the focus ring's clearance, not decoration.
+       * `-m-1.5 p-1.5` is the focus ring's clearance, not decoration.
        * `globals.css` draws focus 4px outside the element, and `overflow-y:
        * auto` promotes `overflow-x` to `auto` per spec — so this is a clipping
        * box on both axes and a field flush against it loses the ring down its
        * left and right. The negative margin cancels the padding, so the fields
        * keep their width and only the clip box grows.
+       *
+       * ⚠️ **It was `-mx-1.5 px-1.5` — horizontal only — and so was
+       * `ConfirmActionDialog`'s, which is where the defect was first reported.
+       * Both are fixed together, because this one would have been found the
+       * same way a week later.** At 360 the two selects stack into one column,
+       * which puts the audience select against the bottom of the clip box and
+       * sliced its ring off — caught by the top/bottom checks newly added to
+       * `expectFocusRingNotClipped`, which had only ever tested left and right.
+       *
+       * ⚠️ **`scroll-p-2` is the other half, and padding alone cannot replace
+       * it.** When a keyboard user tabs to a field below the fold, the browser
+       * scrolls it *just* into view — measured flush, a gap of exactly 0 to the
+       * clip edge — so the ring is sliced off no matter how much padding the
+       * box carries. `scroll-padding` is what tells the browser to stop short
+       * when scrolling something into view; the padding then covers the fields
+       * that were already visible. Both are needed.
        */}
-      <div className="-mx-1.5 min-h-0 space-y-4 overflow-y-auto px-1.5">
+      <div className="-m-1.5 min-h-0 scroll-p-2 space-y-4 overflow-y-auto p-1.5">
         {serverError ? (
           <Alert variant="destructive">
             <AlertTriangle />
