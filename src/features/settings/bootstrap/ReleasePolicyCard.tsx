@@ -11,7 +11,7 @@ import {
   type ReleasePolicyValues,
 } from './bootstrapSchemas'
 import { DangerousSwitch } from './DangerousSwitch'
-import { UnsafeStoredUrlNotice } from './fields'
+import { NotSet, UnsafeStoredUrlNotice } from './fields'
 import { useBootstrapCardForm } from './useBootstrapCardForm'
 
 /**
@@ -28,6 +28,13 @@ import { useBootstrapCardForm } from './useBootstrapCardForm'
  * ⚠️ `storeUrl` is validated to `https:` **before** the request. The server
  * accepts any string and serves it publicly (§3.2); this field is the only
  * thing between an operator's paste and a `javascript:` URL on every phone.
+ *
+ * ⚠️ `minAndroidSdk` renders on **Android only**, and moved here from
+ * `LegalCard` on 2026-10-06. The field exists on the iOS record and means
+ * nothing there (§3.9), so the iOS payload omits it rather than sending a
+ * value that cannot apply — `toReleasePolicyValues` leaves the key off
+ * entirely on iOS, which is what makes the omission automatic rather than a
+ * rule someone has to remember here.
  */
 export function ReleasePolicyCard({
   config,
@@ -36,6 +43,8 @@ export function ReleasePolicyCard({
   config: BootstrapConfig
   canEdit: boolean
 }) {
+  const isAndroid = config.platform === 'ANDROID'
+
   const card = useBootstrapCardForm<ReleasePolicyValues>({
     config,
     schema: releasePolicySchema,
@@ -47,6 +56,7 @@ export function ReleasePolicyCard({
       'minSupportedVersion',
       'minBuildNumber',
       'storeUrl',
+      'minAndroidSdk',
     ],
     canEdit,
   })
@@ -146,6 +156,49 @@ export function ReleasePolicyCard({
             ) : null}
           </div>
         </div>
+
+        {/*
+         * Beneath the version floors, because it is the same question asked
+         * about the OS instead of the app: which clients are allowed to run.
+         */}
+        {isAndroid ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="bootstrap-min-sdk">Minimum Android SDK</Label>
+            <Input
+              id="bootstrap-min-sdk"
+              type="number"
+              inputMode="numeric"
+              className="font-mono sm:max-w-[10rem]"
+              disabled={!canEdit}
+              aria-describedby="bootstrap-min-sdk-hint"
+              aria-invalid={errors.minAndroidSdk ? true : undefined}
+              {...register('minAndroidSdk', { valueAsNumber: true })}
+            />
+            <p
+              id="bootstrap-min-sdk-hint"
+              className="text-caption text-foreground-muted"
+            >
+              Android 7.0 is SDK 24. Devices below this are not supported.
+            </p>
+            {errors.minAndroidSdk ? (
+              <p className="text-caption text-danger-foreground" role="alert">
+                {errors.minAndroidSdk.message}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          /*
+           * Stated rather than hidden. Hiding it leaves an operator wondering
+           * whether iOS has a floor the panel forgot; a disabled input would
+           * imply a permission they are missing. Neither is true.
+           */
+          <p className="text-caption text-foreground-muted">
+            <NotSet>
+              The API has no minimum iOS version — only an Android SDK floor, which does
+              not apply here.
+            </NotSet>
+          </p>
+        )}
 
         <div className="space-y-1.5">
           <Label htmlFor="bootstrap-store-url">Store link</Label>

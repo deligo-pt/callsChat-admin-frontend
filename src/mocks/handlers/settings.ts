@@ -719,107 +719,20 @@ export const settingsHandlers = [
     return settingsOk('Platform and localization settings updated successfully.')
   }),
 
-  http.get(`${API_PREFIX}/admin/settings/deployment`, async () => {
-    const scenario = await applyScenario()
-    if (scenario) return scenario
-
-    return HttpResponse.json({
-      success: true,
-      data: {
-        backend: {
-          version: 'v1.0.0',
-          commitHash: 'prod-release',
-          environment: 'development',
-          nodeVersion: 'v20.20.2',
-          deployedAt: new Date(Date.now() - 40_402_000).toISOString(),
-          uptimeSeconds: 40402,
-        },
-        mobileApps: { android: policies.android, ios: policies.ios },
-      },
-    })
-  }),
-
-  /**
-   * `PATCH /admin/settings/deployment/app-versions`.
+  /*
+   * ⚠️ `GET /admin/settings/deployment` and
+   * `PATCH /admin/settings/deployment/app-versions` were mocked here until
+   * 2026-10-06, when the Releases section that called them was removed.
    *
-   * **Replaces, does not merge.** An omitted `buildNumber` or `releaseNotes`
-   * is written as `null` — the single most destructive behaviour in this
-   * module, and the reason `buildVersionPolicyPayload` always sends all six
-   * keys. Reproduced faithfully so a partial payload fails a test here rather
-   * than silently wiping a release note in production.
+   * The PATCH **replaced rather than merged** — an omitted `buildNumber` or
+   * `releaseNotes` was written as `null`, the most destructive behaviour in
+   * this module. If either route is ever wired up again, that trap has to be
+   * reproduced here before a client is written against it.
+   *
+   * `policies` is still held above: `GET /admin/settings` returns
+   * `appVersionPolicies` and `GET /system/config` derives from the same
+   * records, so the state is load-bearing even with both handlers gone.
    */
-  http.patch(
-    `${API_PREFIX}/admin/settings/deployment/app-versions`,
-    async ({ request }) => {
-      const scenario = await applyScenario()
-      if (scenario) return scenario
-
-      const body = await readBody(request)
-      if (!body) return NULL_BODY()
-
-      const issues: string[] = []
-      const platform = body['platform']
-      const latest = body['latestVersion']
-      const minimum = body['minRequiredVersion']
-
-      if (platform === undefined) issues.push('body/platform Required')
-      else if (platform !== 'ANDROID' && platform !== 'IOS') {
-        issues.push(
-          `body/platform Invalid enum value. Expected 'ANDROID' | 'IOS', received '${String(platform)}'`,
-        )
-      }
-      if (latest === undefined) issues.push('body/latestVersion Required')
-      if (minimum === undefined) issues.push('body/minRequiredVersion Required')
-
-      if (
-        body['buildNumber'] !== undefined &&
-        typeof body['buildNumber'] !== 'string'
-      ) {
-        issues.push(
-          `body/buildNumber Expected string, received ${typeName(body['buildNumber'])}`,
-        )
-      }
-      if (
-        body['forceUpdate'] !== undefined &&
-        typeof body['forceUpdate'] !== 'boolean'
-      ) {
-        issues.push(
-          `body/forceUpdate Expected boolean, received ${typeName(body['forceUpdate'])}`,
-        )
-      }
-
-      if (issues.length > 0) return validationFailure(issues)
-
-      const key = platform === 'ANDROID' ? 'android' : 'ios'
-      const updated: MockPolicy = {
-        ...policies[key],
-        latestVersion: String(latest),
-        minRequiredVersion: String(minimum),
-        // Omitted -> null. No merge. This is the trap.
-        buildNumber:
-          typeof body['buildNumber'] === 'string' ? body['buildNumber'] : null,
-        forceUpdate: body['forceUpdate'] === true,
-        releaseNotes:
-          typeof body['releaseNotes'] === 'string' ? body['releaseNotes'] : null,
-        updatedAt: new Date().toISOString(),
-        updatedBy: ADMIN_ID,
-      }
-      policies = { ...policies, [key]: updated }
-      persist()
-
-      /*
-       * No `minRequiredVersion <= latestVersion` check, deliberately. The live
-       * service accepts the soft-brick pair, so the mock must too — otherwise
-       * the client-side guard in `lib/semver.ts` would look redundant and
-       * someone would remove it.
-       */
-      return HttpResponse.json({
-        success: true,
-        message: `${String(platform)} app version policy updated successfully.`,
-        data: updated,
-      })
-    },
-  ),
 
   /** `POST /admin/settings/database/backup` — no body, 202, then it fails. */
   http.post(`${API_PREFIX}/admin/settings/database/backup`, async () => {

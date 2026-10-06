@@ -6,7 +6,6 @@ import {
   backupDownloadResponseSchema,
   backupListResponseSchema,
   backupTriggerResponseSchema,
-  deploymentInfoSchema,
   logoUploadResponseSchema,
   publicConfigSchema,
   settingsMutationResponseSchema,
@@ -14,10 +13,7 @@ import {
   smsSettingsResponseSchema,
   smsTestResponseSchema,
   systemSettingsSchema,
-  versionPolicyMutationResponseSchema,
-  type AppVersionPolicy,
   type BackupList,
-  type DeploymentInfo,
   type PublicConfig,
   type SmsSettings,
   type SystemSettings,
@@ -113,40 +109,25 @@ export async function uploadBrandLogo(file: File): Promise<string> {
   return response.data.logoUrl
 }
 
-/** `GET /admin/settings/deployment` — backend runtime stats + both policies. */
-export async function fetchDeploymentInfo(
-  signal?: AbortSignal,
-): Promise<DeploymentInfo> {
-  const response = await apiClient.get<z.infer<typeof deploymentInfoSchema>>(
-    '/admin/settings/deployment',
-    {
-      schema: deploymentInfoSchema,
-      resource: 'deployment-info',
-      ...(signal ? { signal } : {}),
-    },
-  )
-  return response.data
-}
-
-/**
- * `PATCH /admin/settings/deployment/app-versions`.
+/*
+ * ⚠️ `GET /admin/settings/deployment` and
+ * `PATCH /admin/settings/deployment/app-versions` had clients here until
+ * 2026-10-06, when the Releases section was removed.
  *
- * A **replace, not a merge** — see `buildVersionPolicyPayload`, which is the
- * only sanctioned way to construct this payload. Passing a partial object here
- * silently destroys `buildNumber` and `releaseNotes` on the server.
+ * Both routes still exist on the backend, and the PATCH is still a **replace,
+ * not a merge** — it wiped `buildNumber` and `releaseNotes` on the live iOS
+ * policy during contract testing. Anything that reintroduces it needs to send
+ * every field, not a partial object.
+ *
+ * The reason the section went is that the record is not the one phones read:
+ * writing `bootstrap.latestVersion` moved the public `GET /bootstrap` while
+ * `appVersionPolicies` stayed put (verified 2026-09-28). Mobile bootstrap
+ * holds a strict superset of these fields, so this route had no reader worth
+ * the risk of a replace-shaped PATCH.
+ *
+ * `appVersionPolicies` is still carried on the settings record below — the API
+ * returns it, and the contract says what the API returns.
  */
-export async function updateVersionPolicy(
-  payload: Record<string, unknown>,
-): Promise<AppVersionPolicy> {
-  const response = await apiClient.patch<
-    z.infer<typeof versionPolicyMutationResponseSchema>
-  >('/admin/settings/deployment/app-versions', {
-    body: payload,
-    schema: versionPolicyMutationResponseSchema,
-    resource: 'app-version-policy',
-  })
-  return response.data
-}
 
 /* ------------------------------------------------------------------ *
  * Database backups — SUPER_ADMIN
@@ -343,5 +324,5 @@ export async function fetchPublicConfig(signal?: AbortSignal): Promise<PublicCon
 export { fetchSettings }
 
 /* Re-exported so features import contract types from one place. */
-export type { SystemSettings, AppVersionPolicy, BackupList, SmsSettings, PublicConfig }
+export type { SystemSettings, BackupList, SmsSettings, PublicConfig }
 export { appVersionPoliciesSchema, systemSettingsSchema }

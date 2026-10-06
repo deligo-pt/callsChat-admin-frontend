@@ -8,7 +8,6 @@ import { parseFieldErrors } from '@/types/common'
 import {
   fetchBackupDownloadUrl,
   fetchBackups,
-  fetchDeploymentInfo,
   fetchPublicConfig,
   fetchSettings,
   fetchSmsSettings,
@@ -18,7 +17,6 @@ import {
   updateChatSettings,
   updateGeneralSettings,
   updatePlatformSettings,
-  updateVersionPolicy,
 } from './api'
 
 /**
@@ -67,13 +65,6 @@ describe('reads', () => {
     expect(bundle.appVersionPolicies.ios.platform).toBe('IOS')
   })
 
-  it('returns deployment info with both mobile policies', async () => {
-    const info = await fetchDeploymentInfo()
-
-    expect(info.backend.nodeVersion).toMatch(/^v\d+/)
-    expect(info.mobileApps.android.platform).toBe('ANDROID')
-  })
-
   it('reshapes the public config rather than echoing the admin record', async () => {
     const config = await fetchPublicConfig()
 
@@ -89,7 +80,6 @@ describe('the mandatory-body trap', () => {
     '/admin/settings/general',
     '/admin/settings/chat',
     '/admin/settings/platform',
-    '/admin/settings/deployment/app-versions',
   ])('rejects a bodyless PATCH to %s', async (path) => {
     const { status, json } = await raw('PATCH', path)
 
@@ -214,63 +204,16 @@ describe('the cross-field language error', () => {
   })
 })
 
-describe('app version policy replaces rather than merges', () => {
-  it('requires platform, latestVersion and minRequiredVersion', async () => {
-    await expect(updateVersionPolicy({})).rejects.toThrow(
-      'body/platform Required, body/latestVersion Required, body/minRequiredVersion Required',
-    )
-  })
-
-  it('accepts only ANDROID and IOS', async () => {
-    await expect(
-      updateVersionPolicy({
-        platform: 'WEB',
-        latestVersion: '1.0.0',
-        minRequiredVersion: '1.0.0',
-      }),
-    ).rejects.toThrow(/Expected 'ANDROID' \| 'IOS', received 'WEB'/)
-  })
-
-  it('WIPES omitted optional fields — the destructive trap', async () => {
-    const policy = await updateVersionPolicy({
-      platform: 'IOS',
-      latestVersion: '1.0.0',
-      minRequiredVersion: '1.0.0',
-    })
-
-    // Seeded as "1" and "Initial release". Both gone.
-    expect(policy.buildNumber).toBeNull()
-    expect(policy.releaseNotes).toBeNull()
-  })
-
-  it('rejects a numeric buildNumber', async () => {
-    await expect(
-      updateVersionPolicy({
-        platform: 'ANDROID',
-        latestVersion: '2.4.0',
-        minRequiredVersion: '2.1.0',
-        buildNumber: 45,
-      }),
-    ).rejects.toThrow('body/buildNumber Expected string, received number')
-  })
-
-  it('accepts the soft-brick pair, exactly as the live service does', async () => {
-    /*
-     * min > latest with no complaint. The mock must stay this permissive or
-     * the client-side guard in lib/semver.ts looks like dead code.
-     */
-    const policy = await updateVersionPolicy({
-      platform: 'ANDROID',
-      latestVersion: '1.0.0',
-      minRequiredVersion: '99.0.0',
-      buildNumber: '1',
-      forceUpdate: true,
-      releaseNotes: '',
-    })
-
-    expect(policy.minRequiredVersion).toBe('99.0.0')
-  })
-})
+/*
+ * ⚠️ The `app version policy replaces rather than merges` block lived here
+ * until 2026-10-06. It covered `PATCH /admin/settings/deployment/app-versions`,
+ * whose client went with the Releases section.
+ *
+ * The route is unchanged on the backend and still destructive: an omitted
+ * `buildNumber` or `releaseNotes` is written as `null`, a numeric `buildNumber`
+ * is rejected, and `min > latest` is accepted without complaint. Reinstating a
+ * client means reinstating these tests first — git history has them.
+ */
 
 describe('database backups', () => {
   it('answers 202 RUNNING, then settles to FAILED', async () => {

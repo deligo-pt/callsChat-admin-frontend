@@ -3,7 +3,7 @@ import { useCallback } from 'react'
 
 import { queryKeys } from '@/api/queryKeys'
 
-import { fetchDeploymentInfo, fetchSettings } from './api'
+import { fetchSettings } from './api'
 
 /**
  * The settings singleton, shared by every tab.
@@ -31,9 +31,9 @@ export function useSettingsQuery() {
  * Invalidate everything a settings write can affect.
  *
  * `configuration.all` is the root of the settings keys, so this catches the
- * shared record, the deployment view that embeds the same version policies,
- * and the public config — which must never be left stale after a write, since
- * it is the surface the operator checks to confirm the save reached the app.
+ * shared record and the public config — which must never be left stale after a
+ * write, since it is the surface the operator checks to confirm the save
+ * reached the app.
  */
 export function useInvalidateSettings() {
   const queryClient = useQueryClient()
@@ -64,22 +64,5 @@ export function useSettingsMutation<TInput, TResult>(
       onSuccess?.(result)
       await invalidate()
     },
-  })
-}
-
-/**
- * Backend build information plus both mobile release policies.
- *
- * A separate query from the settings singleton: `GET /admin/settings/deployment`
- * is the only source of the runtime stats, and its `uptimeSeconds` is stale the
- * moment it arrives — so this is refetched on mount rather than shared with the
- * long-lived settings read.
- */
-export function useDeploymentQuery() {
-  return useQuery({
-    queryKey: queryKeys.configuration.deployment,
-    queryFn: ({ signal }) => fetchDeploymentInfo(signal),
-    staleTime: 0,
-    retry: 1,
   })
 }

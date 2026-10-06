@@ -84,7 +84,6 @@ test.describe('settings shell', () => {
       'Maintenance',
       'Chat & media',
       'Platform',
-      'Releases',
       'Database',
     ]) {
       await expect(nav.getByRole('link', { name, exact: true })).toBeVisible()
@@ -98,6 +97,23 @@ test.describe('settings shell', () => {
     await expect(
       nav.getByRole('link', { name: 'SMS gateway', exact: true }),
     ).toHaveCount(0)
+
+    /*
+     * ⚠️ `Releases` was here until 2026-10-06 and is now asserted absent.
+     *
+     * It edited `appVersionPolicies`, which is not the record mobile clients
+     * read — `Mobile bootstrap` is, and it holds a strict superset of the same
+     * fields. Two editors for one policy, only one of which reached a phone,
+     * is how an operator sets a force update during an incident and watches
+     * nothing happen. Removed rather than annotated.
+     *
+     * The negative assertion matters as much as the deletion: a stale
+     * `SETTINGS_SECTIONS` entry would put a dead link back in the sidebar, and
+     * nothing else in the suite would notice.
+     */
+    await expect(nav.getByRole('link', { name: 'Releases', exact: true })).toHaveCount(
+      0,
+    )
   })
 
   test('each section is its own URL, so it can be linked and bookmarked', async ({

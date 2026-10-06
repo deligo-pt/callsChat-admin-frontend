@@ -65,6 +65,24 @@ export const releasePolicySchema = z
     minSupportedVersion: semver,
     minBuildNumber: buildNumber,
     storeUrl: httpsUrl,
+    /**
+     * Android only. `minAndroidSdk` exists on the iOS record and means nothing
+     * there (§3.9), so the iOS form omits it entirely rather than sending a
+     * value that cannot apply. `.optional()` is what carries that: on iOS the
+     * key is absent from the values object, not zero and not null.
+     *
+     * ⚠️ Moved here from `legalSchema` on 2026-10-06. It is a floor on which
+     * clients may run, which is what this card decides — `minSupportedVersion`
+     * is the same question asked about the app instead of the OS. It sat under
+     * Platform & legal because it arrived with the URL fields, not because it
+     * belonged with them.
+     */
+    minAndroidSdk: z
+      .number({ message: 'Must be a whole number' })
+      .int('Must be a whole number')
+      .min(1, 'Must be 1 or greater')
+      .max(99, 'Android SDK levels are below 99')
+      .optional(),
   })
   /*
    * A cross-field rule the server does not have, and the one most likely to
@@ -126,17 +144,6 @@ export const legalSchema = z.object({
       (value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
       'Must be a valid email address',
     ),
-  /**
-   * Android only. `minAndroidSdk` exists on the iOS record and means nothing
-   * there (§3.9), so the iOS form omits it entirely rather than sending a
-   * value that cannot apply.
-   */
-  minAndroidSdk: z
-    .number({ message: 'Must be a whole number' })
-    .int('Must be a whole number')
-    .min(1, 'Must be 1 or greater')
-    .max(99, 'Android SDK levels are below 99')
-    .optional(),
 })
 
 export type LegalValues = z.infer<typeof legalSchema>
@@ -171,6 +178,10 @@ export function buildReleasePolicyPayload(
     minSupportedVersion: values.minSupportedVersion.trim(),
     minBuildNumber: values.minBuildNumber,
     storeUrl: values.storeUrl.trim(),
+    /* Omitted on iOS rather than sent as a meaningless number. */
+    ...(values.minAndroidSdk === undefined
+      ? {}
+      : { minAndroidSdk: values.minAndroidSdk }),
   }
 }
 
@@ -183,10 +194,6 @@ export function buildLegalPayload(
     privacyPolicyUrl: values.privacyPolicyUrl.trim(),
     termsUrl: values.termsUrl.trim(),
     supportEmail: values.supportEmail.trim(),
-    /* Omitted on iOS rather than sent as a meaningless number. */
-    ...(values.minAndroidSdk === undefined
-      ? {}
-      : { minAndroidSdk: values.minAndroidSdk }),
   }
 }
 
@@ -240,6 +247,7 @@ export function toReleasePolicyValues(config: BootstrapConfig): ReleasePolicyVal
     minSupportedVersion: config.minSupportedVersion,
     minBuildNumber: config.minBuildNumber,
     storeUrl: config.storeUrl,
+    ...(config.platform === 'ANDROID' ? { minAndroidSdk: config.minAndroidSdk } : {}),
   }
 }
 
@@ -248,6 +256,5 @@ export function toLegalValues(config: BootstrapConfig): LegalValues {
     privacyPolicyUrl: config.privacyPolicyUrl,
     termsUrl: config.termsUrl,
     supportEmail: config.supportEmail,
-    ...(config.platform === 'ANDROID' ? { minAndroidSdk: config.minAndroidSdk } : {}),
   }
 }

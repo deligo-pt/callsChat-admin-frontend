@@ -32,8 +32,8 @@ export interface SettingsSection {
    * Same rule as the modules in `navigation.ts`: an entry that navigates to
    * nothing looks like a broken product rather than an unfinished one, and
    * gives an operator no way to tell the two apart. **Each phase flips its own
-   * flag when it ships** — S3 chat and platform, S4 releases, S5 database,
-   * S6 SMS — never before.
+   * flag when it ships** — S3 chat and platform, S5 database, S6 SMS — never
+   * before.
    */
   readonly shipped: boolean
   /**
@@ -82,24 +82,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     shipped: true,
   },
   {
-    value: 'releases',
-    label: 'Releases',
-    to: ROUTES.settingsReleases,
-    description: 'Backend build information and the mobile app version policy.',
-    shipped: true,
-    /*
-     * Full width, for the same reason as Mobile bootstrap below.
-     *
-     * ⚠️ Added when the Android and iOS policies moved side by side. Inside
-     * `form-column` the page was capped at 46rem, so the two cards had to share
-     * 736px — about 355px each — which squeezed every field and defeated the
-     * point of the change. The forms themselves still read narrow: each card
-     * container-queries its own field grid, so the measure is protected per
-     * card rather than by capping the whole page.
-     */
-    wide: true,
-  },
-  {
     value: 'bootstrap',
     label: 'Mobile bootstrap',
     to: ROUTES.settingsBootstrap,
@@ -126,6 +108,10 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
      * ⚠️ The original reason named the client preview card sitting beside the
      * release policy it reported on. That card was removed on 2026-09-30, so
      * the remaining reason is simply the length.
+     *
+     * ⚠️ Since 2026-10-06 this is also the **only** release-policy editor in
+     * the panel: the Releases section was removed, because it wrote to a
+     * record no mobile client reads.
      */
     wide: true,
   },
