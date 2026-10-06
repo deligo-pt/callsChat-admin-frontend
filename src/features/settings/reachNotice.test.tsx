@@ -6,24 +6,29 @@ import { AuthProvider } from '@/auth/AuthProvider'
 import { setSession } from '@/auth/tokenStore'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { signInMockAdmin } from '@/mocks/handlers/auth'
-import { render, screen, setViewport, waitFor, within } from '@tests/render'
+import { render, screen, setViewport, within } from '@tests/render'
 
 import { MaintenanceTab } from './general/MaintenanceTab'
-import { ReleasesTab } from './releases/ReleasesTab'
 
 /**
- * The two screens that edit a record mobile clients do not read
+ * The screen that edits a record mobile clients do not read
  * (plan.md §3.1, phase B4).
  *
  * ⚠️ This is the **first component test of any settings tab**. The settings
  * suite is contract and schema tests, so "the settings suite stays green"
- * could never have proved these notices render — B4's acceptance criterion
- * would have been satisfied by a page that silently dropped them.
+ * could never have proved this notice renders — B4's acceptance criterion
+ * would have been satisfied by a page that silently dropped it.
  *
- * What it guards is not cosmetic. Both of these screens save successfully and
- * change nothing a phone is told, so without the notice an operator setting a
- * force update during an incident watches nothing happen, with no way to learn
+ * What it guards is not cosmetic. This screen saves successfully and changes
+ * nothing a phone is told, so without the notice an operator starting
+ * maintenance during an incident watches nothing happen, with no way to learn
  * why.
+ *
+ * ⚠️ It covered **two** screens until 2026-10-06. The other was Releases,
+ * which had the same split for app versions — that one was resolved by
+ * deleting the section rather than annotating it, since Mobile bootstrap holds
+ * a strict superset of its fields. Maintenance keeps its notice because its
+ * `/admin/settings` field may still serve the web client (§8 O2).
  */
 
 function mount(element: React.ReactElement, path: string) {
@@ -54,51 +59,6 @@ beforeEach(() => {
     accessToken: 'test-token',
     refreshToken: 'test-refresh',
     expiresAt: Date.now() + 60_000,
-  })
-})
-
-describe('Settings › Releases', () => {
-  it('says mobile clients read their update policy somewhere else', async () => {
-    mount(<ReleasesTab />, '/settings/releases')
-
-    const notices = await screen.findAllByText(
-      /read their update policy from Mobile bootstrap/,
-    )
-    /* One per platform policy — Android and iOS each carry their own form. */
-    expect(notices.length).toBeGreaterThan(0)
-  })
-
-  it('links across, rather than naming a screen and leaving them to find it', async () => {
-    mount(<ReleasesTab />, '/settings/releases')
-
-    const links = await screen.findAllByRole('link', { name: 'Open Mobile bootstrap' })
-    expect(links[0]).toHaveAttribute('href', '/settings/bootstrap')
-  })
-
-  it('keeps the editor working — the notice explains, it does not disable', async () => {
-    /*
-     * Neither older editor is deleted or locked. Nothing proves the
-     * `/admin/settings` fields are dead — they may serve the web client (§8
-     * O2) — so the panel states what each reaches rather than guessing.
-     */
-    mount(<ReleasesTab />, '/settings/releases')
-
-    /* Two platform forms, so two of each field — the first is Android's. */
-    const inputs = await screen.findAllByLabelText(/Latest version/)
-    /*
-     * ⚠️ `waitFor`, not a bare assertion. Every editable control on this tab is
-     * `disabled` until `AuthProvider` has resolved `GET /admin/auth/me` and
-     * `canEdit` turns true, while the labels and the notice render immediately —
-     * so a `find*` query can return the field a tick before it is enabled. The
-     * bare `expect` passed only because the session query usually won the race,
-     * and it started failing once the handler list grew by one module.
-     */
-    await waitFor(() => {
-      expect(inputs[0]).toBeEnabled()
-    })
-    expect(
-      (await screen.findAllByRole('button', { name: /save/i })).length,
-    ).toBeGreaterThan(0)
   })
 })
 
@@ -143,27 +103,5 @@ describe('Settings › Maintenance', () => {
     expect(
       await screen.findByRole('button', { name: /Start maintenance/ }),
     ).toBeEnabled()
-  })
-})
-
-describe('the two notices say different things', () => {
-  it('does not reuse one sentence for both, because they stop different things', async () => {
-    /*
-     * A generic "this may not reach mobile" on both would be true and useless.
-     * The version notice is about what a phone is *told on launch*; the
-     * maintenance one is about whether the app is *blocked at all*.
-     */
-    const releases = mount(<ReleasesTab />, '/settings/releases')
-    const releasesText = releases.container.textContent ?? ''
-    releases.unmount()
-
-    const maintenance = mount(<MaintenanceTab />, '/settings/maintenance')
-    await screen.findByText(/does not black out the mobile app/)
-    const maintenanceText = maintenance.container.textContent ?? ''
-
-    expect(releasesText).not.toContain('does not black out the mobile app')
-    expect(maintenanceText).not.toContain(
-      'read their update policy from Mobile bootstrap',
-    )
   })
 })

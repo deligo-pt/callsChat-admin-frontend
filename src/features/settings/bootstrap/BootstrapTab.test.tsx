@@ -225,7 +225,8 @@ describe('minAndroidSdk is Android-only (§3.9)', () => {
      */
     renderScreen('/settings/bootstrap?platform=IOS')
 
-    await screen.findByText('Platform & legal')
+    /* ⚠️ The field moved to Release policy on 2026-10-06 — anchor on that card. */
+    await screen.findByText('Release policy')
     expect(screen.queryByText('Minimum Android SDK')).not.toBeInTheDocument()
     expect(screen.getByText(/no minimum iOS version/)).toBeInTheDocument()
   })

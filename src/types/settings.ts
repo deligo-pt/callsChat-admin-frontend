@@ -108,38 +108,21 @@ export const settingsMutationResponseSchema = z.object({
   data: systemSettingsSchema,
 })
 
-export const versionPolicyMutationResponseSchema = z.object({
-  success: z.literal(true),
-  message: z.string(),
-  data: appVersionPolicySchema,
-})
-
 export const logoUploadResponseSchema = z.object({
   success: z.literal(true),
   message: z.string(),
   data: z.object({ logoUrl: z.string() }),
 })
 
-/* ------------------------------------------------------------------ *
- * Deployment — GET /admin/settings/deployment
- * ------------------------------------------------------------------ */
-
-export const deploymentInfoSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    backend: z.object({
-      version: z.string(),
-      commitHash: z.string(),
-      environment: z.string(),
-      nodeVersion: z.string(),
-      deployedAt: isoDateTime,
-      uptimeSeconds: z.number().nonnegative(),
-    }),
-    mobileApps: appVersionPoliciesSchema,
-  }),
-})
-
-export type DeploymentInfo = z.infer<typeof deploymentInfoSchema>['data']
+/*
+ * ⚠️ `GET /admin/settings/deployment` and its PATCH sibling had schemas here
+ * until 2026-10-06, when the Releases section that read them was removed. The
+ * routes still exist; nothing in the panel calls them.
+ *
+ * `appVersionPolicySchema` above stays, because `GET /admin/settings` returns
+ * `appVersionPolicies` and the contract describes what the API returns — not
+ * only what the panel currently renders.
+ */
 
 /* ------------------------------------------------------------------ *
  * Database backups — SUPER_ADMIN

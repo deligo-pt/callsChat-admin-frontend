@@ -131,7 +131,6 @@ export const ROUTES = {
   settingsMaintenance: '/settings/maintenance',
   settingsChat: '/settings/chat',
   settingsPlatform: '/settings/platform',
-  settingsReleases: '/settings/releases',
   /**
    * Bootstrap Configuration (plan.md §4.1).
    *

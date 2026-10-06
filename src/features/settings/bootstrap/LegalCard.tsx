@@ -9,7 +9,7 @@ import {
   toLegalValues,
   type LegalValues,
 } from './bootstrapSchemas'
-import { NotSet, UnsafeStoredUrlNotice } from './fields'
+import { UnsafeStoredUrlNotice } from './fields'
 import { useBootstrapCardForm } from './useBootstrapCardForm'
 
 /**
@@ -20,9 +20,11 @@ import { useBootstrapCardForm } from './useBootstrapCardForm'
  * accepts any string for all three URL fields and serves them from a public
  * endpoint (§3.2) — these inputs are the only guard there is.
  *
- * ⚠️ `minAndroidSdk` renders on Android only. The field exists on the iOS
- * record and means nothing there (§3.9), and the iOS payload omits it rather
- * than sending a value that cannot apply.
+ * ⚠️ `minAndroidSdk` moved to `ReleasePolicyCard` on 2026-10-06, together with
+ * its Android-only rendering and its omit-on-iOS payload rule. It is a floor on
+ * which clients may run, which is that card's subject; it was here only because
+ * it arrived alongside the URL fields. The description above lost "and the OS
+ * floor it enforces" with it.
  */
 export function LegalCard({
   config,
@@ -31,14 +33,12 @@ export function LegalCard({
   config: BootstrapConfig
   canEdit: boolean
 }) {
-  const isAndroid = config.platform === 'ANDROID'
-
   const card = useBootstrapCardForm<LegalValues>({
     config,
     schema: legalSchema,
     toValues: toLegalValues,
     buildPayload: (values) => buildLegalPayload(config.platform, values),
-    fields: ['privacyPolicyUrl', 'termsUrl', 'supportEmail', 'minAndroidSdk'],
+    fields: ['privacyPolicyUrl', 'termsUrl', 'supportEmail'],
     canEdit,
   })
 
@@ -48,7 +48,7 @@ export function LegalCard({
   return (
     <SettingsCard
       title="Platform & legal"
-      description="The links and contacts every client shows, and the OS floor it enforces."
+      description="The links and contacts every client shows."
       {...(canEdit ? { onSubmit: card.onSubmit } : {})}
       onDiscard={card.onDiscard}
       isDirty={card.isDirty}
@@ -59,45 +59,6 @@ export function LegalCard({
       updatedBy={config.updatedBy}
     >
       <div className="space-y-4">
-        {isAndroid ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="bootstrap-min-sdk">Minimum Android SDK</Label>
-            <Input
-              id="bootstrap-min-sdk"
-              type="number"
-              inputMode="numeric"
-              className="font-mono sm:max-w-[10rem]"
-              disabled={!canEdit}
-              aria-describedby="bootstrap-min-sdk-hint"
-              aria-invalid={errors.minAndroidSdk ? true : undefined}
-              {...register('minAndroidSdk', { valueAsNumber: true })}
-            />
-            <p
-              id="bootstrap-min-sdk-hint"
-              className="text-caption text-foreground-muted"
-            >
-              Android 7.0 is SDK 24. Devices below this are not supported.
-            </p>
-            {errors.minAndroidSdk ? (
-              <p className="text-caption text-danger-foreground" role="alert">
-                {errors.minAndroidSdk.message}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          /*
-           * Stated rather than hidden. Hiding it leaves an operator wondering
-           * whether iOS has a floor the panel forgot; a disabled input would
-           * imply a permission they are missing. Neither is true.
-           */
-          <p className="text-caption text-foreground-muted">
-            <NotSet>
-              The API has no minimum iOS version — only an Android SDK floor, which does
-              not apply here.
-            </NotSet>
-          </p>
-        )}
-
         <div className="space-y-1.5">
           <Label htmlFor="bootstrap-privacy-url">Privacy policy</Label>
           <Input

@@ -6,7 +6,6 @@ import {
   buildMaintenancePayload,
   buildPlatformPayload,
   buildSmsPayload,
-  buildVersionPolicyPayload,
   isMaskedSecret,
   normaliseFileType,
 } from './serialize'
@@ -158,47 +157,6 @@ describe('buildPlatformPayload', () => {
 
     expect(payload.defaultLanguage).toBe('en')
     expect(payload.supportedLanguages).toEqual(['en', 'bn'])
-  })
-})
-
-describe('buildVersionPolicyPayload', () => {
-  it('always sends all six keys, because this PATCH replaces', () => {
-    /*
-     * Sending only the three required fields wiped buildNumber and
-     * releaseNotes on the live iOS policy. An omitted key is data loss here,
-     * never "leave it alone".
-     */
-    const payload = buildVersionPolicyPayload({
-      platform: 'ANDROID',
-      latestVersion: '2.4.0',
-      buildNumber: '',
-      minRequiredVersion: '2.1.0',
-      forceUpdate: false,
-      releaseNotes: '',
-    })
-
-    expect(Object.keys(payload).sort()).toEqual([
-      'buildNumber',
-      'forceUpdate',
-      'latestVersion',
-      'minRequiredVersion',
-      'platform',
-      'releaseNotes',
-    ])
-  })
-
-  it('keeps buildNumber a string — a number is rejected', () => {
-    const payload = buildVersionPolicyPayload({
-      platform: 'IOS',
-      latestVersion: '2.4.0',
-      buildNumber: '45',
-      minRequiredVersion: '2.1.0',
-      forceUpdate: true,
-      releaseNotes: 'Notes',
-    })
-
-    expect(payload.buildNumber).toBe('45')
-    expect(typeof payload.buildNumber).toBe('string')
   })
 })
 

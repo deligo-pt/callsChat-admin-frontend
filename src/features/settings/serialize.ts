@@ -18,8 +18,6 @@
  * endpoint here, once, and nowhere else.
  */
 
-import type { AppPlatform } from '@/types/settings'
-
 /**
  * `""` clears on `/general`.
  *
@@ -167,42 +165,6 @@ export function buildPlatformPayload(values: PlatformFormValues) {
     paymentEnabled: values.paymentEnabled,
     paymentProvider: values.paymentProvider.trim(),
     subscriptionPlansEnabled: values.subscriptionPlansEnabled,
-  }
-}
-
-/* ------------------------------------------------------------------ *
- * App version policy
- * ------------------------------------------------------------------ */
-
-export interface VersionPolicyFormValues {
-  readonly platform: AppPlatform
-  readonly latestVersion: string
-  readonly buildNumber: string
-  readonly minRequiredVersion: string
-  readonly forceUpdate: boolean
-  readonly releaseNotes: string
-}
-
-/**
- * Always sends all six keys.
- *
- * This route is a **replace, not a merge**, despite the PATCH verb: sending
- * only the three required fields wiped `buildNumber` (`"1"` -> `null`) and
- * `releaseNotes` (`"Initial release"` -> `null`) on the live iOS policy. So
- * every optional field goes out explicitly, including as `""`, and omitting
- * one is never how this form expresses "leave it alone".
- *
- * `buildNumber` is a string on the wire — `45` is rejected with
- * `body/buildNumber Expected string, received number`.
- */
-export function buildVersionPolicyPayload(values: VersionPolicyFormValues) {
-  return {
-    platform: values.platform,
-    latestVersion: values.latestVersion.trim(),
-    minRequiredVersion: values.minRequiredVersion.trim(),
-    buildNumber: values.buildNumber.trim(),
-    forceUpdate: values.forceUpdate,
-    releaseNotes: values.releaseNotes.trim(),
   }
 }
 

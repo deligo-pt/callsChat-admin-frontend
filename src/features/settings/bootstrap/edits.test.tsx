@@ -380,18 +380,58 @@ describe('every write names its platform (§3.3)', () => {
   })
 
   it('omits minAndroidSdk on iOS, where it means nothing (§3.9)', async () => {
+    /*
+     * ⚠️ **Retargeted on 2026-10-06, when the field moved from Platform & legal
+     * to Release policy.** The test kept passing against the old card after the
+     * move — and would have passed with the omit-on-iOS rule deleted outright,
+     * because `minAndroidSdk` is no longer part of that card's payload at all.
+     * A test that cannot fail is not a guard.
+     *
+     * It is the Release policy card's payload that has to stay clean now: the
+     * iOS record genuinely carries a `minAndroidSdk`, so seeding it into the
+     * form and sending it back is the mistake available here.
+     */
     const user = renderScreen('/settings/bootstrap?platform=IOS')
-    const legal = await card('Platform & legal')
+    const release = await card('Release policy')
 
-    await user.clear(within(legal).getByLabelText('Terms of service'))
+    await user.clear(within(release).getByLabelText('Store link'))
     await user.type(
-      within(legal).getByLabelText('Terms of service'),
-      'https://callschat.com/terms-ios',
+      within(release).getByLabelText('Store link'),
+      'https://apps.apple.com/app/id123456789',
     )
-    await user.click(within(legal).getByRole('button', { name: /save/i }))
+    await user.click(within(release).getByRole('button', { name: /save/i }))
 
     await waitFor(() => expect(writes).toHaveLength(1))
+    expect(writes[0]!.body['platform']).toBe('IOS')
     expect('minAndroidSdk' in writes[0]!.body).toBe(false)
+  })
+
+  it('sends minAndroidSdk on Android, from the card it now lives on', async () => {
+    /*
+     * The other half of the move. Without this, nothing proves the field
+     * reaches the wire from its new home — the test above is satisfied by a
+     * card that never sends it on either platform.
+     */
+    const user = renderScreen()
+    const release = await card('Release policy')
+
+    /* The seeded store URL is poisoned, and the card refuses to save until it is fixed. */
+    const storeUrl = within(release).getByLabelText('Store link')
+    await user.clear(storeUrl)
+    await user.type(
+      storeUrl,
+      'https://play.google.com/store/apps/details?id=com.callschat',
+    )
+
+    const sdk = within(release).getByLabelText('Minimum Android SDK')
+    await user.clear(sdk)
+    await user.type(sdk, '26')
+    await user.click(within(release).getByRole('button', { name: /save/i }))
+
+    await waitFor(() => expect(writes).toHaveLength(1))
+    expect(writes[0]!.body['platform']).toBe('ANDROID')
+    expect(writes[0]!.body['minAndroidSdk']).toBe(26)
+    await within(release).findByText(/Saved\./)
   })
 })
 

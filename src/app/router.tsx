@@ -74,11 +74,6 @@ const BootstrapTab = lazy(() =>
     default: m.BootstrapTab,
   })),
 )
-const ReleasesTab = lazy(() =>
-  import('@/features/settings/releases/ReleasesTab').then((m) => ({
-    default: m.ReleasesTab,
-  })),
-)
 const DatabaseTab = lazy(() =>
   import('@/features/settings/database/DatabaseTab').then((m) => ({
     default: m.DatabaseTab,
@@ -200,9 +195,9 @@ const moduleRoutes: RouteObject[] = [
    * is bookmarkable and a Super-Admin-only section can 403 on its own rather
    * than taking the whole page with it.
    *
-   * Only the sections that exist are routed. `maintenance`, `chat`,
-   * `platform`, `releases`, `database` and `sms` fall through to the not-found
-   * route until their phases ship, matching the tab rail in `SettingsPage`.
+   * Only the sections that exist are routed. `sms` falls through to the
+   * not-found route until its phase ships, matching the tab rail in
+   * `SettingsPage`.
    */
   {
     path: ROUTES.settings,
@@ -221,7 +216,6 @@ const moduleRoutes: RouteObject[] = [
       { path: 'maintenance', element: suspended(<MaintenanceTab />) },
       { path: 'chat', element: suspended(<ChatTab />) },
       { path: 'platform', element: suspended(<PlatformTab />) },
-      { path: 'releases', element: suspended(<ReleasesTab />) },
       /*
        * Bootstrap — what mobile clients actually read at cold start
        * (plan.md §4.1). Same guard as every other section; the API's own

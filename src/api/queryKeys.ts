@@ -141,7 +141,6 @@ export const queryKeys = {
   configuration: {
     all: ['configuration'] as const,
     settings: ['configuration', 'settings'] as const,
-    deployment: ['configuration', 'deployment'] as const,
     backups: (params?: ListParams) =>
       ['configuration', 'backups', params ?? {}] as const,
     sms: ['configuration', 'sms'] as const,
