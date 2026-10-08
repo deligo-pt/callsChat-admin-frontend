@@ -16,6 +16,7 @@ import { activeDangers, evaluateClient, evaluateForceLogout } from './evaluate'
 const BASE: BootstrapConfig = {
   id: 'cfg_1',
   platform: 'ANDROID',
+  appType: 'PERSONAL',
   configVersion: 21,
   maintenanceMode: false,
   maintenanceMessage: null,

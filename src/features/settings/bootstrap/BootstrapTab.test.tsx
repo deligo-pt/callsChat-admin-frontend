@@ -138,6 +138,134 @@ describe('the platform switch', () => {
   })
 })
 
+describe('the app switch (D4)', () => {
+  /*
+   * ⚠️ The mirror of the platform switch, and the more dangerous of the two.
+   *
+   * Both controls pick a record, but the consequences are not symmetric:
+   * `ANDROID/PERSONAL` is the only one of the four that is live in production
+   * (plan.md §2.1), so a wrong app lands an operator on the real users' record
+   * while a wrong platform lands them on an unused one.
+   */
+
+  it('opens on Personal and asks the server for it explicitly', async () => {
+    /*
+     * Never relying on the default. A missing `appType` answers 200 with the
+     * PERSONAL record (plan.md §2.3) — correct here by luck, and the same luck
+     * writes to the live app on the PATCH route.
+     */
+    renderScreen()
+
+    await screen.findByText('Release policy')
+    expect(lastRead().get('appType')).toBe('PERSONAL')
+  })
+
+  it('restores Business from a deep link', async () => {
+    renderScreen('/settings/bootstrap?appType=BUSINESS')
+
+    await screen.findByText('Release policy')
+    expect(lastRead().get('appType')).toBe('BUSINESS')
+    expect(screen.getByRole('button', { name: 'Business' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('switches app and refetches the other record', async () => {
+    const user = renderScreen()
+    await screen.findByText('Release policy')
+
+    await user.click(screen.getByRole('button', { name: 'Business' }))
+
+    await waitFor(() => expect(lastRead().get('appType')).toBe('BUSINESS'))
+  })
+
+  it('falls back to Personal for a value it does not recognise', async () => {
+    renderScreen('/settings/bootstrap?appType=ENTERPRISE')
+
+    await screen.findByText('Release policy')
+    expect(lastRead().get('appType')).toBe('PERSONAL')
+  })
+
+  it('accepts a lower-case appType, which the API also accepts', async () => {
+    renderScreen('/settings/bootstrap?appType=business')
+
+    await screen.findByText('Release policy')
+    expect(lastRead().get('appType')).toBe('BUSINESS')
+  })
+
+  it('keeps the two keys independent, because all four pairs are real rows', async () => {
+    /*
+     * ⚠️ All four `(platform, appType)` combinations are live records
+     * (plan.md §2.1). A switcher that reset one key when the other changed
+     * would be correct for two of the four and silently wrong for the rest.
+     */
+    const user = renderScreen('/settings/bootstrap?platform=IOS')
+    await screen.findByText('Release policy')
+
+    await user.click(screen.getByRole('button', { name: 'Business' }))
+
+    await waitFor(() => {
+      expect(lastRead().get('appType')).toBe('BUSINESS')
+      expect(lastRead().get('platform')).toBe('IOS')
+    })
+  })
+
+  it('shows the Business flag set, which Personal does not have', async () => {
+    /*
+     * Proof the screen is rendering the record it asked for, not just sending
+     * a different query string. `workspace` exists only on the BUSINESS rows.
+     */
+    renderScreen('/settings/bootstrap?appType=BUSINESS')
+
+    expect(await screen.findByLabelText('workspace')).toBeInTheDocument()
+  })
+
+  it('does not show the Business flags on Personal', async () => {
+    renderScreen()
+
+    await screen.findByText('Feature flags')
+    expect(screen.queryByLabelText('workspace')).not.toBeInTheDocument()
+  })
+})
+
+describe('the status line names the record (D4, §4.2)', () => {
+  it('says which app and platform the numbers belong to', async () => {
+    /*
+     * ⚠️ "Revision 21" is meaningless with four records behind one screen. An
+     * operator returning to a stale tab has no other way to tell which record
+     * they are about to write to.
+     *
+     * ⚠️ The same `recordLabel()` the confirmation dialogs use since D5, so the
+     * status line and the sentence asking you to stop the product can never
+     * name the record differently.
+     */
+    renderScreen()
+
+    expect(await screen.findByText('Personal Android')).toBeInTheDocument()
+  })
+
+  it('updates when the app changes', async () => {
+    const user = renderScreen('/settings/bootstrap?platform=IOS')
+    await screen.findByText('Personal iOS')
+
+    await user.click(screen.getByRole('button', { name: 'Business' }))
+
+    expect(await screen.findByText('Business iOS')).toBeInTheDocument()
+  })
+
+  it('reports what was fetched, not what was requested', async () => {
+    /*
+     * ⚠️ Read from `config`, never from the switcher state. A typo'd
+     * `?appType=` falls back silently, and a line driven by the requested
+     * value would confirm the operator's mistake back to them.
+     */
+    renderScreen('/settings/bootstrap?appType=ENTERPRISE')
+
+    expect(await screen.findByText('Personal Android')).toBeInTheDocument()
+  })
+})
+
 describe('the stored URLs (§3.2)', () => {
   it('shows a `javascript:` store URL in the field, and warns it is live', async () => {
     /*
@@ -181,24 +309,47 @@ describe('the stored URLs (§3.2)', () => {
 
 describe('the blocked versions (§3.4)', () => {
   it('flags an entry that is not a version number', async () => {
-    renderScreen()
-
-    const tag = await screen.findByText('garbage')
-
     /*
-     * Scoped to the tag. The phrase also appears in the field's hint, which is
-     * deliberate — the hint explains the rule once, the tag flags the instance
-     * — so an unscoped query matches both.
+     * ⚠️ **Re-queried inside `waitFor`, never held across an await.**
+     *
+     * This was the O11 flake: it failed roughly one full run in two, always on
+     * `toBeInTheDocument()` rather than on finding the node — the signature of
+     * a node that *was* found and is now detached.
+     *
+     * `findByText` can resolve before `AuthProvider` has settled `canEdit`.
+     * When it does, the card re-renders, React swaps the subtree, and the
+     * captured `tag` is orphaned: `within(tag).getByText()` still matches
+     * inside that dead subtree, so the query passes and only the
+     * in-document check fails. `edits.test.tsx` documents the same trap on
+     * this very control; this file had not learned it.
+     *
+     * Scoping still matters: the phrase also appears in the field's hint —
+     * deliberately, the hint explains the rule once and the tag flags the
+     * instance — so an unscoped query matches both.
      */
-    expect(within(tag).getByText(/matches no client/)).toBeInTheDocument()
-    expect(tag).toHaveAttribute('title', expect.stringContaining('matches no client'))
+    renderScreen()
+    await screen.findByText('garbage')
+
+    await waitFor(() => {
+      const tag = screen.getByText('garbage')
+      expect(tag).toBeInTheDocument()
+      expect(within(tag).getByText(/matches no client/)).toBeInTheDocument()
+      expect(tag).toHaveAttribute('title', expect.stringContaining('matches no client'))
+    })
   })
 
   it('does not flag a real version', async () => {
+    /*
+     * Same re-query discipline as above. This one never failed — reading
+     * `textContent` works fine on a detached node — which is exactly why it
+     * would have gone on hiding the same race.
+     */
     renderScreen()
+    await screen.findByText('1.1.0')
 
-    const tag = await screen.findByText('1.1.0')
-    expect(tag.textContent).not.toContain('matches no client')
+    await waitFor(() => {
+      expect(screen.getByText('1.1.0').textContent).not.toContain('matches no client')
+    })
   })
 
   it('says None rather than rendering an empty row', async () => {
@@ -312,6 +463,7 @@ describe('the LIVE NOW banner (§5.1)', () => {
           data: {
             id: 'cfg_1',
             platform: 'ANDROID',
+            appType: 'PERSONAL',
             configVersion: 30,
             maintenanceMode: true,
             maintenanceMessage: 'Back in 15 minutes.',

@@ -83,6 +83,67 @@ test.describe('bootstrap configuration', () => {
     await expectNoSidewaysScroll(page)
   })
 
+  test('the app switch round-trips through the URL and a reload', async ({ page }) => {
+    /*
+     * The mirror of the platform test above, and the more consequential of the
+     * two: `ANDROID/PERSONAL` is the only one of the four records that is live
+     * in production (plan.md §2.1), so a switcher that silently fell back to it
+     * would put an operator on real users' config while they believed they were
+     * editing Business.
+     *
+     * Asserted on the **store link**, not on the pressed state alone — the
+     * button could highlight while the screen still showed the old record.
+     */
+    await signIn(page)
+    await page.goto('/settings/bootstrap')
+
+    await page.getByRole('button', { name: 'Business' }).click()
+    await expect(page).toHaveURL(/appType=BUSINESS/)
+    await expect(page.getByLabel('Store link')).toHaveValue(
+      'https://play.google.com/store/apps/details?id=com.codextechit.callchat.business',
+    )
+
+    await page.reload()
+    await expect(page.getByRole('button', { name: 'Business' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await expectNoSidewaysScroll(page)
+  })
+
+  test('the two keys are independent, because all four pairs are real rows', async ({
+    page,
+  }) => {
+    /*
+     * ⚠️ All four `(platform, appType)` combinations are live records. A
+     * switcher that reset one key when the other moved would be correct for two
+     * of the four and silently wrong for the rest — and the operator would have
+     * no way to tell, because both controls would look right.
+     */
+    await signIn(page)
+    await page.goto('/settings/bootstrap?platform=IOS')
+
+    await page.getByRole('button', { name: 'Business' }).click()
+    await expect(page).toHaveURL(/platform=IOS/)
+    await expect(page).toHaveURL(/appType=BUSINESS/)
+    await expect(page.getByLabel('Store link')).toHaveValue(
+      'https://apps.apple.com/app/callschat-business',
+    )
+  })
+
+  test('the status line names the record the numbers belong to', async ({ page }) => {
+    /*
+     * "Revision 21" means nothing with four records behind one screen. This is
+     * read from the fetched record rather than the switcher, so a URL the panel
+     * did not recognise reports where it actually landed instead of confirming
+     * the operator's typo back to them.
+     */
+    await signIn(page)
+    await page.goto('/settings/bootstrap?appType=ENTERPRISE')
+
+    await expect(page.getByText('Personal Android')).toBeVisible()
+  })
+
   test('is offered in the sidebar now that it can be edited', async ({
     page,
   }, testInfo) => {

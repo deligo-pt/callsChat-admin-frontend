@@ -89,7 +89,7 @@ export function useBootstrapCardForm<TValues extends FieldValues>(options: {
     seed(config)
   }, [config, seed])
 
-  const mutation = useUpdateBootstrapMutation(config.platform, (saved) => {
+  const mutation = useUpdateBootstrapMutation(config, (saved) => {
     /* Re-seed from the SERVER's record, so its normalisation is what shows. */
     seed(saved)
     setSavedMessage(

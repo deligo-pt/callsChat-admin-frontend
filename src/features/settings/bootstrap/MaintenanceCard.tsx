@@ -9,6 +9,7 @@ import {
   type MaintenanceMessageValues,
 } from './bootstrapSchemas'
 import { DangerousSwitch } from './DangerousSwitch'
+import { recordLabel } from './labels'
 import { useBootstrapCardForm } from './useBootstrapCardForm'
 
 /**
@@ -36,7 +37,7 @@ export function MaintenanceCard({
     config,
     schema: maintenanceMessageSchema,
     toValues: (record) => ({ maintenanceMessage: record.maintenanceMessage ?? '' }),
-    buildPayload: (values) => buildMaintenanceMessagePayload(config.platform, values),
+    buildPayload: (values) => buildMaintenanceMessagePayload(config, values),
     fields: ['maintenanceMessage'],
     savedMessage: config.maintenanceMode
       ? 'Saved — and maintenance mode is on, so clients are seeing this now.'
@@ -78,8 +79,8 @@ export function MaintenanceCard({
            * outage notice reaches live sessions will stop watching for the
            * ones that did not get it.
            */
-          effect={(platform) =>
-            `Every ${platform === 'ANDROID' ? 'Android' : 'iOS'} client will show a full-screen maintenance notice it cannot dismiss, from the next time it is opened. The change is saved the moment you confirm — there is no scheduled window and no undo.`
+          effect={(key) =>
+            `Every ${recordLabel(key)} client will show a full-screen maintenance notice it cannot dismiss, from the next time it is opened. The change is saved the moment you confirm — there is no scheduled window and no undo.`
           }
           canEdit={canEdit}
         />

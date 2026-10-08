@@ -5,10 +5,14 @@ import { useSearchParams } from 'react-router'
 import { fetchBootstrapConfig, updateBootstrapConfig } from '@/api/bootstrap'
 import { queryKeys } from '@/api/queryKeys'
 import {
+  bootstrapAppTypeSchema,
   bootstrapPlatformSchema,
+  BOOTSTRAP_APP_TYPES,
   BOOTSTRAP_PLATFORMS,
+  type BootstrapAppType,
   type BootstrapConfig,
   type BootstrapPlatform,
+  type BootstrapRecordKey,
   type UpdateBootstrapPayload,
 } from '@/types/bootstrap'
 
@@ -22,13 +26,19 @@ import {
  *   write wins, silently. Refetching when the tab regains focus is the only
  *   moment the panel can notice that somebody else moved `configVersion` while
  *   it was in the background.
- * - **Keyed per platform.** Android and iOS are independent records, verified
- *   by writing to one and watching the other stay put.
+ * - **Keyed on `(platform, appType)`.** The four are independent records,
+ *   verified by writing to one and watching the others stay put. Keyed on
+ *   `platform` alone, opening Business would serve the cached Personal record
+ *   for the same platform — an operator editing and saving something they were
+ *   never shown (plan.md §2.1).
  */
-export function useBootstrapQuery(platform: BootstrapPlatform) {
+export function useBootstrapQuery(
+  platform: BootstrapPlatform,
+  appType: BootstrapAppType,
+) {
   return useQuery({
-    queryKey: queryKeys.configuration.bootstrap(platform),
-    queryFn: ({ signal }) => fetchBootstrapConfig(platform, signal),
+    queryKey: queryKeys.configuration.bootstrap(platform, appType),
+    queryFn: ({ signal }) => fetchBootstrapConfig(platform, appType, signal),
     staleTime: 0,
     refetchOnWindowFocus: true,
     /*
@@ -88,6 +98,57 @@ export function useBootstrapPlatform(): {
 }
 
 /**
+ * Which app edition the screen is showing, owned by the URL.
+ *
+ * The mirror of `useBootstrapPlatform`, deliberately: `?appType=BUSINESS`
+ * deep-links, survives a reload, and can be pasted to a colleague. `PERSONAL`
+ * is the default and stays **out** of the URL, the same rule `ANDROID` follows.
+ *
+ * ⚠️ An unrecognised value falls back to `PERSONAL` rather than erroring, which
+ * matches both the API and the platform hook. Note the same asymmetry B0 found
+ * for `platform`: the API *rejects* a bad value on read
+ * (`400 querystring/appType`) while accepting a missing one. The panel never
+ * forwards a value it has not recognised, so that 400 is unreachable from here.
+ *
+ * ⚠️ **Falling back to the default is not harmless here the way it is for
+ * platform.** `ANDROID/PERSONAL` is the only one of the four records that is
+ * live in production (plan.md §2.1), so a typo'd `?appType=` lands the operator
+ * on the real users' app rather than on an unused one. That is why the switcher
+ * states the selection rather than relying on a highlighted segment alone.
+ */
+export function useBootstrapAppType(): {
+  readonly appType: BootstrapAppType
+  readonly setAppType: (next: BootstrapAppType) => void
+  readonly appTypes: readonly BootstrapAppType[]
+} {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const appType = useMemo<BootstrapAppType>(() => {
+    const raw = searchParams.get('appType')?.trim().toUpperCase()
+    const parsed = bootstrapAppTypeSchema.safeParse(raw)
+    return parsed.success ? parsed.data : 'PERSONAL'
+  }, [searchParams])
+
+  const setAppType = useCallback(
+    (next: BootstrapAppType) => {
+      setSearchParams(
+        (current) => {
+          const params = new URLSearchParams(current)
+          /* Personal is the default, so it stays out of the URL entirely. */
+          if (next === 'PERSONAL') params.delete('appType')
+          else params.set('appType', next)
+          return params
+        },
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
+
+  return { appType, setAppType, appTypes: BOOTSTRAP_APP_TYPES }
+}
+
+/**
  * Writing the bootstrap configuration (plan.md §7, phase B2).
  *
  * ⚠️ **A save is live, globally, on the next request.** Verified: a `PATCH`
@@ -100,9 +161,8 @@ export function useBootstrapPlatform(): {
  * - **`retry: false`.** A retried `PATCH` that actually succeeded the first
  *   time would increment `configVersion` twice, and on a route with no
  *   idempotency key that is the only trace it leaves.
- * - **Invalidates only this platform's query.** The two records are
- *   independent (§1.1); invalidating both would refetch a record nothing
- *   touched.
+ * - **Invalidates only this record's query.** The four are independent
+ *   (§2.1); invalidating the others would refetch records nothing touched.
  * - **Nothing is seeded into the cache from the response.** The caller gets
  *   the saved record to re-seed its own form — so the server's normalisation
  *   is what shows — and the screen redraws from the refetch.
@@ -111,20 +171,19 @@ export function useBootstrapPlatform(): {
  * a caller can compare `configVersion` and notice a concurrent write (§3.5).
  */
 export function useUpdateBootstrapMutation(
-  platform: BootstrapPlatform,
+  key: BootstrapRecordKey,
   onSaved?: (saved: BootstrapConfig) => void,
 ) {
   const queryClient = useQueryClient()
+  const queryKey = queryKeys.configuration.bootstrap(key.platform, key.appType)
 
   return useMutation({
     mutationFn: (payload: UpdateBootstrapPayload) => updateBootstrapConfig(payload),
     retry: false,
     onSuccess: async (saved) => {
       onSaved?.(saved)
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.configuration.bootstrap(platform),
-      })
+      await queryClient.invalidateQueries({ queryKey })
     },
-    mutationKey: [...queryKeys.configuration.bootstrap(platform), 'update'],
+    mutationKey: [...queryKey, 'update'],
   })
 }

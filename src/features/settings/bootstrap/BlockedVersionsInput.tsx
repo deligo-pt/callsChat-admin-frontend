@@ -37,7 +37,7 @@ export function BlockedVersionsInput({
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const mutation = useUpdateBootstrapMutation(config.platform)
+  const mutation = useUpdateBootstrapMutation(config)
 
   /*
    * Re-seed when the server's record moves — a save landing, a refetch, or a
@@ -89,7 +89,7 @@ export function BlockedVersionsInput({
 
   function save() {
     /* ⚠️ The whole array, always — the server replaces it. */
-    mutation.mutate(buildBlockedVersionsPayload(config.platform, versions))
+    mutation.mutate(buildBlockedVersionsPayload(config, versions))
   }
 
   return (

@@ -7,15 +7,24 @@ import { ErrorState, LoadingState } from '@/components/feedback'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { cn } from '@/lib/cn'
 import { useActorName } from '@/lib/hooks/useActorName'
-import type { BootstrapConfig, BootstrapPlatform } from '@/types/bootstrap'
+import type {
+  BootstrapAppType,
+  BootstrapConfig,
+  BootstrapPlatform,
+} from '@/types/bootstrap'
 
 import { activeDangers } from './evaluate'
+import { APP_TYPE_LABEL, PLATFORM_LABEL, recordLabel } from './labels'
 import { FeatureFlagsCard } from './FeatureFlagsCard'
 import { LegalCard } from './LegalCard'
 import { MaintenanceCard } from './MaintenanceCard'
 import { ReleasePolicyCard } from './ReleasePolicyCard'
 import { SessionCard } from './SessionCard'
-import { useBootstrapPlatform, useBootstrapQuery } from './useBootstrap'
+import {
+  useBootstrapAppType,
+  useBootstrapPlatform,
+  useBootstrapQuery,
+} from './useBootstrap'
 
 /**
  * Bootstrap Configuration — `/settings/bootstrap` (plan.md §5.1).
@@ -36,16 +45,69 @@ import { useBootstrapPlatform, useBootstrapQuery } from './useBootstrap'
  *    only defence, which is why it is at the top rather than in a footer.
  */
 
-const PLATFORM_LABEL: Readonly<Record<BootstrapPlatform, string>> = {
-  ANDROID: 'Android',
-  IOS: 'iOS',
-}
-
 /** Copy for the LIVE NOW banner, per switch. */
 const DANGER_COPY: Readonly<Record<string, string>> = {
   maintenanceMode: 'Maintenance mode is on — every client shows a full-screen notice.',
   forceUpdate: 'Emergency force update is on — every client is blocked behind it.',
   forceLogout: 'Global force logout is on — every session is being destroyed.',
+}
+
+/**
+ * Which app edition is being configured.
+ *
+ * ⚠️ **Deliberately heavier than `PlatformSwitch`**, which it sits beside.
+ *
+ * The two controls are the same mechanism, but the consequences are not
+ * symmetric: picking the wrong platform shows an operator a record that is
+ * merely wrong, while picking the wrong app puts them on
+ * `ANDROID/PERSONAL` — the only one of the four records that is live in
+ * production (plan.md §2.1, §4.2). Two identical twins invite the eye to skip
+ * one, so this one is larger, labelled, and reads as the primary choice.
+ *
+ * The label is rendered rather than implied by a highlighted segment: a typo'd
+ * `?appType=` falls back to Personal silently (see `useBootstrapAppType`), and
+ * a highlight alone does not tell an operator which fallback they landed on.
+ */
+function AppTypeSwitch({
+  appType,
+  appTypes,
+  onSelect,
+}: {
+  appType: BootstrapAppType
+  appTypes: readonly BootstrapAppType[]
+  onSelect: (next: BootstrapAppType) => void
+}) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+      <span className="text-overline text-foreground-muted">App</span>
+      <div
+        role="group"
+        aria-label="App"
+        className="inline-flex rounded-md border border-border bg-surface-muted p-0.5"
+      >
+        {appTypes.map((value) => {
+          const selected = value === appType
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onSelect(value)}
+              className={cn(
+                'touch-target rounded-sm px-5 text-body font-medium transition-colors',
+                'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                selected
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-foreground-muted hover:text-foreground',
+              )}
+            >
+              {APP_TYPE_LABEL[value]}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function PlatformSwitch({
@@ -112,6 +174,17 @@ function StatusLine({ config }: { config: BootstrapConfig }) {
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-caption text-foreground-muted">
+      {/*
+       * ⚠️ Names the record before the revision number.
+       *
+       * "Revision 71" is meaningless without knowing whose revision — and with
+       * four records behind one screen, an operator reading a stale tab has no
+       * other way to tell which one they are about to write to (§4.2). It is
+       * read from `config`, not from the switcher state, so it reports what was
+       * actually fetched rather than what was requested.
+       */}
+      <span className="font-medium text-foreground">{recordLabel(config)}</span>
+      <span aria-hidden="true">·</span>
       <span className="tabular">Revision {config.configVersion}</span>
       <span aria-hidden="true">·</span>
       <span>
@@ -144,7 +217,8 @@ export function BootstrapTab() {
    */
   const canEdit = can(PERMISSIONS.configurationConfigure)
   const { platform, setPlatform, platforms } = useBootstrapPlatform()
-  const query = useBootstrapQuery(platform)
+  const { appType, setAppType, appTypes } = useBootstrapAppType()
+  const query = useBootstrapQuery(platform, appType)
 
   if (query.isPending) return <LoadingState variant="form" />
 
@@ -163,12 +237,15 @@ export function BootstrapTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PlatformSwitch
-          platform={platform}
-          platforms={platforms}
-          onSelect={setPlatform}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <AppTypeSwitch appType={appType} appTypes={appTypes} onSelect={setAppType} />
+          <PlatformSwitch
+            platform={platform}
+            platforms={platforms}
+            onSelect={setPlatform}
+          />
+        </div>
         <StatusLine config={config} />
       </div>
 
@@ -179,9 +256,7 @@ export function BootstrapTab() {
       {dangers.length > 0 ? (
         <Alert variant="destructive">
           <AlertTriangle aria-hidden="true" />
-          <AlertTitle>
-            {PLATFORM_LABEL[config.platform]} clients are affected right now
-          </AlertTitle>
+          <AlertTitle>{recordLabel(config)} clients are affected right now</AlertTitle>
           <AlertDescription>
             <ul className="space-y-1">
               {dangers.map((danger) => (

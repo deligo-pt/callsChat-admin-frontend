@@ -9,6 +9,7 @@ import type { BootstrapConfig } from '@/types/bootstrap'
 
 import { SettingsCard } from '../SettingsCard'
 import { DangerousSwitch } from './DangerousSwitch'
+import { recordLabel } from './labels'
 import { isValidSemver } from './semver'
 import { useUpdateBootstrapMutation } from './useBootstrap'
 
@@ -40,7 +41,7 @@ export function SessionCard({
   const [error, setError] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
 
-  const mutation = useUpdateBootstrapMutation(config.platform, () => {
+  const mutation = useUpdateBootstrapMutation(config, () => {
     setSavedMessage(
       'Saved. Clients below this version are signed out on their next start.',
     )
@@ -74,6 +75,7 @@ export function SessionCard({
     setError(null)
     mutation.mutate({
       platform: config.platform,
+      appType: config.appType,
       /* Cleared with `null`, meaning "no threshold", not an empty version. */
       forceLogoutBeforeVersion: value.length > 0 ? value : null,
     })
@@ -93,8 +95,8 @@ export function SessionCard({
           description="Signs out every user, on every device, immediately."
           title="Sign out every user"
           confirmLabel="Sign everyone out"
-          effect={(platform) =>
-            `Every signed-in ${platform === 'ANDROID' ? 'Android' : 'iOS'} user is signed out the next time the app is opened, and must sign in again. Turning this off afterwards does not sign anyone back in.`
+          effect={(key) =>
+            `Every signed-in ${recordLabel(key)} user is signed out the next time the app is opened, and must sign in again. Turning this off afterwards does not sign anyone back in.`
           }
           canEdit={canEdit}
         />

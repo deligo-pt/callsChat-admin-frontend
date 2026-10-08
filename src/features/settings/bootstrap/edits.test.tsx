@@ -36,6 +36,13 @@ import { BootstrapTab } from './BootstrapTab'
  * message before finishing: `writes` is recorded at request start, so a test
  * that stopped there could end while the mock handler was still writing, and
  * the next test's `resetMockBootstrap()` would race it.
+ *
+ * ⚠️ **Eight tests were missing that wait**, found in D4 when the suite began
+ * failing roughly one full run in three — always inside this folder, never the
+ * same test twice, and never once when the folder ran alone. The leaked write
+ * landed after `resetMockBootstrap()` and left the *next* test reading a
+ * corrupted record, which is why the symptom never pointed at the cause.
+ * A mutating test without this wait is a bug, not a style choice.
  */
 
 /** Every write the screen issued, with its parsed body. */
@@ -102,8 +109,22 @@ beforeEach(() => {
 
   writes = []
   server.events.removeAllListeners('request:start')
+  /*
+   * ⚠️ **Scoped to the bootstrap route**, not to "any non-GET request".
+   *
+   * It used to capture every write the app made, which silently included
+   * `AuthProvider`'s token traffic. `expect(writes).toHaveLength(0)` then meant
+   * "the app sent nothing at all", not "the screen saved nothing" — so an auth
+   * POST landing inside the assertion window failed a test about a dialog.
+   *
+   * It survived because the race needs load to lose: it fired in the full
+   * suite roughly one run in two and never once when this file ran alone,
+   * which is the worst shape a flake can have. Found when D4 added three more
+   * renders to this file and tipped the timing.
+   */
   server.events.on('request:start', async ({ request }) => {
     if (request.method === 'GET') return
+    if (!new URL(request.url).pathname.endsWith('/admin/bootstrap')) return
     const clone = request.clone()
     writes.push({
       path: new URL(request.url).pathname,
@@ -118,6 +139,11 @@ describe('feature flags REPLACE, so the card sends every flag (§2.4)', () => {
      * ⚠️ THE assertion of this phase. Sending `{"chat":false}` alone deleted
      * `calls` and `signup` on the live API — a 200, no warning, two features
      * gone. The card holds the whole map so the payload cannot be a diff.
+     *
+     * ⚠️ Measured against the real `ANDROID/PERSONAL` record since D3, which
+     * carries **thirteen** flags. The whole list is spelled out rather than
+     * counted: a length check passes against a payload carrying thirteen of
+     * the wrong names, and the names are the thing the mobile app reads.
      */
     const user = renderScreen()
     const flags = await card('Feature flags')
@@ -130,7 +156,20 @@ describe('feature flags REPLACE, so the card sends every flag (§2.4)', () => {
       chat: true,
       calls: false,
       signup: true,
+      groupChat: true,
+      groupCalls: true,
+      socialClub: true,
+      videoCalls: true,
+      safetyNumber: true,
+      linkedDevices: true,
+      voiceMessages: true,
+      mediaAttachments: true,
+      digitalBusinessCard: true,
+      businessVerification: true,
     })
+
+    /* Settle the write before the next test's reset — see the header. */
+    await within(flags).findByText(/Saved\./)
   })
 
   it('keeps the other flags alive afterwards, not just in the request', async () => {
@@ -146,6 +185,9 @@ describe('feature flags REPLACE, so the card sends every flag (§2.4)', () => {
       expect(screen.getByLabelText('chat')).toBeInTheDocument()
       expect(screen.getByLabelText('calls')).toBeInTheDocument()
     })
+
+    /* Settle the write before the next test's reset — see the header. */
+    await within(flags).findByText(/Saved\./)
   })
 
   it('says on the card that saving replaces the whole list', async () => {
@@ -174,7 +216,8 @@ describe('feature flags REPLACE, so the card sends every flag (§2.4)', () => {
     const user = renderScreen()
     const flags = await card('Feature flags')
 
-    await user.type(within(flags).getByLabelText('Add a flag'), 'videoCalls')
+    /* ⚠️ `videoCalls` until D3 — it is a real flag on the live record now. */
+    await user.type(within(flags).getByLabelText('Add a flag'), 'newFlag')
     await user.click(within(flags).getByRole('button', { name: 'Add' }))
     await user.click(within(flags).getByRole('button', { name: /save/i }))
 
@@ -183,8 +226,22 @@ describe('feature flags REPLACE, so the card sends every flag (§2.4)', () => {
       chat: true,
       calls: true,
       signup: true,
-      videoCalls: false,
+      groupChat: true,
+      groupCalls: true,
+      socialClub: true,
+      videoCalls: true,
+      safetyNumber: true,
+      linkedDevices: true,
+      voiceMessages: true,
+      mediaAttachments: true,
+      digitalBusinessCard: true,
+      businessVerification: true,
+      /* The new one, off, alongside every flag that was already there. */
+      newFlag: false,
     })
+
+    /* Settle the write before the next test's reset — see the header. */
+    await within(flags).findByText(/Saved\./)
   })
 })
 
@@ -377,6 +434,9 @@ describe('every write names its platform (§3.3)', () => {
 
     await waitFor(() => expect(writes).toHaveLength(1))
     expect(writes[0]!.body['platform']).toBe('IOS')
+
+    /* Settle the write before the next test's reset — see the header. */
+    await within(legal).findByText(/Saved\./)
   })
 
   it('omits minAndroidSdk on iOS, where it means nothing (§3.9)', async () => {
@@ -404,6 +464,9 @@ describe('every write names its platform (§3.3)', () => {
     await waitFor(() => expect(writes).toHaveLength(1))
     expect(writes[0]!.body['platform']).toBe('IOS')
     expect('minAndroidSdk' in writes[0]!.body).toBe(false)
+
+    /* Settle the write before the next test's reset — see the header. */
+    await within(release).findByText(/Saved\./)
   })
 
   it('sends minAndroidSdk on Android, from the card it now lives on', async () => {

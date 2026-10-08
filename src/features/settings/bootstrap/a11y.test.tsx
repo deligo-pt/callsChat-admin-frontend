@@ -78,6 +78,37 @@ describe('no axe violations', () => {
     await expectNoA11yViolations(container)
   })
 
+  it.each([1440, 360])('a Business record at %ipx (D5)', async (width) => {
+    /*
+     * ⚠️ A different record, not a narrower one. Business carries its own
+     * flag set, its own store URL, and the app switcher in its non-default
+     * state — none of which this file saw before D5.
+     */
+    setViewport(width)
+    const { container } = mount('/settings/bootstrap?appType=BUSINESS')
+    await screen.findByText('Release policy')
+    await expectNoA11yViolations(container)
+  })
+
+  it.each([1440, 360])('the thirteen-flag card at %ipx (D5)', async (width) => {
+    /*
+     * ⚠️ **The widest `FeatureFlagsCard` will ever render.**
+     *
+     * This file was written when every record carried three flags. The live
+     * `ANDROID/PERSONAL` record carries **thirteen** (plan.md §3.1), seeded
+     * since D3 — thirteen switch rows, each with its own label, in a card that
+     * shares a column at 1440 and stacks at 360. A three-flag fixture never
+     * exercised that, so the sweep was passing on a card a third of its real
+     * height.
+     */
+    setViewport(width)
+    const { container } = mount()
+    await screen.findByText('Feature flags')
+    await screen.findByLabelText('businessVerification')
+
+    await expectNoA11yViolations(container)
+  })
+
   it('the LIVE NOW state, where every dangerous switch is on', async () => {
     server.use(
       http.get('*/admin/bootstrap', () =>
@@ -86,6 +117,7 @@ describe('no axe violations', () => {
           data: {
             id: 'cfg_1',
             platform: 'ANDROID',
+            appType: 'PERSONAL',
             configVersion: 30,
             maintenanceMode: true,
             maintenanceMessage: 'Back in 15 minutes.',

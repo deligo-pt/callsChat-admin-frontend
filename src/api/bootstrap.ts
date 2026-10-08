@@ -4,6 +4,7 @@ import { apiClient } from '@/api/client'
 import {
   bootstrapConfigResponseSchema,
   bootstrapUpdateResponseSchema,
+  type BootstrapAppType,
   type BootstrapConfig,
   type BootstrapPlatform,
   type UpdateBootstrapPayload,
@@ -23,10 +24,13 @@ import {
  *
  * Three rules hold across this file:
  *
- * 1. **`platform` is always sent, on both routes.** Omitting it silently
- *    selects Android — on the write route that means editing the wrong
- *    record, and on the read route it means an operator who asked for iOS
- *    being shown Android (plan.md §3.3).
+ * 1. **`platform` AND `appType` are always sent, on both routes.** They
+ *    default **independently** and silently (plan.md §2.3): no parameters at
+ *    all serves `ANDROID`/`PERSONAL`, `?platform=IOS` serves `IOS`/`PERSONAL`,
+ *    `?appType=BUSINESS` serves `ANDROID`/`BUSINESS`. On the read route a
+ *    missing key shows an operator a record they did not ask for; on the write
+ *    route it edits one. `ANDROID`/`PERSONAL` is the live production record,
+ *    so `appType` is the more dangerous of the two to omit (plan.md §2.5).
  * 2. **`features` and `blockedVersions` are sent whole or not at all.** The
  *    server replaces them; a partial send deletes the rest (plan.md §2.4).
  *    The payload type enforces this, and callers must not narrow it.
@@ -38,21 +42,22 @@ import {
  */
 
 /**
- * `GET /admin/bootstrap?platform=…`.
+ * `GET /admin/bootstrap?platform=…&appType=…`.
  *
- * ⚠️ The `platform` parameter is validated on **read** — `?platform=WEB`
- * answers `400 querystring/platform Invalid enum value` — but omitting it
- * answers `200` with the **Android** record. The asymmetry with the write
- * route (where a bad value is rejected but a missing one is not) is why this
- * call never relies on the default.
+ * ⚠️ Both parameters are validated on **read** — `?platform=WEB` answers
+ * `400 querystring/platform Invalid enum value` and `?appType=ENTERPRISE`
+ * answers the equivalent for `appType` — but omitting either answers `200`
+ * with a record the caller did not ask for. A bad value is rejected while a
+ * missing one is not, which is why this call never relies on either default.
  */
 export function fetchBootstrapConfig(
   platform: BootstrapPlatform,
+  appType: BootstrapAppType,
   signal?: AbortSignal,
 ): Promise<BootstrapConfig> {
   return apiClient
     .get<z.infer<typeof bootstrapConfigResponseSchema>>('/admin/bootstrap', {
-      params: { platform },
+      params: { platform, appType },
       schema: bootstrapConfigResponseSchema,
       resource: 'bootstrap-config',
       ...(signal ? { signal } : {}),
@@ -67,6 +72,12 @@ export function fetchBootstrapConfig(
  * changes nothing. There is no conditional write, no `If-Match` and no way to
  * say "only if it is still version 21" — two operators editing at once means
  * last write wins, silently (plan.md §3.5).
+ *
+ * ⚠️ **`PATCH {}` answers 200 and writes** (plan.md §2.5, verified 2026-10-08
+ * — it moved the live `ANDROID/PERSONAL` record from version 70 to 71). An
+ * empty body is not a no-op the server ignores; it is a no-op the server
+ * *records*. `UpdateBootstrapPayload` requires both key fields so that body
+ * cannot be constructed here.
  *
  * ⚠️ Three fields in this payload can stop the product. `maintenanceMode`
  * blacks out every mobile client, `forceUpdate` hard-blocks every one of them

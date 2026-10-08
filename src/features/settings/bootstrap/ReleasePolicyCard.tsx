@@ -11,6 +11,7 @@ import {
   type ReleasePolicyValues,
 } from './bootstrapSchemas'
 import { DangerousSwitch } from './DangerousSwitch'
+import { recordLabel } from './labels'
 import { NotSet, UnsafeStoredUrlNotice } from './fields'
 import { useBootstrapCardForm } from './useBootstrapCardForm'
 
@@ -49,7 +50,7 @@ export function ReleasePolicyCard({
     config,
     schema: releasePolicySchema,
     toValues: toReleasePolicyValues,
-    buildPayload: (values) => buildReleasePolicyPayload(config.platform, values),
+    buildPayload: (values) => buildReleasePolicyPayload(config, values),
     fields: [
       'latestVersion',
       'latestBuildNumber',
@@ -239,8 +240,8 @@ export function ReleasePolicyCard({
             description="Blocks every client behind an update wall, whatever version it is on."
             title="Force every client to update"
             confirmLabel="Force the update"
-            effect={(platform) =>
-              `Every ${platform === 'ANDROID' ? 'Android' : 'iOS'} client is blocked behind an update wall it cannot dismiss the next time it is opened — including clients already on the latest version. They are sent to the store link above.`
+            effect={(key) =>
+              `Every ${recordLabel(key)} client is blocked behind an update wall it cannot dismiss the next time it is opened — including clients already on the latest version. They are sent to the store link above.`
             }
             canEdit={canEdit}
           />
