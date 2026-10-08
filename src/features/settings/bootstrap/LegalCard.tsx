@@ -37,7 +37,7 @@ export function LegalCard({
     config,
     schema: legalSchema,
     toValues: toLegalValues,
-    buildPayload: (values) => buildLegalPayload(config.platform, values),
+    buildPayload: (values) => buildLegalPayload(config, values),
     fields: ['privacyPolicyUrl', 'termsUrl', 'supportEmail'],
     canEdit,
   })

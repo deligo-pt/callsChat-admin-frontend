@@ -3,7 +3,9 @@ import { useRef, useState } from 'react'
 import { ConfirmActionDialog, type ActionSeverity } from '@/components/feedback'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import type { BootstrapConfig, BootstrapPlatform } from '@/types/bootstrap'
+import type { BootstrapConfig, BootstrapRecordKey } from '@/types/bootstrap'
+
+import { recordLabel } from './labels'
 
 import { useUpdateBootstrapMutation } from './useBootstrap'
 
@@ -37,17 +39,20 @@ export interface DangerousSwitchProps {
   /** One line under the label, in the card. */
   description: string
   /** What happens the moment it is confirmed. Written for an operator. */
-  effect: (platform: BootstrapPlatform) => string
+  /**
+   * ⚠️ Takes the whole record key, not just the platform.
+   *
+   * This sentence is the last thing an operator reads before stopping the
+   * product for everyone on that record. Built from `platform` alone it read
+   * "Every Android client …" on all four records, so the Business confirmation
+   * was word-for-word identical to the live Personal one (see `labels.ts`).
+   */
+  effect: (key: BootstrapRecordKey) => string
   /** Verb phrase for the dialog title, e.g. "Turn on maintenance mode". */
   title: string
   confirmLabel: string
   severity?: ActionSeverity
   canEdit: boolean
-}
-
-const PLATFORM_LABEL: Readonly<Record<BootstrapPlatform, string>> = {
-  ANDROID: 'Android',
-  IOS: 'iOS',
 }
 
 export function DangerousSwitch({
@@ -62,7 +67,7 @@ export function DangerousSwitch({
   canEdit,
 }: DangerousSwitchProps) {
   const [confirming, setConfirming] = useState(false)
-  const mutation = useUpdateBootstrapMutation(config.platform)
+  const mutation = useUpdateBootstrapMutation(config)
 
   /*
    * Focus has to be sent back by hand.
@@ -94,7 +99,11 @@ export function DangerousSwitch({
      * that ends an outage, and every second of ceremony is a second of
      * downtime.
      */
-    mutation.mutate({ platform: config.platform, [field]: false })
+    mutation.mutate({
+      platform: config.platform,
+      appType: config.appType,
+      [field]: false,
+    })
   }
 
   return (
@@ -128,8 +137,8 @@ export function DangerousSwitch({
           }
         }}
         title={title}
-        target={`${PLATFORM_LABEL[config.platform]} clients`}
-        effect={effect(config.platform)}
+        target={`${recordLabel(config)} clients`}
+        effect={effect(config)}
         severity={severity}
         confirmLabel={confirmLabel}
         loading={mutation.isPending}
@@ -142,7 +151,7 @@ export function DangerousSwitch({
         reasonHint="At least 10 characters. This is for the person sitting beside you — the API stores no reason and keeps no history, so nothing here is recorded anywhere."
         onConfirm={() => {
           mutation.mutate(
-            { platform: config.platform, [field]: true },
+            { platform: config.platform, appType: config.appType, [field]: true },
             {
               onSuccess: () => {
                 setConfirming(false)

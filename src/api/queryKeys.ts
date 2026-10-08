@@ -146,12 +146,20 @@ export const queryKeys = {
     sms: ['configuration', 'sms'] as const,
     publicConfig: ['configuration', 'public'] as const,
     /**
-     * Bootstrap is keyed **per platform**, because they are two independent
-     * records rather than two views of one (plan.md §1.1) — verified by
-     * writing to Android and watching iOS stay put. One shared key would let
-     * a write to one platform serve the other's cached record.
+     * Bootstrap is keyed on the **composite pair** `(platform, appType)`,
+     * because the four are independent records rather than four views of one
+     * (plan.md §2.1) — verified by writing to Android and watching iOS stay
+     * put. One shared key would let a write to one record serve another's
+     * cached copy.
+     *
+     * ⚠️ **Both halves are load-bearing.** Keyed on `platform` alone, opening
+     * Business would be served the cached Personal record for the same
+     * platform — the operator would edit, and save, a record they were never
+     * shown. That is the dual-app version of the bug this key already
+     * prevented between Android and iOS.
      */
-    bootstrap: (platform: string) => ['configuration', 'bootstrap', platform] as const,
+    bootstrap: (platform: string, appType: string) =>
+      ['configuration', 'bootstrap', platform, appType] as const,
   },
 
   search: (term: string) => ['search', term] as const,

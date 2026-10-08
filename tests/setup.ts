@@ -1,9 +1,36 @@
 import '@testing-library/jest-dom/vitest'
 
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 
 import { server } from '@/mocks/server'
+
+/**
+ * How long `findBy*` and `waitFor` are allowed to wait — plan.md O11.
+ *
+ * ⚠️ **Raised from Testing Library's 1000ms default on 2026-10-08**, after the
+ * suite was measured failing 1 run in 2 on an otherwise idle machine. The
+ * failures rotated across announcements, feedback, verifications and bootstrap,
+ * never the same test twice, which is what kept them looking like four separate
+ * problems instead of one.
+ *
+ * They were not. Every one was a **timeout**, in one of two shapes:
+ *
+ * - `Unable to find role="button" and name "Save changes"` — every editable
+ *   control on a settings screen is disabled until `AuthProvider` resolves
+ *   `GET /admin/auth/me`, which lands *after* the record query. The wait is
+ *   correct; 1000ms is simply not always enough for two chained requests
+ *   through MSW plus a re-render.
+ * - `Test timed out in 5000ms` — the announcements editor tests type into the
+ *   hostile fixture, whose body runs to several thousand characters. `userEvent`
+ *   dispatches a full event sequence per keystroke.
+ *
+ * ⚠️ This raises a ceiling; it does not paper over a product bug. The
+ * assertions are waiting for work that genuinely happens, and a test that is
+ * actually broken still fails — just later. The cost is that a genuinely
+ * hanging test now takes 5s rather than 1s to report.
+ */
+configure({ asyncUtilTimeout: 5000 })
 
 /**
  * The MSW mock backend runs for the whole suite, so component and integration

@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 
-import type { BootstrapPlatform } from '@/types/bootstrap'
+import type { BootstrapAppType, BootstrapPlatform } from '@/types/bootstrap'
 
 import { API_PREFIX, applyScenario, errorResponse } from './shared'
 
@@ -43,6 +43,20 @@ const VALIDATION = 'FST_ERR_VALIDATION' as const
 interface MockConfig {
   id: string
   platform: BootstrapPlatform
+  /*
+   * ⚠️ **D1 only carries the field; D3 makes it a key.**
+   *
+   * Live, the record is keyed on the composite pair `(platform, appType)` —
+   * four records, not two (plan.md §2.1). This mock still holds two, both
+   * `PERSONAL`, which is what the panel read before the dual-app rollout. The
+   * field is present so `bootstrapConfigSchema` parses; the routing, the four
+   * seeds and the `PATCH {}` behaviour land in D3.
+   *
+   * Until then this mock is **more forgiving than the service**, and the gap
+   * is named here rather than discovered: nothing in it can yet fail a test
+   * for targeting the wrong record.
+   */
+  appType: BootstrapAppType
   configVersion: number
   maintenanceMode: boolean
   maintenanceMessage: string | null
@@ -67,72 +81,180 @@ interface MockConfig {
 
 const SUPER_ADMIN_ID = 'cmt8orkov00004upco3oifg2v'
 
-const SEED: Record<BootstrapPlatform, MockConfig> = {
+/**
+ * The four live records, captured 2026-10-08.
+ *
+ * ⚠️ **Flag sets differ per record, and two PERSONAL records disagree with
+ * each other.** `bootstrap-update.md` §4.4 presents a fixed two-tier scheme —
+ * Personal gets three flags, Business adds three — and the live data does not
+ * follow it: `ANDROID/PERSONAL` carries **13**, `IOS/PERSONAL` carries **3**,
+ * both BUSINESS records carry **6** (plan.md §3.1).
+ *
+ * Seeded faithfully because a tidy three-flag fixture would never exercise the
+ * real screen: `FeatureFlagsCard` renders one row per flag, and thirteen rows
+ * is what an operator actually sees.
+ */
+const SEED: Record<BootstrapPlatform, Record<BootstrapAppType, MockConfig>> = {
   ANDROID: {
-    id: 'cmui6rpcx01or01mm1injp0hu',
-    platform: 'ANDROID',
-    configVersion: 21,
-    maintenanceMode: false,
-    maintenanceMessage: null,
-    minSupportedVersion: '1.0.0',
-    latestVersion: '1.2.0',
-    minBuildNumber: 1,
-    latestBuildNumber: 12,
-    forceUpdate: false,
-    /*
-     * ⚠️ Seeded POISONED. The live API accepted exactly this value, stored it,
-     * and served it from the unauthenticated public endpoint (§3.2). The panel
-     * must render it as text with a warning and NO anchor — a test asserts
-     * there is no `a[href]` anywhere near it.
-     */
-    storeUrl: 'javascript:alert(document.domain)',
-    /*
-     * ⚠️ One real version and one that is not a version at all. The second was
-     * accepted and stored live; it matches no client, so an operator believes
-     * a bad build is barred when it is not (§3.4).
-     */
-    blockedVersions: ['1.1.0', 'garbage'],
-    forceLogout: false,
-    forceLogoutBeforeVersion: null,
-    minAndroidSdk: 24,
-    privacyPolicyUrl: 'https://callschat.com/privacy',
-    termsUrl: 'https://callschat.com/terms',
-    supportEmail: 'support@callschat.com',
-    features: { chat: true, calls: true, signup: true },
-    createdAt: '2026-09-26T09:27:21.633Z',
-    updatedAt: '2026-09-28T03:52:10.118Z',
-    /* A bare id, never an expanded actor (§3.6). */
-    updatedBy: SUPER_ADMIN_ID,
+    PERSONAL: {
+      id: 'cmui6rpcx01or01mm1injp0hu',
+      platform: 'ANDROID',
+      appType: 'PERSONAL',
+      /*
+       * ⚠️ The only one of the four that is live in production (plan.md §2.1),
+       * and the one a forgotten `appType` silently targets. Seeded at a high
+       * revision because that is what the real record looks like — the other
+       * three have never been edited.
+       */
+      configVersion: 21,
+      maintenanceMode: false,
+      maintenanceMessage: null,
+      minSupportedVersion: '1.0.0',
+      latestVersion: '1.0.0',
+      minBuildNumber: 1,
+      latestBuildNumber: 1,
+      forceUpdate: false,
+      /*
+       * ⚠️ Accepted, stored, and served from the unauthenticated public
+       * endpoint — verified live (§3.2). The panel must render it as text with
+       * a warning and NO anchor; a test asserts there is no `a[href]` near it.
+       */
+      storeUrl: 'javascript:alert(document.domain)',
+      /*
+       * ⚠️ One real version and one that is not a version at all. The second
+       * was accepted and stored live; it matches no client, so an operator
+       * believes a bad build is barred when it is not (§3.4).
+       */
+      blockedVersions: ['1.1.0', 'garbage'],
+      forceLogout: false,
+      forceLogoutBeforeVersion: null,
+      minAndroidSdk: 24,
+      privacyPolicyUrl: 'https://callschat.com/privacy',
+      termsUrl: 'https://callschat.com/terms',
+      supportEmail: 'support@callschat.com',
+      /* All thirteen, exactly as live — see the note on SEED. */
+      features: {
+        chat: true,
+        calls: true,
+        signup: true,
+        groupChat: true,
+        groupCalls: true,
+        socialClub: true,
+        videoCalls: true,
+        safetyNumber: true,
+        linkedDevices: true,
+        voiceMessages: true,
+        mediaAttachments: true,
+        digitalBusinessCard: true,
+        businessVerification: true,
+      },
+      createdAt: '2026-09-26T09:27:21.633Z',
+      updatedAt: '2026-09-28T03:52:10.118Z',
+      /* A bare id, never an expanded actor (§3.6). */
+      updatedBy: SUPER_ADMIN_ID,
+    },
+    BUSINESS: {
+      id: 'cmuz1ny6c00p601l1t0lars9a',
+      platform: 'ANDROID',
+      appType: 'BUSINESS',
+      configVersion: 1,
+      maintenanceMode: false,
+      maintenanceMessage: null,
+      minSupportedVersion: '1.0.0',
+      latestVersion: '1.0.0',
+      minBuildNumber: 1,
+      latestBuildNumber: 1,
+      forceUpdate: false,
+      storeUrl:
+        'https://play.google.com/store/apps/details?id=com.codextechit.callchat.business',
+      blockedVersions: [],
+      forceLogout: false,
+      forceLogoutBeforeVersion: null,
+      minAndroidSdk: 24,
+      privacyPolicyUrl: 'https://callschat.com/privacy',
+      termsUrl: 'https://callschat.com/terms',
+      supportEmail: 'support@callschat.com',
+      features: {
+        chat: true,
+        calls: true,
+        signup: true,
+        support: true,
+        workspace: true,
+        automation: true,
+      },
+      createdAt: '2026-10-08T04:36:33.348Z',
+      updatedAt: '2026-10-08T04:36:33.348Z',
+      /* `null` until somebody writes — the state of a never-edited record. */
+      updatedBy: null,
+    },
   },
   IOS: {
-    id: 'cmukpfoez000401ngwppvo6gz',
-    platform: 'IOS',
-    configVersion: 1,
-    maintenanceMode: false,
-    maintenanceMessage: null,
-    minSupportedVersion: '1.0.0',
-    latestVersion: '1.0.0',
-    minBuildNumber: 1,
-    latestBuildNumber: 1,
-    forceUpdate: false,
-    storeUrl: 'https://apps.apple.com/app/callschat',
-    blockedVersions: [],
-    forceLogout: false,
-    forceLogoutBeforeVersion: null,
-    /* ⚠️ Meaningless on iOS, and present anyway — exactly as live (§3.9). */
-    minAndroidSdk: 24,
-    privacyPolicyUrl: 'https://callschat.com/privacy',
-    termsUrl: 'https://callschat.com/terms',
-    supportEmail: 'support@callschat.com',
-    features: { chat: true, calls: true, signup: true },
-    createdAt: '2026-09-24T08:00:00.000Z',
-    updatedAt: '2026-09-24T08:00:00.000Z',
-    /* `null` until somebody writes — the state of a never-edited record. */
-    updatedBy: null,
+    PERSONAL: {
+      id: 'cmukpfoez000401ngwppvo6gz',
+      platform: 'IOS',
+      appType: 'PERSONAL',
+      configVersion: 1,
+      maintenanceMode: false,
+      maintenanceMessage: null,
+      minSupportedVersion: '1.0.0',
+      latestVersion: '1.0.0',
+      minBuildNumber: 1,
+      latestBuildNumber: 1,
+      forceUpdate: false,
+      storeUrl: 'https://apps.apple.com/app/callschat',
+      blockedVersions: [],
+      forceLogout: false,
+      forceLogoutBeforeVersion: null,
+      /* ⚠️ Meaningless on iOS, and present anyway — exactly as live (§3.9). */
+      minAndroidSdk: 24,
+      privacyPolicyUrl: 'https://callschat.com/privacy',
+      termsUrl: 'https://callschat.com/terms',
+      supportEmail: 'support@callschat.com',
+      /* ⚠️ Three, where ANDROID/PERSONAL has thirteen. Same appType. */
+      features: { chat: true, calls: true, signup: true },
+      createdAt: '2026-09-24T08:00:00.000Z',
+      updatedAt: '2026-09-24T08:00:00.000Z',
+      updatedBy: null,
+    },
+    BUSINESS: {
+      id: 'cmuz1nz0m00p701l1uxzp195j',
+      platform: 'IOS',
+      appType: 'BUSINESS',
+      configVersion: 1,
+      maintenanceMode: false,
+      maintenanceMessage: null,
+      minSupportedVersion: '1.0.0',
+      latestVersion: '1.0.0',
+      minBuildNumber: 1,
+      latestBuildNumber: 1,
+      forceUpdate: false,
+      storeUrl: 'https://apps.apple.com/app/callschat-business',
+      blockedVersions: [],
+      forceLogout: false,
+      forceLogoutBeforeVersion: null,
+      minAndroidSdk: 24,
+      privacyPolicyUrl: 'https://callschat.com/privacy',
+      termsUrl: 'https://callschat.com/terms',
+      supportEmail: 'support@callschat.com',
+      features: {
+        chat: true,
+        calls: true,
+        signup: true,
+        support: true,
+        workspace: true,
+        automation: true,
+      },
+      createdAt: '2026-10-08T04:36:33.348Z',
+      updatedAt: '2026-10-08T04:36:33.348Z',
+      updatedBy: null,
+    },
   },
 }
 
-let configs: Record<BootstrapPlatform, MockConfig> = structuredClone(SEED)
+let configs: Record<
+  BootstrapPlatform,
+  Record<BootstrapAppType, MockConfig>
+> = structuredClone(SEED)
 
 /**
  * Restore the seed records.
@@ -159,6 +281,16 @@ function normalisePlatform(value: unknown): BootstrapPlatform | null {
   if (typeof value !== 'string') return null
   const upper = value.toUpperCase()
   if (upper !== 'ANDROID' && upper !== 'IOS') return null
+  return upper
+}
+
+/** All four spellings, as the live enum accepts them. */
+const APP_TYPE_VALUES = ['PERSONAL', 'BUSINESS', 'personal', 'business'] as const
+
+function normaliseAppType(value: unknown): BootstrapAppType | null {
+  if (typeof value !== 'string') return null
+  const upper = value.toUpperCase()
+  if (upper !== 'PERSONAL' && upper !== 'BUSINESS') return null
   return upper
 }
 
@@ -190,22 +322,41 @@ export const bootstrapHandlers = [
     const scenario = await applyScenario()
     if (scenario) return scenario
 
-    const raw = new URL(request.url).searchParams.get('platform')
+    const params = new URL(request.url).searchParams
+    const rawPlatform = params.get('platform')
+    const rawAppType = params.get('appType')
 
-    if (raw !== null && !(PLATFORM_VALUES as readonly string[]).includes(raw)) {
+    if (
+      rawPlatform !== null &&
+      !(PLATFORM_VALUES as readonly string[]).includes(rawPlatform)
+    ) {
       return validationFailure([
-        `querystring/platform Invalid enum value. Expected 'ANDROID' | 'IOS' | 'android' | 'ios', received '${raw}'`,
+        `querystring/platform Invalid enum value. Expected 'ANDROID' | 'IOS' | 'android' | 'ios', received '${rawPlatform}'`,
+      ])
+    }
+
+    if (
+      rawAppType !== null &&
+      !(APP_TYPE_VALUES as readonly string[]).includes(rawAppType)
+    ) {
+      return validationFailure([
+        `querystring/appType Invalid enum value. Expected 'PERSONAL' | 'BUSINESS' | 'personal' | 'business', received '${rawAppType}'`,
       ])
     }
 
     /*
-     * ⚠️ No parameter at all answers 200 with ANDROID — verified live. The
-     * panel never relies on this, and the mock reproduces it so that a caller
-     * which forgot the parameter is silently wrong here too, rather than
-     * failing loudly in a way production would not.
+     * ⚠️ **The two keys default INDEPENDENTLY**, verified live 2026-10-08
+     * (plan.md §2.3): no parameters at all answers 200 with ANDROID/PERSONAL,
+     * `?platform=IOS` answers IOS/PERSONAL, `?appType=BUSINESS` answers
+     * ANDROID/BUSINESS.
+     *
+     * Reproduced so that a caller which forgot a parameter is silently wrong
+     * here too, rather than failing loudly in a way production would not — the
+     * whole point of this mock is that the panel's guards look necessary.
      */
-    const platform = normalisePlatform(raw) ?? 'ANDROID'
-    return HttpResponse.json({ success: true, data: configs[platform] })
+    const platform = normalisePlatform(rawPlatform) ?? 'ANDROID'
+    const appType = normaliseAppType(rawAppType) ?? 'PERSONAL'
+    return HttpResponse.json({ success: true, data: configs[platform][appType] })
   }),
 
   /**
@@ -236,6 +387,35 @@ export const bootstrapHandlers = [
       issues.push(
         `body/platform Invalid enum value. Expected 'ANDROID' | 'IOS' | 'android' | 'ios', received '${String(body['platform'])}'`,
       )
+    }
+
+    if (
+      'appType' in body &&
+      !(APP_TYPE_VALUES as readonly string[]).includes(String(body['appType']))
+    ) {
+      issues.push(
+        `body/appType Invalid enum value. Expected 'PERSONAL' | 'BUSINESS' | 'personal' | 'business', received '${String(body['appType'])}'`,
+      )
+    }
+
+    if (body['minAndroidSdk'] !== undefined) {
+      const sdk = body['minAndroidSdk']
+      if (typeof sdk !== 'number' || !Number.isInteger(sdk)) {
+        issues.push(`body/minAndroidSdk Expected number, received ${typeof sdk}`)
+      } else if (sdk < 0) {
+        issues.push('body/minAndroidSdk Number must be greater than or equal to 0')
+      } else if (sdk > 100) {
+        issues.push('body/minAndroidSdk Number must be less than or equal to 100')
+      }
+    }
+
+    if (body['maintenanceMessage'] !== undefined) {
+      const message = body['maintenanceMessage']
+      if (typeof message === 'string' && message.length > 1000) {
+        issues.push(
+          'body/maintenanceMessage String must contain at most 1000 character(s)',
+        )
+      }
     }
 
     for (const field of ['minSupportedVersion', 'latestVersion'] as const) {
@@ -300,13 +480,26 @@ export const bootstrapHandlers = [
 
     if (issues.length > 0) return validationFailure(issues)
 
+    /*
+     * ⚠️ **`PATCH {}` reaches here and writes.** It is not rejected — the live
+     * service answers 200 and records a no-op, burning a `configVersion` and
+     * restamping `updatedAt` (plan.md §2.5, verified 2026-10-08 against the
+     * real `ANDROID/PERSONAL` record, which moved from 70 to 71).
+     *
+     * Both keys default independently, so a body missing `appType` lands on
+     * PERSONAL — the live app. This is the single most important line of
+     * fidelity in this file: a mock that rejected `{}`, or that required
+     * `appType`, would make the payload guards in `bootstrapSchemas.ts` look
+     * like ceremony and invite someone to delete them.
+     */
     const platform = normalisePlatform(body['platform']) ?? 'ANDROID'
-    const current = configs[platform]
+    const appType = normaliseAppType(body['appType']) ?? 'PERSONAL'
+    const current = configs[platform][appType]
 
     const scalar = <T>(key: string, fallback: T): T =>
       key in body ? (body[key] as T) : fallback
 
-    configs[platform] = {
+    configs[platform][appType] = {
       ...current,
       maintenanceMode: scalar('maintenanceMode', current.maintenanceMode),
       /* Both `null` and `""` clear it (§3.7). */
@@ -354,7 +547,7 @@ export const bootstrapHandlers = [
     return HttpResponse.json({
       success: true,
       message: 'Bootstrap configuration updated successfully',
-      data: configs[platform],
+      data: configs[platform][appType],
     })
   }),
 ]

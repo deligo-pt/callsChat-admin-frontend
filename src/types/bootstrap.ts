@@ -11,6 +11,11 @@ import { envelopeSchema, idSchema, isoDateTime } from './common'
  * message. Where the written doc and the live service disagreed, the live
  * service won (plan.md §2.7).
  *
+ * ⚠️ **RE-VERIFIED 2026-10-08 for the dual-app rollout.** The record is no
+ * longer keyed on `platform` alone but on the composite pair
+ * `(platform, appType)` — four records, not two (plan.md §2.1). Every field
+ * below is unchanged; `appType` is the only addition.
+ *
  * This is the record **every mobile client reads before it renders anything**.
  * Three of its fields can stop the product (plan.md §3.10), and a save is
  * visible on the unauthenticated public endpoint on the very next request —
@@ -33,6 +38,25 @@ export const bootstrapPlatformSchema = z.enum(['ANDROID', 'IOS'])
 export type BootstrapPlatform = z.infer<typeof bootstrapPlatformSchema>
 
 export const BOOTSTRAP_PLATFORMS = bootstrapPlatformSchema.options
+
+/**
+ * The two app editions — CallsChat Personal and CallsChat Business.
+ *
+ * ⚠️ Same four-spelling tolerance as `platform`: the API's enum is
+ * `PERSONAL | BUSINESS | personal | business`, accepted on both read and write
+ * (verified 2026-10-08). The panel narrows to the upper-case pair for the same
+ * reason — one value with two spellings is how a store ends up holding both.
+ *
+ * ⚠️ Together with `platform` this forms the record's composite key. The two
+ * default **independently** on the wire: `GET /admin/bootstrap` with no
+ * parameters serves `ANDROID`/`PERSONAL`, `?platform=IOS` serves
+ * `IOS`/`PERSONAL`, and `?appType=BUSINESS` serves `ANDROID`/`BUSINESS`
+ * (plan.md §2.3). Nothing here may ever rely on either default.
+ */
+export const bootstrapAppTypeSchema = z.enum(['PERSONAL', 'BUSINESS'])
+export type BootstrapAppType = z.infer<typeof bootstrapAppTypeSchema>
+
+export const BOOTSTRAP_APP_TYPES = bootstrapAppTypeSchema.options
 
 /** What the server tells a client to do about its version (plan.md §2.5). */
 export const updateStatusSchema = z.enum(['none', 'optional', 'forced'])
@@ -57,6 +81,7 @@ export type UpdateStatus = z.infer<typeof updateStatusSchema>
 export const bootstrapConfigSchema = z.object({
   id: idSchema,
   platform: bootstrapPlatformSchema,
+  appType: bootstrapAppTypeSchema,
 
   /**
    * Auto-increments on **every** successful `PATCH`, including one that
@@ -192,10 +217,17 @@ export type PublicBootstrap = z.infer<typeof publicBootstrapSchema>
  * `PATCH /admin/bootstrap`.
  *
  * ⚠️ **`platform` is required here and optional on the wire**, and that
- * inversion is the point. `PATCH {}` returns 200 and writes to the **Android**
- * record (plan.md §3.3) — a form that forgets the field, or a retry that drops
- * it, edits the wrong platform in silence. Making it required in the type means
- * the compiler refuses the body the server would have accepted.
+ * inversion is the point. `PATCH {}` returns **200 and writes** — it is not
+ * rejected, it is a successful no-op that still burns a `configVersion`
+ * (plan.md §2.5). A form that forgets a key, or a retry that drops one, edits
+ * the wrong record in silence. Making both required in the type means the
+ * compiler refuses the body the server would have accepted.
+ *
+ * ⚠️ **`appType` is required for a sharper reason than `platform`.** The two
+ * default independently, so a payload missing `appType` targets `PERSONAL` —
+ * and `ANDROID/PERSONAL` is the only one of the four records that is live in
+ * production (plan.md §2.1). Forgetting `platform` edits the wrong platform;
+ * forgetting `appType` edits the real users' app.
  *
  * ⚠️ **`features` and `blockedVersions` are complete values, never partials.**
  * The server *replaces* both rather than merging them: sending
@@ -204,8 +236,27 @@ export type PublicBootstrap = z.infer<typeof publicBootstrapSchema>
  * the most dangerous thing about this API for a form to get wrong, so the type
  * names it and `plan.md` §5.4 makes the card hold the whole map in state.
  */
+/**
+ * Which of the four records an operation targets.
+ *
+ * ⚠️ **One argument, never two.** Every payload builder takes this rather than
+ * a `platform` and an `appType` separately, and that is the structural half of
+ * the §2.5 guard: two positional parameters of adjacent types can be
+ * transposed, half-supplied from a stale variable, or extended by a new caller
+ * that passes only the one it was thinking about. A single object cannot be
+ * half-passed.
+ *
+ * `BootstrapConfig` satisfies it structurally, so callers hand over the record
+ * they are already holding instead of destructuring two fields out of it.
+ */
+export interface BootstrapRecordKey {
+  readonly platform: BootstrapPlatform
+  readonly appType: BootstrapAppType
+}
+
 export interface UpdateBootstrapPayload {
   readonly platform: BootstrapPlatform
+  readonly appType: BootstrapAppType
 
   readonly maintenanceMode?: boolean
   readonly maintenanceMessage?: string | null

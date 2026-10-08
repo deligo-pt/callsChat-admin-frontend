@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import axe from 'axe-core'
 
 import { ACCOUNTS, signIn } from './fixtures'
@@ -102,6 +102,7 @@ test('the user directory has no contrast violations beyond known token debt', as
   await page.goto('/users')
   await expect(page.getByRole('button', { name: 'Add user' })).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -149,6 +150,7 @@ test('the staff surfaces have no contrast violations beyond known token debt', a
    */
   await expect(page.getByText('Probe Temp', { exact: true })).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -164,6 +166,7 @@ test('the staff record and its permission grid have no contrast violations', asy
     page.getByRole('heading', { name: 'Sarah Connor', level: 1 }),
   ).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -264,6 +267,7 @@ test('the feedback surfaces have no contrast violations beyond known token debt'
   await page.goto('/feedback')
   await expect(page.getByText('Audio cuts out during group call')).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -282,6 +286,7 @@ test('the hostile ticket has no contrast violations', async ({ page }) => {
     page.getByRole('heading', { level: 1, name: /Payment failed/ }),
   ).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -360,6 +365,55 @@ test('every feedback status and priority badge is legible on its own background'
   }
 })
 
+/**
+ * Wait until nothing on the page is still changing colour.
+ *
+ * ⚠️ **A contrast scan is only meaningful on a settled page**, and every test
+ * in this file used to scan the moment some text became visible. Two things
+ * move after that on a settings screen:
+ *
+ * 1. Every editable control is disabled until `AuthProvider` resolves
+ *    `GET /admin/auth/me`, which lands *after* the record query — and a
+ *    disabled control is painted in different colours than an enabled one.
+ * 2. The platform and app switches carry `transition-colors`. A scan landing
+ *    mid-transition reads an **interpolated** background belonging to neither
+ *    state, and axe computes a ratio against a colour the design system never
+ *    defines.
+ *
+ * `getAnimations()` covers CSS transitions as well as animations, so waiting
+ * for all of them to stop is the precise condition rather than a sleep.
+ *
+ * ⚠️ Added 2026-10-08 after this test failed **once** at mobile-360 in a
+ * three-spec, three-viewport run, and then refused to reproduce — it passes
+ * alone, and a rerun of the identical command came back 244/244. So this is a
+ * **precaution against a real raciness**, not a verified fix for that failure:
+ * I could not capture the violation body, and the cause is unproven. What is
+ * certain is that scanning an unsettled page is wrong, and that `AppTypeSwitch`
+ * made it likelier by introducing the largest colour jump on the screen
+ * (transparent to `bg-primary`) next to the toggle that was already there.
+ */
+async function settled(page: Page, gatedControl?: Locator): Promise<void> {
+  /*
+   * ⚠️ `gatedControl` is opt-in, and deliberately not a built-in lookup.
+   *
+   * My first version always waited for a "Save changes" button. That is the
+   * right signal on a settings screen — `SettingsCard` only renders the save
+   * row once `canEdit` is true — but those buttons do not exist on the
+   * verification queue, the announcements editor, or the feedback surfaces this
+   * helper is now called from, so an unconditional wait fails everywhere else.
+   * An `if (count())` guard would be worse than useless: a control that has not
+   * rendered yet counts zero, so the wait would skip exactly when it is needed.
+   *
+   * So callers that know their screen is auth-gated pass the control; the rest
+   * get the animation wait, which is universal.
+   */
+  if (gatedControl) await expect(gatedControl).toBeVisible()
+
+  await page.waitForFunction(() =>
+    document.getAnimations().every((animation) => animation.playState !== 'running'),
+  )
+}
+
 test('the bootstrap screen has no contrast violations beyond known token debt', async ({
   page,
 }) => {
@@ -376,6 +430,7 @@ test('the bootstrap screen has no contrast violations beyond known token debt', 
   await signIn(page, ACCOUNTS.superAdmin)
   await page.goto('/settings/bootstrap')
   await expect(page.getByText('Release policy')).toBeVisible()
+  await settled(page, page.getByRole('button', { name: 'Save changes' }).first())
 
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
@@ -404,6 +459,7 @@ test('the LIVE NOW banner is legible when the product is down', async ({ page })
 
   await expect(page.getByText(/clients are affected right now/)).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -437,6 +493,7 @@ test('the confirmation dialog for a dangerous switch is legible', async ({ page 
    */
   await expect(dialog).toHaveCSS('opacity', '1')
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -460,6 +517,7 @@ test('the verification queue has no contrast violations beyond known token debt'
   await page.goto('/verifications?status=ALL')
   await expect(page.getByText('DeliGo').first()).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -480,6 +538,7 @@ test('the application, with every warning painted, has no contrast violations', 
   await page.goto('/verifications/cmulfjl62000301r33hha40xj')
   await expect(page.getByText(/No explanation was recorded/)).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -500,6 +559,7 @@ test('the open document viewer has no contrast violations', async ({ page }) => 
   await page.getByRole('button', { name: /^View/ }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )
@@ -522,6 +582,7 @@ test('the reject dialog has no contrast violations, including its error state', 
   await page.getByRole('button', { name: 'Reject', exact: true }).last().click()
   await expect(page.getByRole('alert')).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) =>
       node.color !== KNOWN_SUBTLE_TOKEN && node.color !== KNOWN_DANGER_TEXT_TOKEN,
@@ -624,6 +685,7 @@ test('the announcements queue has no contrast violations beyond known token debt
   /* A row, so the badges are actually painted rather than skeletons. */
   await expect(page.getByText('Important Security Update')).toBeVisible()
 
+  await settled(page)
   const unexpected = (await contrastViolations(page)).filter(
     (node) => node.color !== KNOWN_SUBTLE_TOKEN,
   )

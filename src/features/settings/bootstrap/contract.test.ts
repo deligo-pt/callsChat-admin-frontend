@@ -8,7 +8,8 @@ import {
 
 /**
  * The contract, against payloads captured from the live service on
- * **2026-09-28** (plan.md §2).
+ * **2026-09-28**, and re-captured on **2026-10-08** for the dual-app rollout
+ * (plan.md §2).
  *
  * Every fixture below is a real response body, pasted rather than composed —
  * the feedback module learned that lesson the hard way, when a hand-written
@@ -16,12 +17,13 @@ import {
  * against a payload that could not exist.
  */
 
-/** `GET /admin/bootstrap?platform=ANDROID`, verbatim. */
+/** `GET /admin/bootstrap?platform=ANDROID&appType=PERSONAL`, verbatim. */
 const LIVE_ANDROID = {
   success: true,
   data: {
     id: 'cmui6rpcx01or01mm1injp0hu',
     platform: 'ANDROID',
+    appType: 'PERSONAL',
     configVersion: 1,
     maintenanceMode: false,
     maintenanceMessage: null,
@@ -67,6 +69,53 @@ const LIVE_UPDATE = {
     ...LIVE_ANDROID.data,
     configVersion: 21,
     updatedBy: 'cmt8orkov00004upco3oifg2v',
+  },
+}
+
+/**
+ * `GET /admin/bootstrap?platform=ANDROID&appType=BUSINESS`, verbatim,
+ * captured 2026-10-08.
+ *
+ * ⚠️ Pasted whole rather than spread from `LIVE_ANDROID`, unlike the two
+ * fixtures above. The point of this one is that a Business record differs from
+ * a Personal record in ways a spread would paper over — a different `id`, a
+ * different `storeUrl`, and a **different set of feature flags**. Deriving it
+ * would assert that the panel handles a record the service does not serve.
+ */
+const LIVE_ANDROID_BUSINESS = {
+  success: true,
+  data: {
+    id: 'cmuz1ny6c00p601l1t0lars9a',
+    platform: 'ANDROID',
+    appType: 'BUSINESS',
+    configVersion: 1,
+    maintenanceMode: false,
+    maintenanceMessage: null,
+    minSupportedVersion: '1.0.0',
+    latestVersion: '1.0.0',
+    minBuildNumber: 1,
+    latestBuildNumber: 1,
+    forceUpdate: false,
+    storeUrl:
+      'https://play.google.com/store/apps/details?id=com.codextechit.callchat.business',
+    blockedVersions: [],
+    forceLogout: false,
+    forceLogoutBeforeVersion: null,
+    minAndroidSdk: 24,
+    privacyPolicyUrl: 'https://callschat.com/privacy',
+    termsUrl: 'https://callschat.com/terms',
+    supportEmail: 'support@callschat.com',
+    features: {
+      chat: true,
+      calls: true,
+      signup: true,
+      support: true,
+      workspace: true,
+      automation: true,
+    },
+    createdAt: '2026-10-08T04:36:33.348Z',
+    updatedAt: '2026-10-08T04:36:33.348Z',
+    updatedBy: null,
   },
 }
 
@@ -127,6 +176,69 @@ describe('the admin record', () => {
     const parsed = bootstrapUpdateResponseSchema.parse(LIVE_UPDATE)
     expect(parsed.message).toContain('updated successfully')
     expect(parsed.data.configVersion).toBe(21)
+  })
+})
+
+describe('appType — the dual-app key (plan.md §2)', () => {
+  it('parses a BUSINESS record, which is a different row and not a view', () => {
+    const parsed = bootstrapConfigResponseSchema.parse(LIVE_ANDROID_BUSINESS).data
+
+    expect(parsed.appType).toBe('BUSINESS')
+    expect(parsed.platform).toBe('ANDROID')
+    /* Same platform, different row — the composite key is doing the work. */
+    expect(parsed.id).not.toBe(
+      bootstrapConfigResponseSchema.parse(LIVE_ANDROID).data.id,
+    )
+  })
+
+  it('carries a flag set the Personal record does not have', () => {
+    /*
+     * ⚠️ The assertion that kills the doc's §4.4 feature matrix.
+     *
+     * `bootstrap-update.md` presents a fixed two-tier scheme — Personal gets
+     * three flags, Business adds three more — and advises the panel to render
+     * business-exclusive flags only in the Business view. Live, the sets are
+     * per-record and arbitrary: `ANDROID/PERSONAL` carries **13** flags and
+     * `IOS/PERSONAL` carries **3**, so two Personal records disagree with each
+     * other and the split is not Personal-vs-Business at all (plan.md §3.1).
+     *
+     * This is why `FeatureFlagsCard` renders whatever keys the record holds
+     * and must never be given a hard-coded list.
+     */
+    const business = bootstrapConfigResponseSchema.parse(LIVE_ANDROID_BUSINESS).data
+
+    expect(Object.keys(business.features)).toEqual(
+      expect.arrayContaining(['workspace', 'automation', 'support']),
+    )
+  })
+
+  it('rejects an appType the panel refuses to originate', () => {
+    /*
+     * The service accepts all four spellings — `PERSONAL | BUSINESS |
+     * personal | business` — and the panel narrows to the upper-case pair, the
+     * same call already made for `platform`. One value with two spellings is
+     * how a store ends up holding both.
+     */
+    const lowercased = {
+      ...LIVE_ANDROID_BUSINESS,
+      data: { ...LIVE_ANDROID_BUSINESS.data, appType: 'business' },
+    }
+
+    expect(() => bootstrapConfigResponseSchema.parse(lowercased)).toThrow()
+  })
+
+  it('refuses a record with no appType at all', () => {
+    /*
+     * ⚠️ Not pedantry. Both query keys default **independently** and silently
+     * (plan.md §2.3), so a response missing `appType` means the panel cannot
+     * tell which of the four records it is holding — and the next save would
+     * go to whichever one the server picks. Better to fail the parse.
+     */
+    const { appType: _dropped, ...rest } = LIVE_ANDROID_BUSINESS.data
+
+    expect(() =>
+      bootstrapConfigResponseSchema.parse({ success: true, data: rest }),
+    ).toThrow()
   })
 })
 

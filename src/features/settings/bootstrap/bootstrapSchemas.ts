@@ -4,7 +4,7 @@ import {
   BOOTSTRAP_URL_PROTOCOL,
   MIN_BUILD_NUMBER,
   type BootstrapConfig,
-  type BootstrapPlatform,
+  type BootstrapRecordKey,
   type UpdateBootstrapPayload,
 } from '@/types/bootstrap'
 
@@ -161,18 +161,46 @@ export type MaintenanceMessageValues = z.infer<typeof maintenanceMessageSchema>
 /* -------------------------------------------------------------------------
  * Payload builders
  *
- * ⚠️ Every one of these sets `platform` explicitly. `PATCH {}` returns 200 and
- * writes to ANDROID (§3.3), so a builder that forgot it would silently edit
- * the wrong record — and the operator would see their iOS change appear to do
- * nothing.
+ * ⚠️ Every one of these names the target record explicitly, and takes it as a
+ * single `BootstrapRecordKey` rather than as a loose `platform` plus a loose
+ * `appType`.
+ *
+ * `PATCH {}` returns **200 and writes** (plan.md §2.5) — it is not rejected.
+ * `platform` and `appType` default independently, so a builder that dropped
+ * one would silently edit a record nobody asked for, and the operator would
+ * watch their change appear to do nothing. Dropping `appType` is the worse
+ * half: it targets `PERSONAL`, and `ANDROID/PERSONAL` is the only one of the
+ * four that is live in production.
+ *
+ * Spreading `key` is what makes this unforgeable — a builder cannot name one
+ * field and forget the other, because it never names either.
  * ---------------------------------------------------------------------- */
 
+/**
+ * Narrow a record down to the two fields that identify it.
+ *
+ * ⚠️ **Never spread a `BootstrapRecordKey` directly.** Callers pass the whole
+ * `BootstrapConfig`, which satisfies the key structurally but carries 21 other
+ * fields — `id`, `configVersion`, `createdAt`, and every switch on the screen.
+ * Spreading it put the entire record into every payload: saving the legal card
+ * would also have written `maintenanceMode` and `forceUpdate` from whatever the
+ * form last read, and the server would have answered 200 because it drops keys
+ * it does not recognise rather than rejecting them (§2.3).
+ *
+ * Caught by `edits.test.tsx`'s iOS assertion — `minAndroidSdk` appeared in a
+ * payload that had deliberately omitted it — which is the only reason this is a
+ * comment and not a production incident.
+ */
+function recordKey(key: BootstrapRecordKey): BootstrapRecordKey {
+  return { platform: key.platform, appType: key.appType }
+}
+
 export function buildReleasePolicyPayload(
-  platform: BootstrapPlatform,
+  key: BootstrapRecordKey,
   values: ReleasePolicyValues,
 ): UpdateBootstrapPayload {
   return {
-    platform,
+    ...recordKey(key),
     latestVersion: values.latestVersion.trim(),
     latestBuildNumber: values.latestBuildNumber,
     minSupportedVersion: values.minSupportedVersion.trim(),
@@ -186,11 +214,11 @@ export function buildReleasePolicyPayload(
 }
 
 export function buildLegalPayload(
-  platform: BootstrapPlatform,
+  key: BootstrapRecordKey,
   values: LegalValues,
 ): UpdateBootstrapPayload {
   return {
-    platform,
+    ...recordKey(key),
     privacyPolicyUrl: values.privacyPolicyUrl.trim(),
     termsUrl: values.termsUrl.trim(),
     supportEmail: values.supportEmail.trim(),
@@ -198,12 +226,12 @@ export function buildLegalPayload(
 }
 
 export function buildMaintenanceMessagePayload(
-  platform: BootstrapPlatform,
+  key: BootstrapRecordKey,
   values: MaintenanceMessageValues,
 ): UpdateBootstrapPayload {
   const message = values.maintenanceMessage.trim()
   return {
-    platform,
+    ...recordKey(key),
     /*
      * `null` rather than `""`. The server clears on both — verified — so this
      * is a choice about what the panel *means*: an absent message, not an
@@ -222,18 +250,18 @@ export function buildMaintenanceMessagePayload(
  * signature is deliberately a complete record rather than a patch.
  */
 export function buildFeaturesPayload(
-  platform: BootstrapPlatform,
+  key: BootstrapRecordKey,
   features: Readonly<Record<string, boolean>>,
 ): UpdateBootstrapPayload {
-  return { platform, features: { ...features } }
+  return { ...recordKey(key), features: { ...features } }
 }
 
 /** ⚠️ The whole array, always — `blockedVersions` replaces too. */
 export function buildBlockedVersionsPayload(
-  platform: BootstrapPlatform,
+  key: BootstrapRecordKey,
   versions: readonly string[],
 ): UpdateBootstrapPayload {
-  return { platform, blockedVersions: [...versions] }
+  return { ...recordKey(key), blockedVersions: [...versions] }
 }
 
 /* -------------------------------------------------------------------------

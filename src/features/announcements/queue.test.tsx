@@ -283,12 +283,32 @@ describe('the pin toggle', () => {
      * failure too, so the refetch converges on the truth either way. A test
      * that cannot fail is not a guard, and mutation-testing is what exposed it.
      *
-     * So the refetch is **held for 250ms** here. That isolates the rollback: in
-     * the window between the failed POST and the refetch landing, the only
-     * thing that can correct the row is `onError` restoring the snapshot. With
-     * it deleted, an operator spends that window looking at a pinned badge on a
+     * So the refetch is **held open** here. That isolates the rollback: in the
+     * window between the failed POST and the refetch landing, the only thing
+     * that can correct the row is `onError` restoring the snapshot. With it
+     * deleted, an operator spends that window looking at a pinned badge on a
      * row the server never pinned.
+     *
+     * ⚠️ **Held by an explicit gate, not by a timer** — changed 2026-10-08
+     * (plan.md O11). It used to `await delay(250)`, which made the assertion a
+     * race: if the click, the 500 and the `waitFor` poll together took longer
+     * than 250ms, the refetch landed first and `listResolved` was 2. That cost
+     * about one full-suite run in four, and it got worse when
+     * `asyncUtilTimeout` was raised, because a slower poll is a wider window.
+     *
+     * A promise the test resolves itself has no window at all. It is also the
+     * honest shape of the claim: the point was never "250ms", it was "before
+     * the refetch lands, whenever that is".
      */
+    /*
+     * Released only after the assertions, so the held request cannot leak into
+     * the next test — the same hazard that made `edits.test.tsx` order-dependent.
+     */
+    let releaseRefetch: () => void = () => {}
+    const refetchHeld = new Promise<void>((resolve) => {
+      releaseRefetch = resolve
+    })
+
     let listStarted = 0
     /* ⚠️ Completions, not invocations: the refetch *starts* immediately and is
      * then held, so counting calls would prove nothing about whether its data
@@ -303,8 +323,8 @@ describe('the pin toggle', () => {
       ),
       http.get(`${API_PREFIX}/admin/announcements`, async () => {
         listStarted += 1
-        /* The first call is the page load; only the refetch is slowed. */
-        if (listStarted > 1) await delay(250)
+        /* The first call is the page load; only the refetch is held. */
+        if (listStarted > 1) await refetchHeld
         listResolved += 1
         return Response.json({
           success: true,
@@ -338,6 +358,12 @@ describe('the pin toggle', () => {
 
     /* And the record itself never moved. */
     expect(mockAnnouncements().find((row) => row.id === DRAFT_ID)?.isPinned).toBe(false)
+
+    /* Let the held refetch finish, so nothing is in flight at teardown. */
+    releaseRefetch()
+    await waitFor(() => {
+      expect(listResolved).toBe(2)
+    })
   })
 })
 

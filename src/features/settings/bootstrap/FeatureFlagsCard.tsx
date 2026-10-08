@@ -41,7 +41,7 @@ export function FeatureFlagsCard({
   const [error, setError] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
 
-  const mutation = useUpdateBootstrapMutation(config.platform, () => {
+  const mutation = useUpdateBootstrapMutation(config, () => {
     setSavedMessage('Saved. Mobile clients pick this up on their next start.')
   })
 
@@ -108,7 +108,7 @@ export function FeatureFlagsCard({
               event.preventDefault()
               setSavedMessage(null)
               /* ⚠️ The whole map, always — the server replaces it. */
-              mutation.mutate(buildFeaturesPayload(config.platform, flags))
+              mutation.mutate(buildFeaturesPayload(config, flags))
             },
           }
         : {})}
