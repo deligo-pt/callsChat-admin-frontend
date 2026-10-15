@@ -56,51 +56,30 @@ export const socialClubDetailSchema = socialClubSummarySchema.extend({
 export type SocialClubDetail = z.infer<typeof socialClubDetailSchema>
 
 /* -------------------------------------------------------------------------
- * Hosts
+ * Hosts — REMOVED 2026-10-15 (plan.md §4.1, phase H1)
+ *
+ * ⚠️ `hostApplicationSchema`, `hostApplicationStatusSchema` and
+ * `hostProfileSchema` stood here, and **none of them had ever been checked
+ * against the API they claimed to describe.** The live contract is in
+ * `types/hosts.ts`, measured against
+ * `https://test-api.callschat.com/api/v1` on 2026-10-15.
+ *
+ * Almost nothing survived the comparison:
+ *
+ *   - status was `SUBMITTED`; the service says **`PENDING`**;
+ *   - the shape was `maskedPhone`, `countryCode`, `introduction`,
+ *     `submittedAt`, `reviewedAt`, `reviewerName`, `decisionReason`,
+ *     `applicantStatus` — the service sends `niche`,
+ *     `expectedHostingHoursPerWeek`, `motivation`, `bio`, `introMediaUrl`,
+ *     `socialLinks`, `createdAt` and a nested `user.profile`;
+ *   - `hostProfileSchema` carried `approved`, `clubCount`, `openReportCount`
+ *     and an `earnings` object; the service sends `badgeLevel`,
+ *     `totalLiveHours`, `totalDiamondsEarned`, `followersCount`;
+ *   - the mock served `/admin/host-applications`; the route is
+ *     **`/admin/live/host-applications`**.
+ *
+ * Deleted rather than adapted. A UI built on it would have passed every test it
+ * had and failed on its first live request — which is exactly what the
+ * equivalent fiction in `types/ops.ts` did to the announcements build before it
+ * was found.
  * ---------------------------------------------------------------------- */
-
-export const hostApplicationStatusSchema = z.enum(['SUBMITTED', 'APPROVED', 'REJECTED'])
-export type HostApplicationStatus = z.infer<typeof hostApplicationStatusSchema>
-
-/**
- * plan.md Host Management: MVP review is lightweight and manual. No KYC, no
- * identity documents — only what an Operations Admin needs for a basic call.
- */
-export const hostApplicationSchema = z.object({
-  id: idSchema,
-  userId: idSchema,
-  displayName: z.string(),
-  maskedPhone: z.string(),
-  countryCode: z.string().nullable(),
-  introduction: z.string(),
-  status: hostApplicationStatusSchema,
-  submittedAt: isoDateTime,
-  reviewedAt: isoDateTime.nullable(),
-  reviewerName: z.string().nullable(),
-  decisionReason: z.string().nullable(),
-  /** Account state at review time — approval must not bypass a ban. */
-  applicantStatus: z.enum(['ACTIVE', 'SUSPENDED', 'BANNED']),
-})
-export type HostApplication = z.infer<typeof hostApplicationSchema>
-
-export const hostProfileSchema = z.object({
-  id: idSchema,
-  userId: idSchema,
-  displayName: z.string(),
-  approved: z.boolean(),
-  approvedAt: isoDateTime.nullable(),
-  countryCode: z.string().nullable(),
-  clubCount: z.int().nonnegative(),
-  openReportCount: z.int().nonnegative(),
-  /**
-   * Backend-calculated. plan.md §3.3: the frontend never computes withdrawable
-   * earnings — it displays what the ledger and payout configuration produced.
-   */
-  earnings: z.object({
-    availableDiamonds: diamondAmount,
-    lockedDiamonds: diamondAmount,
-    withdrawalThreshold: diamondAmount,
-    eligibleForWithdrawal: z.boolean(),
-  }),
-})
-export type HostProfile = z.infer<typeof hostProfileSchema>

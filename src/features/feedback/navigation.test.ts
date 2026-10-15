@@ -37,8 +37,22 @@ describe('the Feedback nav entry', () => {
      * because its subject is the panel's operators; Feedback's subject is the
      * same population Users covers, and moving between a ticket and the
      * reporter's account is the expected path.
+     *
+     * ⚠️ **Asserted relationally, not as Community's full membership.** This
+     * used to pin the whole list as `['Users', 'Feedback']`, which broke the
+     * day Host applications joined the section on 2026-10-15 — a test about
+     * *Feedback's placement* failing because a different module shipped.
+     *
+     * Community's exact contents are still pinned, deliberately, in exactly
+     * one place: `features/hosts/navigation.test.ts`. One canonical assertion
+     * catches an accidental reordering; three copies of it just mean the next
+     * entry breaks three tests for one change.
      */
-    expect(community?.items.map((item) => item.label)).toEqual(['Users', 'Feedback'])
+    const labels = community?.items.map((item) => item.label) ?? []
+
+    expect(labels).toContain('Feedback')
+    expect(labels.indexOf('Feedback')).toBeGreaterThan(labels.indexOf('Users'))
+    expect(NAV_SECTIONS.map((section) => section.id)).not.toContain('feedback')
   })
 
   it('points at /feedback and keeps the ticket page highlighted', () => {

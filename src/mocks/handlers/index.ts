@@ -2,6 +2,7 @@ import { announcementHandlers } from './announcements'
 import { authHandlers } from './auth'
 import { bootstrapHandlers } from './bootstrap'
 import { feedbackHandlers } from './feedback'
+import { hostHandlers } from './hosts'
 import { resourceHandlers } from './resources'
 import { searchHandlers } from './search'
 import { settingsHandlers } from './settings'
@@ -27,5 +28,13 @@ export const handlers = [
    * (plan.md §3.2).
    */
   ...announcementHandlers,
+  /*
+   * Also before `resourceHandlers`, by the same convention. There is no
+   * wildcard in that file today that would swallow `/admin/live/*` — checked —
+   * but the four handlers this module replaces DID live there, on the wrong
+   * route (`/admin/host-applications`), and registering here keeps the real
+   * routes in front of anything generic that is added later.
+   */
+  ...hostHandlers,
   ...resourceHandlers,
 ]

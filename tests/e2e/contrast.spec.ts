@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import axe from 'axe-core'
 
-import { ACCOUNTS, signIn } from './fixtures'
+import { ACCOUNTS, seedHostFixtures, signIn } from './fixtures'
 
 /**
  * Colour contrast, checked in a real browser.
@@ -779,4 +779,163 @@ test('the publish confirmation is legible, since it is the last thing read befor
 
   /* AA for normal-size text. */
   expect(ratio).toBeGreaterThanOrEqual(4.5)
+})
+
+/* ------------------------------------------------------------------ *
+ * Host applications and the live-host roster — phase H7
+ * ------------------------------------------------------------------ */
+
+test('the host queue has no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  /*
+   * ⚠️ Scanned **seeded**, although the live queue is empty on every
+   * environment. An empty state is four greys and an illustration; the six-tile
+   * stats strip, the status badges and the table are where contrast can
+   * actually fail, and none of them render without rows.
+   */
+  await seedHostFixtures(page)
+  await signIn(page)
+  await page.goto('/host-applications')
+  await expect(page.getByText('Alice Johnson')).toBeVisible()
+
+  await settled(page)
+  const violations = await contrastViolations(page)
+  expect(
+    violations.filter(
+      (v) => v.color !== KNOWN_SUBTLE_TOKEN && v.color !== KNOWN_DANGER_TEXT_TOKEN,
+    ),
+  ).toEqual([])
+})
+
+test('the application drawer is legible on the hostile record', async ({ page }) => {
+  await seedHostFixtures(page)
+  await signIn(page)
+  await page.goto('/host-applications')
+  await page.getByText('No display name').click()
+
+  const drawer = page.getByRole('dialog')
+  await expect(
+    drawer.getByRole('heading', { name: 'Application', exact: true }),
+  ).toBeVisible()
+
+  await settled(page)
+  /* Scoped — see the note on `contrastViolations`; the queue shows through. */
+  const violations = await contrastViolations(page, '[role="dialog"]')
+  expect(
+    violations.filter(
+      (v) => v.color !== KNOWN_SUBTLE_TOKEN && v.color !== KNOWN_DANGER_TEXT_TOKEN,
+    ),
+  ).toEqual([])
+})
+
+test('the approve confirmation is legible, since it is irreversible', async ({
+  page,
+}) => {
+  /*
+   * The last thing an operator reads before creating a live host profile that
+   * this panel cannot undo. Its `severity="critical"` styling is the one place
+   * in this module that paints danger colours on a filled surface.
+   */
+  await seedHostFixtures(page)
+  await signIn(page)
+  await page.goto('/host-applications')
+  await page.getByText('Alice Johnson').click()
+  await page.getByRole('button', { name: 'Approve' }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Approve this application' })
+  await expect(dialog.getByText(/no way to un-approve/)).toBeVisible()
+
+  await settled(page)
+  const violations = await contrastViolations(page, '[role="dialog"]')
+  expect(
+    violations.filter(
+      (v) => v.color !== KNOWN_SUBTLE_TOKEN && v.color !== KNOWN_DANGER_TEXT_TOKEN,
+    ),
+  ).toEqual([])
+})
+
+test('the roster has no contrast violations, suspension reason included', async ({
+  page,
+}) => {
+  await seedHostFixtures(page)
+  await signIn(page)
+  await page.goto('/hosts')
+  await expect(page.getByText('Alex Rivers')).toBeVisible()
+  await expect(page.getByText(/Repeated copyright infringement/)).toBeVisible()
+
+  await settled(page)
+  const violations = await contrastViolations(page)
+  expect(
+    violations.filter(
+      (v) => v.color !== KNOWN_SUBTLE_TOKEN && v.color !== KNOWN_DANGER_TEXT_TOKEN,
+    ),
+  ).toEqual([])
+})
+
+test('every host status badge is legible on its own background', async ({ page }) => {
+  /*
+   * ⚠️ Measured per badge rather than through axe, exactly as the feedback and
+   * verification tones are: a badge painting its own tinted fill is the case
+   * axe resolves against the wrong ancestor, and ACTIVE / SUSPENDED are the
+   * two states an operator scans a roster for.
+   *
+   * Both are on screen at once — the seed holds one active host and one
+   * suspended one, which is the minimum that makes this test mean anything.
+   */
+  await seedHostFixtures(page)
+  await signIn(page)
+  await page.goto('/hosts')
+  await expect(page.getByText('Alex Rivers')).toBeVisible()
+  await settled(page)
+
+  const ratios = await page.evaluate(() => {
+    function luminance(rgb: string): number {
+      const [r, g, b] = (rgb.match(/\d+/g) ?? ['0', '0', '0']).map(Number) as [
+        number,
+        number,
+        number,
+      ]
+      const channel = (value: number) => {
+        const c = value / 255
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    }
+
+    function painted(el: Element): string {
+      let node: Element | null = el
+      while (node) {
+        const bg = getComputedStyle(node).backgroundColor
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg
+        node = node.parentElement
+      }
+      return 'rgb(255, 255, 255)'
+    }
+
+    const badges = Array.from(
+      document.querySelectorAll('span.text-overline.uppercase'),
+    ).filter((el) => {
+      const own = getComputedStyle(el).backgroundColor
+      const fills = own && own !== 'rgba(0, 0, 0, 0)' && own !== 'transparent'
+      return fills && (el.textContent ?? '').trim().length > 0
+    })
+
+    return badges.map((el) => {
+      const fg = luminance(getComputedStyle(el).color)
+      const bg = luminance(painted(el))
+      return {
+        label: (el.textContent ?? '').trim(),
+        ratio: (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05),
+      }
+    })
+  })
+
+  expect(ratios.length).toBeGreaterThan(0)
+  for (const badge of ratios) {
+    expect(
+      badge.ratio,
+      `${badge.label} at ${badge.ratio.toFixed(2)}:1`,
+    ).toBeGreaterThan(4.5)
+  }
 })

@@ -1,3 +1,4 @@
+import { safeHttpsUrl } from '@/lib/safeUrl'
 import type { FeedbackAttachment } from '@/types/feedback'
 
 /**
@@ -44,8 +45,6 @@ import type { FeedbackAttachment } from '@/types/feedback'
  *   `types/settings.ts`) serves https.
  * - `file:`, `ftp:`, custom app schemes — nothing serves an attachment.
  */
-const ALLOWED_PROTOCOL = 'https:'
-
 /**
  * The href to use for an attachment, or `null` when it must not be linked.
  *
@@ -61,26 +60,14 @@ const ALLOWED_PROTOCOL = 'https:'
  * every other normalisation the parser already handles.
  */
 export function safeAttachmentHref(fileUrl: string): string | null {
-  let parsed: URL
-  try {
-    parsed = new URL(fileUrl)
-  } catch {
-    /*
-     * Relative URLs land here too, and they are refused on purpose: resolving
-     * one against the panel's own origin would point an operator at this app
-     * rather than at the file, and nothing legitimate arrives relative.
-     */
-    return null
-  }
-
-  if (parsed.protocol !== ALLOWED_PROTOCOL) return null
-
   /*
-   * `parsed.href`, not the raw input: the parser has normalised escapes and
-   * whitespace, so what is returned is exactly what the browser would navigate
-   * to. Returning the original would let the two disagree.
+   * ⚠️ Delegates to `lib/safeUrl` since 2026-10-15. The parse was duplicated
+   * here, in the bootstrap module, and was about to be written a third time for
+   * host intro media — at which point "duplicated rather than shared" stopped
+   * being a defensible call. The evidence above is attachment-specific and
+   * stays; the parse is not and does not.
    */
-  return parsed.href
+  return safeHttpsUrl(fileUrl)
 }
 
 /** Whether this attachment can be opened at all. */
