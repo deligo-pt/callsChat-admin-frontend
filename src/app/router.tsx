@@ -79,6 +79,14 @@ const DatabaseTab = lazy(() =>
     default: m.DatabaseTab,
   })),
 )
+const HostApplicationsPage = lazy(() =>
+  import('@/features/hosts/HostApplicationsPage').then((m) => ({
+    default: m.HostApplicationsPage,
+  })),
+)
+const HostsPage = lazy(() =>
+  import('@/features/hosts/HostsPage').then((m) => ({ default: m.HostsPage })),
+)
 const FeedbackListPage = lazy(() =>
   import('@/features/feedback/FeedbackListPage').then((m) => ({
     default: m.FeedbackListPage,
@@ -257,6 +265,58 @@ const moduleRoutes: RouteObject[] = [
     element: (
       <RequirePermission permission={PERMISSIONS.feedbackManage} resource="feedback">
         {suspended(<FeedbackListPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase H4 — Host applications (plan.md §4.2).
+   *
+   * Guarded here as well as in the sidebar so a typed URL gets the standard
+   * 403 rather than a screen that 403s on its first request.
+   *
+   * ⚠️ `hostApplicationsView` was already granted to ADMIN in
+   * `auth/permissions.ts` before this module existed, and the doc agrees —
+   * `ADMIN` or `SUPER_ADMIN` with `status: ACTIVE`. That the grant predates the
+   * feature is not evidence it is right: it has **never been measured**,
+   * because the only credential available is a SUPER_ADMIN that bypasses
+   * module permissions entirely (plan.md O2).
+   */
+  {
+    path: ROUTES.hostApplications,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.hostApplicationsView}
+        resource="host applications"
+      >
+        {suspended(<HostApplicationsPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase H6 — the live host roster (plan.md §4.4).
+   *
+   * ⚠️ **Gated on `hostApplicationsView`, which is wider than it should be.**
+   * Suspending or banning a host ends their income and tears down their live
+   * room — a materially more severe act than reviewing an application — but
+   * the backend exposes **no roster-specific permission**. The only keys that
+   * exist are `host_applications.{view,approve,reject}`.
+   *
+   * Inventing `PERMISSIONS.hostsSuspend` here would be a frontend fiction with
+   * nothing behind it: every role would still be judged by the server on the
+   * key it actually checks, and the panel would be enforcing a boundary that
+   * does not exist. That is exactly what `types/clubs.ts` did and H1 deleted.
+   * Logged as plan.md O11 for the backend owner instead.
+   */
+  {
+    path: ROUTES.hosts,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.hostApplicationsView}
+        resource="live hosts"
+      >
+        {suspended(<HostsPage />)}
       </RequirePermission>
     ),
   },

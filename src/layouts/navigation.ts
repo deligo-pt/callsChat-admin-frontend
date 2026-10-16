@@ -4,6 +4,8 @@ import {
   LayoutDashboard,
   Megaphone,
   MessageSquare,
+  Mic,
+  Radio,
   Settings2,
   ShieldCheck,
   Users,
@@ -116,6 +118,53 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: MessageSquare,
         permission: PERMISSIONS.feedbackManage,
         matchPrefix: '/feedback',
+      },
+      /*
+       * Added 2026-10-15 under the rule above: the
+       * `/admin/live/host-applications/*` endpoints were verified live the
+       * same day (plan.md §2).
+       *
+       * **In Community, beside Users and Feedback.** Its subject is the same
+       * population Users already covers — a consumer account asking for a new
+       * capability — and an operator moves between an application and the
+       * person who filed it. That is the Feedback case exactly, not the
+       * Verifications one: there the subject is a legal identity document and
+       * the audience is compliance, which earned a section of its own.
+       *
+       * ⚠️ The entry appears although the queue is **empty on every
+       * environment** (plan.md §2.1). That is the right way round: the routes
+       * exist and work, so hiding the entry would make a built feature look
+       * unbuilt. The empty state explains that nothing has been submitted yet,
+       * which is information an operator can act on; an absent nav item is not.
+       */
+      {
+        label: 'Host applications',
+        to: ROUTES.hostApplications,
+        icon: Mic,
+        permission: PERMISSIONS.hostApplicationsView,
+        matchPrefix: '/host-applications',
+      },
+      /*
+       * ⚠️ **A second entry rather than a child of the one above**, although
+       * both are the live-hosting feature.
+       *
+       * They are different jobs with different subjects. The queue is a
+       * triage: a stack of people asking for something, worked through and
+       * emptied. The roster is governance: a standing list of people already
+       * broadcasting, visited when one of them has to be stopped. An operator
+       * reaching for "suspend a host during an incident" should not have to
+       * know that it lives underneath "applications".
+       *
+       * ⚠️ `matchPrefix: '/hosts'` is deliberately NOT `/host` — that would
+       * also match `/host-applications` and leave both entries highlighted at
+       * once.
+       */
+      {
+        label: 'Live hosts',
+        to: ROUTES.hosts,
+        icon: Radio,
+        permission: PERMISSIONS.hostApplicationsView,
+        matchPrefix: '/hosts',
       },
     ],
   },

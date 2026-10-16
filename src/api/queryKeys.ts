@@ -39,7 +39,16 @@ export const queryKeys = {
     members: (id: string) => ['social-clubs', 'members', id] as const,
   },
 
-  hostApplications: domain('host-applications'),
+  hostApplications: {
+    ...domain('host-applications'),
+    /*
+     * ⚠️ Its own key, deliberately outside `list`. The stats route takes no
+     * query parameters and ignores every filter, so keying it by the queue's
+     * params would refetch six platform-wide counters every time an operator
+     * narrowed the table — and cache six identical copies under six keys.
+     */
+    stats: () => ['host-applications', 'stats'] as const,
+  },
   hosts: domain('hosts'),
 
   moderation: {

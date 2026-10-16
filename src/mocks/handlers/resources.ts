@@ -9,8 +9,6 @@ import {
   diamondPackages,
   diamondTransactions,
   gifts,
-  hostApplications,
-  hostProfiles,
   moderationCases,
   payments,
   payoutRates,
@@ -536,23 +534,14 @@ export const resourceHandlers = [
   }),
   detailHandler('/admin/social-clubs', socialClubs, 'Social Club'),
 
-  /* ------------------------------------------------------------- Hosts */
-  listHandler('/admin/host-applications', hostApplications, {
-    searchFields: ['id', 'displayName', 'userId'],
-    sortFields: ['submittedAt', 'displayName', 'status'],
-    filters: {
-      status: (row, value) => row.status === value,
-      country: (row, value) => row.countryCode === value,
-    },
-  }),
-  detailHandler('/admin/host-applications', hostApplications, 'Host application'),
-
-  listHandler('/admin/hosts', hostProfiles, {
-    searchFields: ['id', 'displayName', 'userId'],
-    sortFields: ['displayName', 'clubCount', 'approvedAt'],
-    filters: { country: (row, value) => row.countryCode === value },
-  }),
-  detailHandler('/admin/hosts', hostProfiles, 'Host'),
+  /* ------------------------------------------------------------- Hosts
+   *
+   * ⚠️ Four handlers stood here on `/admin/host-applications` and
+   * `/admin/hosts`, serving an invented shape (plan.md §4.1). The real routes
+   * are `/admin/live/host-applications` and `/admin/live/hosts`, and their mock
+   * lives in `mocks/handlers/hosts.ts` from H3 — written against responses
+   * measured on 2026-10-15 rather than against a guess.
+   */
 
   /* -------------------------------------------------------- Moderation */
   listHandler('/admin/moderation-cases', moderationCases, {

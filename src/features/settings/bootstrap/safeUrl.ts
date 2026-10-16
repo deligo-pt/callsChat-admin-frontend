@@ -1,3 +1,4 @@
+import { ALLOWED_URL_PROTOCOL, safeHttpsUrl } from '@/lib/safeUrl'
 import { BOOTSTRAP_URL_PROTOCOL } from '@/types/bootstrap'
 
 /**
@@ -22,27 +23,25 @@ import { BOOTSTRAP_URL_PROTOCOL } from '@/types/bootstrap'
  * protocol-relative `//evil.com` — all are the browser's problem to parse, and
  * all are refused here because the parse is the browser's own.
  *
- * The same reasoning, and the same shape, as
- * `features/feedback/attachments.ts`. It is duplicated rather than shared
- * because that one is specific to attachment records and this one carries the
- * bootstrap contract's constant; merging them would couple two unrelated
- * modules through a file neither owns.
+ * The same reasoning as `features/feedback/attachments.ts`. This once argued
+ * the duplication was right — "merging them would couple two unrelated modules
+ * through a file neither owns" — and that held at two copies. It stopped
+ * holding at three, so the parse moved to `lib/safeUrl.ts` on 2026-10-15 and
+ * this function now delegates. What stays here is the bootstrap contract's own
+ * constant and its own evidence.
  */
 export function safeBootstrapHref(value: string): string | null {
-  let parsed: URL
-  try {
-    parsed = new URL(value)
-  } catch {
-    /*
-     * Unparseable, or relative. A relative value would resolve against the
-     * panel's own origin — which is how `/admin/settings` became a plausible
-     * "attachment" in the feedback module.
-     */
-    return null
-  }
+  /*
+   * ⚠️ Delegates to `lib/safeUrl` since 2026-10-15 — see the note there for
+   * why the duplication argument below stopped holding at the third copy.
+   *
+   * `BOOTSTRAP_URL_PROTOCOL` is asserted against the shared constant rather
+   * than used to re-implement the check, so this module still fails loudly if
+   * its contract ever diverges from what `lib/safeUrl` permits.
+   */
+  if (BOOTSTRAP_URL_PROTOCOL !== ALLOWED_URL_PROTOCOL) return null
 
-  if (parsed.protocol !== BOOTSTRAP_URL_PROTOCOL) return null
-  return parsed.href
+  return safeHttpsUrl(value)
 }
 
 /** Whether a stored value is safe to link. Never whether it is *correct*. */

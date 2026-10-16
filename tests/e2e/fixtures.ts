@@ -138,3 +138,21 @@ export async function expectFocusRingNotClipped(
 
   expect(clipped).toEqual([])
 }
+
+/**
+ * Ask the mock backend for the populated host fixtures, before the app boots.
+ *
+ * ⚠️ **Call this before `signIn`, not after.** The host queue and roster are
+ * empty by default because production is (plan.md §2.1), and the flag is read
+ * once when the mock worker starts — so setting it after the first navigation
+ * leaves the page already rendered against nothing.
+ *
+ * The flag lives in `sessionStorage` so it survives `page.goto` and
+ * `page.reload`. Without that, every test here would have to reach its screen
+ * by clicking the sidebar, which is a drawer at 360px and a rail at 1920px.
+ */
+export async function seedHostFixtures(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('callschat.mocks.hosts.seeded', '1')
+  })
+}

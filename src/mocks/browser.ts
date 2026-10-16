@@ -1,6 +1,7 @@
 import { setupWorker } from 'msw/browser'
 
 import { handlers } from './handlers'
+import { exposeHostFixtureControls } from './handlers/hosts'
 import { exposeScenarioControls } from './scenarios'
 
 export const worker = setupWorker(...handlers)
@@ -13,6 +14,7 @@ export const worker = setupWorker(...handlers)
  */
 export async function startMockBackend(): Promise<void> {
   exposeScenarioControls()
+  exposeHostFixtureControls()
 
   await worker.start({
     onUnhandledRequest: 'bypass',
@@ -23,6 +25,8 @@ export async function startMockBackend(): Promise<void> {
   console.warn(
     '[mocks] Mock backend running. Sign in with nadia@callschat.app (Super Admin), ' +
       'tomas@callschat.app (Admin) or elena@callschat.app (Moderator) and any password. ' +
-      "Toggle failure states with __mockScenario.set('error' | 'empty' | 'forbidden' | 'slow' | 'normal').",
+      "Toggle failure states with __mockScenario.set('error' | 'empty' | 'forbidden' | 'slow' | 'normal'). " +
+      'The host queue and roster start empty, as production does — ' +
+      'populate them with __mockHosts.seed().',
   )
 }

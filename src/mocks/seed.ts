@@ -6,8 +6,6 @@ import type {
   DiamondTransaction,
   DiamondWallet,
   Gift,
-  HostApplication,
-  HostProfile,
   ModerationCaseDetail,
   PaymentTransaction,
   PayoutRate,
@@ -289,58 +287,33 @@ export const socialClubs: SocialClubDetail[] = Array.from(
 )
 
 /* -------------------------------------------------------------------------
- * Host applications — 40
+ * Host payees — scaffolding for the withdrawals seed only
+ *
+ * ⚠️ **This is NOT the host contract.** Forty invented `hostApplications` and
+ * sixty `hostProfiles` stood here, served on `/admin/host-applications` and
+ * `/admin/hosts`, and neither had ever been checked against the API (plan.md
+ * §4.1). They were deleted in H1 along with their schemas; the live contract is
+ * `types/hosts.ts` and its mock is `mocks/handlers/hosts.ts`.
+ *
+ * What survives is the minimum the **withdrawals** seed needs — it builds rows
+ * around a payee and uses exactly four fields. That is local scaffolding for an
+ * unrelated module, deliberately typed inline rather than against a contract,
+ * so nothing can mistake it for a description of a real endpoint again.
  * ---------------------------------------------------------------------- */
 
-export const hostApplications: HostApplication[] = Array.from(
-  { length: 40 },
-  (_, index) => {
-    const user = users[(index * 11) % users.length]!
-    const status = index < 18 ? 'SUBMITTED' : rng.bool(0.65) ? 'APPROVED' : 'REJECTED'
-    const submittedAt = rng.pastDate(90, 0)
+interface HostPayee {
+  readonly id: string
+  readonly userId: string
+  readonly displayName: string
+  readonly countryCode: string | null
+}
 
-    return {
-      id: id('hap', index),
-      userId: user.id,
-      displayName: user.displayName,
-      maskedPhone: user.maskedPhone,
-      countryCode: user.countryCode,
-      introduction:
-        'I would like to host weekly conversation sessions for my local community and help newcomers practise speaking.',
-      status,
-      submittedAt,
-      reviewedAt: status === 'SUBMITTED' ? null : rng.pastDate(60, 0),
-      reviewerName: status === 'SUBMITTED' ? null : 'Tomas Ricci',
-      decisionReason:
-        status === 'APPROVED'
-          ? 'Profile complete and no safety history. Approved for hosting.'
-          : status === 'REJECTED'
-            ? 'Open moderation case against this account; re-apply after resolution.'
-            : null,
-      applicantStatus: legacyStatus(user.status),
-    } satisfies HostApplication
-  },
-)
-
-export const hostProfiles: HostProfile[] = hostUsers.slice(0, 60).map((user, index) => {
-  const available = rng.int(0, 180000)
-  return {
-    id: id('hst', index),
-    userId: user.id,
-    displayName: user.displayName,
-    approved: true,
-    approvedAt: rng.pastDate(300, 10),
-    countryCode: user.countryCode,
-    clubCount: rng.int(0, 6),
-    openReportCount: rng.bool(0.2) ? rng.int(1, 4) : 0,
-    earnings: {
-      availableDiamonds: available,
-      lockedDiamonds: user.wallet?.lockedDiamonds ?? 0,
-      withdrawalThreshold: 10000,
-      eligibleForWithdrawal: available >= 10000,
-    },
-  } satisfies HostProfile
-})
+const hostPayees: HostPayee[] = hostUsers.slice(0, 60).map((user, index) => ({
+  id: id('hst', index),
+  userId: user.id,
+  displayName: user.displayName,
+  countryCode: user.countryCode,
+}))
 
 /* -------------------------------------------------------------------------
  * Diamond economy
@@ -531,7 +504,7 @@ const NEXT_STATES: Record<string, readonly string[]> = {
 export const withdrawals: WithdrawalDetail[] = Array.from(
   { length: 80 },
   (_, index) => {
-    const host = hostProfiles[index % hostProfiles.length]!
+    const host = hostPayees[index % hostPayees.length]!
     const state = WITHDRAWAL_STATES[index % WITHDRAWAL_STATES.length]!
     const rate = payoutRates[index % payoutRates.length]!
     const multiplier = rng.int(1, 6)
