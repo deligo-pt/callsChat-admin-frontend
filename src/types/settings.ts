@@ -48,6 +48,36 @@ export const systemSettingsSchema = z.object({
   /** Free string on the wire, not an enum — `"stripe"` was accepted. */
   paymentProvider: z.string(),
   subscriptionPlansEnabled: z.boolean(),
+
+  /* ----------------------------------------------------------------- *
+   * Diamond economy — measured on the live record 2026-10-27, phase W7.
+   * ----------------------------------------------------------------- */
+
+  /**
+   * ⚠️ **These two live on the same `id: "primary"` singleton as everything
+   * above**, and are written by `PATCH /admin/settings/economy` — a different
+   * route reaching the same record. That is why the editor is a tab in this
+   * module rather than a screen in the diamonds module: two features writing
+   * one record through two optimistic-update paths is the class of bug the
+   * bootstrap work spent a phase removing.
+   *
+   * ⚠️ **Optional, unlike every field above.** They were measured present on
+   * `test-api`, but the settings record predates them and nothing guarantees
+   * an older deployment returns them. A required field would blank the entire
+   * settings page — every tab, not just this one — on a backend that is merely
+   * behind.
+   */
+  newUserDiamondBonus: z.number().int().nonnegative().nullable().optional(),
+  minCreatorTransferLimit: z.number().int().nonnegative().nullable().optional(),
+
+  /**
+   * ⚠️ **Not `defaultHostRevenueSharePercent`.** The integration guide
+   * documents it as the third economy parameter and it is **not in the
+   * record** — all 25 keys were read on 2026-10-27. Revenue share is per host,
+   * on `LiveHostProfile.revenueSharePercent` (plan.md O9). Nothing here may
+   * invent a global default for it.
+   */
+
   updatedAt: isoDateTime,
   /** Bare admin ID with no name or email attached — see §8 O2. */
   updatedBy: idSchema.nullable(),

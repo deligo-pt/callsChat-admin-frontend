@@ -47,7 +47,7 @@ import type { z } from 'zod'
  * be a 404 at runtime on a screen whose whole job is changing production.
  */
 async function patchSettings(
-  path: 'general' | 'chat' | 'platform',
+  path: 'general' | 'chat' | 'platform' | 'economy',
   payload: Record<string, unknown>,
 ): Promise<SystemSettings> {
   const response = await apiClient.patch<
@@ -83,6 +83,19 @@ export function updatePlatformSettings(
   payload: Record<string, unknown>,
 ): Promise<SystemSettings> {
   return patchSettings('platform', payload)
+}
+
+/**
+ * `PATCH /admin/settings/economy` (plan.md §5, phase W7).
+ *
+ * ⚠️ **An empty body answers `200`** — measured. The response therefore cannot
+ * tell a caller whether anything changed, which is why the tab does its own
+ * dirty-checking and never reports success from the status code alone.
+ */
+export function updateEconomySettings(
+  payload: Record<string, unknown>,
+): Promise<SystemSettings> {
+  return patchSettings('economy', payload)
 }
 
 /**

@@ -21,6 +21,7 @@ import type {
   UserSession,
 } from '@/types/identity'
 
+import { AdjustBalanceAction } from './AdjustBalanceAction'
 import { AddRestrictionAction, RemoveRestrictionAction } from './RestrictionActions'
 import { RevokeAllSessionsAction, RevokeSessionAction } from './SessionActions'
 
@@ -579,11 +580,30 @@ export function SafetyPanel({ user }: { user: UserDetail }) {
 
 export function FinancePanel({ user }: { user: UserDetail }) {
   const f = user.finance
+  const canAdjust = useAuth().can(PERMISSIONS.diamondsAdjust)
 
   return (
     <Panel
       title="Diamond summary"
-      description="Read-only. Balances are adjusted from the Diamond economy module, never from here."
+      /*
+       * ⚠️ **This description used to say "never from here", and that stopped
+       * being true on 2026-10-27.**
+       *
+       * It was written before any Diamond economy module existed, as a note
+       * that the users module shipped no mutation control — not as a rule
+       * about where such a control belongs. When the module arrived, the
+       * adjustment first got a page of its own to honour the sentence
+       * literally. That page could not show whose account an opaque `userId`
+       * was and had to warn the operator it could not verify it; here the
+       * name, both balances and the restriction history are already in front
+       * of them. So the action moved and the sentence went with it (plan.md
+       * §4.2, revised).
+       *
+       * The *endpoint* and the *permission* still belong to the diamonds
+       * module. Only the button moved.
+       */
+      description="Balances are read from the Diamond economy module. Adjusting one writes a permanent ledger row and cannot be undone."
+      action={canAdjust ? <AdjustBalanceAction user={user.identity} /> : undefined}
     >
       {/*
         plan.md §3.2 / §9: available and locked are ALWAYS separate figures and
@@ -624,7 +644,8 @@ export function FinancePanel({ user }: { user: UserDetail }) {
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>
           Available and locked Diamonds are separate balances and are never combined.
-          The transaction ledger arrives with the Diamond economy module.
+          There is still no endpoint for reading the transaction ledger, so an
+          adjustment made here will not show up on this page.
         </span>
       </p>
     </Panel>

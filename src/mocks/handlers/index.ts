@@ -8,6 +8,7 @@ import { searchHandlers } from './search'
 import { settingsHandlers } from './settings'
 import { staffHandlers } from './staff'
 import { verificationHandlers } from './verifications'
+import { walletHandlers } from './wallet'
 
 export const handlers = [
   ...authHandlers,
@@ -21,6 +22,7 @@ export const handlers = [
   ...staffHandlers,
   ...feedbackHandlers,
   ...verificationHandlers,
+  ...walletHandlers,
   /*
    * Also before `resourceHandlers`, and for a sharper reason than the others:
    * the catch-all there would answer `GET /admin/announcements/:id` with a

@@ -113,6 +113,8 @@ interface MockSettings {
   paymentEnabled: boolean
   paymentProvider: string
   subscriptionPlansEnabled: boolean
+  newUserDiamondBonus: number
+  minCreatorTransferLimit: number
   updatedAt: string
   updatedBy: string | null
 }
@@ -156,6 +158,9 @@ const DEFAULT_SETTINGS: MockSettings = {
   paymentEnabled: false,
   paymentProvider: 'none',
   subscriptionPlansEnabled: false,
+  /* ⚠️ The live values on `test-api`, read 2026-10-27. */
+  newUserDiamondBonus: 0,
+  minCreatorTransferLimit: 50,
   updatedAt: new Date().toISOString(),
   updatedBy: null,
 }
@@ -454,6 +459,55 @@ export const settingsHandlers = [
    * `""` clears. `null` is accepted for every nullable field but refused for
    * `supportEmail`, which is the asymmetry `serialize.ts` exists to encode.
    */
+  /**
+   * `PATCH /admin/settings/economy` (plan.md §5, phase W7).
+   *
+   * ⚠️ **Here rather than in the wallet mock, because it writes THIS record.**
+   * A different route reaching the same `id: "primary"` singleton — the whole
+   * reason the editor is a tab in System Settings rather than a screen in the
+   * diamonds module. A stub elsewhere would have returned a shape the settings
+   * response schema rejects, and the tab would have failed on save with a
+   * contract error that said nothing about the cause.
+   *
+   * ⚠️ **An empty body answers `200`** — measured, and reproduced rather than
+   * tidied. The route accepts a save that changes nothing and reports success,
+   * so the tab cannot use the response to know whether anything happened. A
+   * mock that rejected it would hide the reason the tab does its own
+   * dirty-checking.
+   */
+  http.patch(`${API_PREFIX}/admin/settings/economy`, async ({ request }) => {
+    const scenario = await applyScenario()
+    if (scenario) return scenario
+
+    const body = await readBody(request)
+    if (!body) return NULL_BODY()
+
+    const issues: string[] = []
+    if (
+      typeof body['newUserDiamondBonus'] === 'number' &&
+      body['newUserDiamondBonus'] < 0
+    ) {
+      issues.push('body/newUserDiamondBonus Bonus cannot be negative')
+    }
+    if (
+      typeof body['minCreatorTransferLimit'] === 'number' &&
+      body['minCreatorTransferLimit'] < 0
+    ) {
+      issues.push('body/minCreatorTransferLimit Minimum cannot be negative')
+    }
+    if (issues.length > 0) return validationFailure(issues)
+
+    if (typeof body['newUserDiamondBonus'] === 'number') {
+      settings.newUserDiamondBonus = body['newUserDiamondBonus']
+    }
+    if (typeof body['minCreatorTransferLimit'] === 'number') {
+      settings.minCreatorTransferLimit = body['minCreatorTransferLimit']
+    }
+
+    touch()
+    return settingsOk('Diamond economy settings updated successfully.')
+  }),
+
   http.patch(`${API_PREFIX}/admin/settings/general`, async ({ request }) => {
     const scenario = await applyScenario()
     if (scenario) return scenario

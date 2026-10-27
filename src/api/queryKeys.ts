@@ -48,8 +48,20 @@ export const queryKeys = {
      * narrowed the table — and cache six identical copies under six keys.
      */
     stats: () => ['host-applications', 'stats'] as const,
+    /*
+     * ⚠️ **A fallback key, used only while `stats` is a 404** (plan.md W0, O1).
+     * Each entry is one `limit=1` read whose only purpose is `pagination.total`
+     * for one status. Kept out of `list` so a count can never be mistaken for a
+     * page of rows, and so the whole fallback can be invalidated in one call
+     * the day the stats route comes back.
+     */
+    count: (params?: ListParams) =>
+      ['host-applications', 'count', params ?? {}] as const,
   },
-  hosts: domain('hosts'),
+  hosts: {
+    ...domain('hosts'),
+    count: (params?: ListParams) => ['hosts', 'count', params ?? {}] as const,
+  },
 
   moderation: {
     ...domain('moderation-cases'),
@@ -60,6 +72,8 @@ export const queryKeys = {
   wallets: domain('wallets'),
   diamondTransactions: domain('diamond-transactions'),
   diamondPackages: domain('diamond-packages'),
+  /** The manual top-up queue — `GET /admin/wallet/requests` (plan.md §5, W2). */
+  topUpRequests: domain('top-up-requests'),
   gifts: domain('gifts'),
   payoutRates: domain('payout-rates'),
 

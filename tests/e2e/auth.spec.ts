@@ -83,15 +83,49 @@ test('navigation lists only modules the backend actually serves', async ({ page 
   await expect(nav.getByRole('link', { name: 'Announcements' })).toBeVisible()
 
   /*
+   * ⚠️ **`Hosts` left the absent list on 2026-10-15, and failed this test on
+   * the way out** — the same way `Announcements` did, and for the same reason.
+   *
+   * `/admin/live/host-applications/*` and `/admin/live/hosts/*` were verified
+   * live that day (plan.md §2), so `layouts/navigation.ts` gained two entries
+   * under its standing rule. Keeping the old line would have meant the suite
+   * enforcing the absence of a module that works.
+   *
+   * ⚠️ They are asserted with `exact`, and the absent list below is matched
+   * loosely on purpose. Playwright's `name` is a **substring** match by
+   * default, so the bare `'Hosts'` that used to sit in that list now matches
+   * both "Host applications" and "Live hosts" — which is precisely how this
+   * failure surfaced.
+   */
+  await expect(
+    nav.getByRole('link', { name: 'Host applications', exact: true }),
+  ).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Live hosts', exact: true })).toBeVisible()
+
+  /*
+   * ⚠️ **`Diamonds` left the absent list on 2026-10-27**, the third entry to
+   * do so after `Announcements` and `Hosts`, and for the same reason: the
+   * `/admin/wallet/*` endpoints were verified live that day and the panel
+   * gained a Diamonds section under its standing rule.
+   *
+   * It would have kept passing for a while on a technicality — the section
+   * *label* is not a link, and the only entry is "Top-up requests" — and then
+   * failed the moment W4 adds "Diamond packages", which the bare substring
+   * `'Diamonds'` matches. A test that passes for a reason unrelated to what it
+   * claims is worse than one that fails.
+   */
+  await expect(
+    nav.getByRole('link', { name: 'Top-up requests', exact: true }),
+  ).toBeVisible()
+
+  /*
    * Every module below returns 404 server-side, so it must not appear even for
    * a Super Admin. A menu item leading to "not built yet" reads as a broken
    * product rather than an unfinished one.
    */
   for (const absent of [
     'Social Clubs',
-    'Hosts',
     'Moderation',
-    'Diamonds',
     'Payments',
     'Withdrawals',
     'Reports',

@@ -156,3 +156,19 @@ export async function seedHostFixtures(page: Page): Promise<void> {
     sessionStorage.setItem('callschat.mocks.hosts.seeded', '1')
   })
 }
+
+/**
+ * Ask the mock backend for the populated wallet fixtures, before the app boots.
+ *
+ * ⚠️ Same contract as {@link seedHostFixtures}, and the same reason: the
+ * top-up queue and the package list are empty by default because production is
+ * (plan.md O11), and the flag is read once when the mock worker starts. The
+ * `sessionStorage` key survives `page.goto` and `page.reload`, so a test can
+ * navigate normally instead of clicking a sidebar that is a drawer at 360px
+ * and a rail at 1920px.
+ */
+export async function seedWalletFixtures(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('callschat.mocks.wallet.seeded', '1')
+  })
+}

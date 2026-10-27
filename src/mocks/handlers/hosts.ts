@@ -68,7 +68,15 @@ interface MockHost {
   status: string
   badgeLevel: number | null
   totalLiveHours: number | null
+  totalLiveSessions: number | null
+  peakViewers: number | null
   totalDiamondsEarned: number | null
+  totalGiftsReceived: number | null
+  withdrawableDiamonds: number | null
+  pendingWithdrawal: number | null
+  revenueSharePercent: number | null
+  isLive: boolean | null
+  lastLiveAt: string | null
   followersCount: number | null
   approvedAt: string | null
   suspendedAt: string | null
@@ -184,7 +192,21 @@ function populatedHosts(): MockHost[] {
       badgeLevel: 2,
       /* ⚠️ A float. Never coerce it to an integer. */
       totalLiveHours: 48.5,
+      totalLiveSessions: 63,
+      peakViewers: 124,
       totalDiamondsEarned: 64200,
+      totalGiftsReceived: 58,
+      /*
+       * ⚠️ Three different numbers on purpose. Lifetime earned, what is
+       * withdrawable now, and what is already in flight are not the same
+       * money, and a fixture where they matched would let a cell render the
+       * wrong one and still pass.
+       */
+      withdrawableDiamonds: 12189,
+      pendingWithdrawal: 4000,
+      revenueSharePercent: 70,
+      isLive: true,
+      lastLiveAt: '2026-10-26T16:54:33.572Z',
       followersCount: 1420,
       approvedAt: '2026-10-01T08:00:00.000Z',
       suspendedAt: null,
@@ -206,7 +228,20 @@ function populatedHosts(): MockHost[] {
       status: 'SUSPENDED',
       badgeLevel: null,
       totalLiveHours: 0,
+      totalLiveSessions: null,
+      peakViewers: null,
       totalDiamondsEarned: 0,
+      totalGiftsReceived: 0,
+      /*
+       * ⚠️ A suspended host with earnings still in flight. Suspension does not
+       * cancel a withdrawal, and the panel cannot do anything about either —
+       * which is exactly the state an operator needs to be able to see.
+       */
+      withdrawableDiamonds: 0,
+      pendingWithdrawal: 2500,
+      revenueSharePercent: 70,
+      isLive: false,
+      lastLiveAt: null,
       followersCount: 0,
       approvedAt: '2026-09-20T08:00:00.000Z',
       suspendedAt: '2026-10-02T11:30:00.000Z',
@@ -220,10 +255,28 @@ function populatedHosts(): MockHost[] {
 let applications: MockApplication[] = []
 let hosts: MockHost[] = []
 
+/**
+ * Reproduce the live stats regression (plan.md O1, phase W0).
+ *
+ * ⚠️ **The real backend does this and our mock does not**, which is exactly
+ * why it has to be switchable. `GET /admin/live/host-applications/stats`
+ * returned `200` on 2026-10-15 and `404` on 2026-10-27: the `:id` route now
+ * swallows the literal `stats` segment, and the body is the *application*
+ * not-found message rather than a route error. The handler below is ordered
+ * correctly and would hide the defect forever — a mock that is better behaved
+ * than the server cannot test what the server does.
+ */
+let statsRouteBroken = false
+
+export function breakMockStatsRoute(broken = true): void {
+  statsRouteBroken = broken
+}
+
 /** Restore the live default: nothing at all. */
 export function resetMockHosts(): void {
   applications = []
   hosts = []
+  statsRouteBroken = false
 }
 
 /**
@@ -425,6 +478,11 @@ export const hostHandlers = [
     const scenario = await applyScenario()
     if (scenario) return scenario
 
+    /* The live 404, verbatim — the detail message, not a route error. */
+    if (statsRouteBroken) {
+      return errorResponse(404, NOT_FOUND, 'Host application not found')
+    }
+
     const approved = applications.filter((row) => row.status === 'APPROVED').length
 
     return HttpResponse.json({
@@ -535,7 +593,15 @@ export const hostHandlers = [
         status: 'ACTIVE',
         badgeLevel: 1,
         totalLiveHours: 0,
+        totalLiveSessions: 0,
+        peakViewers: 0,
         totalDiamondsEarned: 0,
+        totalGiftsReceived: 0,
+        withdrawableDiamonds: 0,
+        pendingWithdrawal: 0,
+        revenueSharePercent: 70,
+        isLive: false,
+        lastLiveAt: null,
         followersCount: 0,
         approvedAt: new Date().toISOString(),
         suspendedAt: null,

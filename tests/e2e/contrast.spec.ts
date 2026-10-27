@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import axe from 'axe-core'
 
-import { ACCOUNTS, seedHostFixtures, signIn } from './fixtures'
+import { ACCOUNTS, seedHostFixtures, seedWalletFixtures, signIn } from './fixtures'
 
 /**
  * Colour contrast, checked in a real browser.
@@ -887,6 +887,160 @@ test('every host status badge is legible on its own background', async ({ page }
   await signIn(page)
   await page.goto('/hosts')
   await expect(page.getByText('Alex Rivers')).toBeVisible()
+  await settled(page)
+
+  const ratios = await page.evaluate(() => {
+    function luminance(rgb: string): number {
+      const [r, g, b] = (rgb.match(/\d+/g) ?? ['0', '0', '0']).map(Number) as [
+        number,
+        number,
+        number,
+      ]
+      const channel = (value: number) => {
+        const c = value / 255
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    }
+
+    function painted(el: Element): string {
+      let node: Element | null = el
+      while (node) {
+        const bg = getComputedStyle(node).backgroundColor
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg
+        node = node.parentElement
+      }
+      return 'rgb(255, 255, 255)'
+    }
+
+    const badges = Array.from(
+      document.querySelectorAll('span.text-overline.uppercase'),
+    ).filter((el) => {
+      const own = getComputedStyle(el).backgroundColor
+      const fills = own && own !== 'rgba(0, 0, 0, 0)' && own !== 'transparent'
+      return fills && (el.textContent ?? '').trim().length > 0
+    })
+
+    return badges.map((el) => {
+      const fg = luminance(getComputedStyle(el).color)
+      const bg = luminance(painted(el))
+      return {
+        label: (el.textContent ?? '').trim(),
+        ratio: (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05),
+      }
+    })
+  })
+
+  expect(ratios.length).toBeGreaterThan(0)
+  for (const badge of ratios) {
+    expect(
+      badge.ratio,
+      `${badge.label} at ${badge.ratio.toFixed(2)}:1`,
+    ).toBeGreaterThan(4.5)
+  }
+})
+
+/* ------------------------------------------------------------------ *
+ * Diamond Wallet & Creator Economy — phase W8
+ * ------------------------------------------------------------------ */
+
+const DEBT = (v: { color: string }) =>
+  v.color !== KNOWN_SUBTLE_TOKEN && v.color !== KNOWN_DANGER_TEXT_TOKEN
+
+test('the top-up queue has no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  /*
+   * ⚠️ Scanned **seeded**, although the live queue is empty. An empty state is
+   * four greys and an illustration; the method badges, the status tones and
+   * the money figures are where contrast can actually fail, and none of them
+   * render without rows.
+   */
+  await seedWalletFixtures(page)
+  await signIn(page)
+  await page.goto('/diamonds/top-ups')
+  await expect(page.getByText('Rakibul Khan')).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('the payment drawer is legible on the hostile record', async ({ page }) => {
+  await seedWalletFixtures(page)
+  await signIn(page)
+  await page.goto('/diamonds/top-ups')
+  await page.getByText('No account details').click()
+
+  const drawer = page.getByRole('dialog')
+  await expect(
+    drawer.getByRole('heading', { name: 'Payment', exact: true }),
+  ).toBeVisible()
+
+  await settled(page)
+  /* Scoped — the queue shows through; see the note on `contrastViolations`. */
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('the approve confirmation is legible, since it moves money', async ({ page }) => {
+  await seedWalletFixtures(page)
+  await signIn(page)
+  await page.goto('/diamonds/top-ups')
+  await page.getByText('Rakibul Khan').click()
+  await page.getByRole('button', { name: 'Approve' }).click()
+
+  const dialog = page.getByRole('dialog', { name: /approve this payment/i })
+  await expect(dialog.getByText(/no way to un-approve/)).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('the price list and its editor have no contrast violations', async ({ page }) => {
+  await seedWalletFixtures(page)
+  await signIn(page)
+  await page.goto('/diamonds/packages')
+  await expect(page.getByText('Starter Pack')).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+
+  await page.getByRole('button', { name: 'Edit Starter Pack' }).click()
+  const dialog = page.getByRole('dialog', { name: /edit package/i })
+  await expect(dialog.getByLabel(/Sort order/)).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('the creator earnings group on the roster is legible', async ({ page }) => {
+  /*
+   * ⚠️ Three money figures, a percentage and a live badge were added to a row
+   * that already carried four columns (phase W6). The "in flight" warning tone
+   * and the "Live now" danger badge are the two new colours.
+   */
+  await seedHostFixtures(page)
+  await signIn(page)
+  await page.goto('/hosts')
+  await expect(page.getByText('Alex Rivers')).toBeVisible()
+  await expect(page.getByText('4,000 in flight')).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('every top-up status and method badge is legible on its own background', async ({
+  page,
+}) => {
+  /*
+   * ⚠️ Measured per badge rather than through axe, as the feedback, host and
+   * verification tones are: a badge painting its own tinted fill is the case
+   * axe resolves against the wrong ancestor. The seed carries PENDING,
+   * APPROVED and REJECTED, plus a manual and a gateway method.
+   */
+  await seedWalletFixtures(page)
+  await signIn(page)
+  await page.goto('/diamonds/top-ups')
+  await expect(page.getByText('Rakibul Khan')).toBeVisible()
   await settled(page)
 
   const ratios = await page.evaluate(() => {

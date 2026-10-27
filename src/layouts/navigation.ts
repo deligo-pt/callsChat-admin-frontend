@@ -1,10 +1,12 @@
 import {
   Activity,
   BadgeCheck,
+  Gem,
   LayoutDashboard,
   Megaphone,
   MessageSquare,
   Mic,
+  Package,
   Radio,
   Settings2,
   ShieldCheck,
@@ -204,6 +206,67 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         permission: PERMISSIONS.verificationsReview,
         matchPrefix: '/verifications',
       },
+    ],
+  },
+  /*
+   * Added 2026-10-27 under the rule above: the `/admin/wallet/*` endpoints
+   * shipped and were verified live, so the section appears the same day
+   * (plan.md §4.1, phase W2).
+   *
+   * ⚠️ **A section of its own rather than more entries under Community.** The
+   * test that put Feedback and Host applications there was "is the subject the
+   * same population Users already covers?" Here the subject is money: a queue
+   * of payments to verify against a bank statement. The audience is finance
+   * and operations, the permissions are the ones RBAC reserves for Super
+   * Admin, and the nearest neighbour is Verifications, which earned its own
+   * section for the same reason.
+   *
+   * ⚠️ Named **Diamonds**, matching the `/diamonds/*` routes reserved in
+   * `app/routes.ts` long before this module existed and the "Diamond economy
+   * module" wording already on screen in the user Finance panel. A second name
+   * for one thing would have orphaned both.
+   *
+   * ⚠️ Gated on `walletsView`, which ADMIN holds. The writes inside are
+   * Super-Admin-only by their own keys, so an ADMIN sees the queue and not the
+   * package editor — see `app/router.tsx` for why approval is not gated
+   * harder than the backend enforces.
+   */
+  {
+    id: 'diamonds',
+    label: 'Diamonds',
+    items: [
+      {
+        label: 'Top-up requests',
+        to: ROUTES.topUps,
+        icon: Gem,
+        permission: PERMISSIONS.walletsView,
+        matchPrefix: '/diamonds/top-ups',
+      },
+      /*
+       * ⚠️ `walletsView`, not `diamondPackagesConfigure`. An ADMIN can read
+       * the price list — it is how they answer "what did this person buy" —
+       * and the create, edit and delete controls inside hide themselves on
+       * the narrower key. Gating the nav entry on the write permission would
+       * make the page unreachable for the tier that most often needs to look
+       * at it.
+       */
+      {
+        label: 'Diamond packages',
+        to: ROUTES.diamondPackages,
+        icon: Package,
+        permission: PERMISSIONS.walletsView,
+        matchPrefix: '/diamonds/packages',
+      },
+      /*
+       * ⚠️ **No "Adjust a wallet" entry, and that is a decision rather than an
+       * omission** (plan.md §4.2, revised 2026-10-27). Adjusting a balance is
+       * an action *on a person*, and a page of its own could not show who an
+       * opaque `userId` belonged to — it had to warn the operator that it
+       * could not verify the account. It now lives on the user record beside
+       * suspend, ban and change-role, where the name, the balances and the
+       * history are already on screen. Both entries left here are places; that
+       * one never was.
+       */
     ],
   },
   /*
