@@ -102,6 +102,21 @@ const PackagesPage = lazy(() =>
     default: m.PackagesPage,
   })),
 )
+const EmojiPacksPage = lazy(() =>
+  import('@/features/emoji/EmojiPacksPage').then((m) => ({
+    default: m.EmojiPacksPage,
+  })),
+)
+const GiftTransactionsPage = lazy(() =>
+  import('@/features/ledger/GiftTransactionsPage').then((m) => ({
+    default: m.GiftTransactionsPage,
+  })),
+)
+const GiftCatalogPage = lazy(() =>
+  import('@/features/gifts/GiftCatalogPage').then((m) => ({
+    default: m.GiftCatalogPage,
+  })),
+)
 const HostsPage = lazy(() =>
   import('@/features/hosts/HostsPage').then((m) => ({ default: m.HostsPage })),
 )
@@ -349,6 +364,41 @@ const moduleRoutes: RouteObject[] = [
     ),
   },
 
+  /*
+   * Phase G2 — the gift catalog (plan.md §3.1).
+   *
+   * ⚠️ The same read/write split as diamond packages: `walletsView` reads,
+   * and every write inside gates itself on `giftsConfigure`, which is
+   * Super-Admin-only by RBAC policy.
+   */
+  {
+    path: ROUTES.gifts,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.walletsView}
+        resource="the gift catalog"
+      >
+        {suspended(<GiftCatalogPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase G5 — the gift ledger (plan.md §3.1). `ledgerView`, which ADMIN
+   * holds: the operations tier reads who sent what to whom.
+   */
+  {
+    path: ROUTES.diamondTransactions,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.ledgerView}
+        resource="gift transactions"
+      >
+        {suspended(<GiftTransactionsPage />)}
+      </RequirePermission>
+    ),
+  },
+
   {
     path: ROUTES.hostApplications,
     element: (
@@ -450,6 +500,21 @@ const moduleRoutes: RouteObject[] = [
         resource="announcements"
       >
         {suspended(<AnnouncementsPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase G4 — emoji packs (plan.md §3.4).
+   *
+   * ⚠️ `giftsConfigure` for reading too (plan.md §3.1). The page has no
+   * read-only mode: every control on it is a write.
+   */
+  {
+    path: ROUTES.emojiPacks,
+    element: (
+      <RequirePermission permission={PERMISSIONS.giftsConfigure} resource="emoji packs">
+        {suspended(<EmojiPacksPage />)}
       </RequirePermission>
     ),
   },

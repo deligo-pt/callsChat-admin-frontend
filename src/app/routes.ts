@@ -44,7 +44,20 @@ export const ROUTES = {
   gifts: '/diamonds/gifts',
   wallets: '/diamonds/wallets',
   wallet: (id: string) => `/diamonds/wallets/${id}`,
+  /**
+   * ⚠️ The **gift** ledger, under the name reserved for a diamond ledger that
+   * does not exist yet (plan.md §3.3, O9). Top-ups and adjustments are not in
+   * it.
+   */
   diamondTransactions: '/diamonds/transactions',
+  /** Phase G5. `senderId` and `receiverId` are the two filters measured to work. */
+  giftLedger: (filter: { senderId?: string; receiverId?: string }) => {
+    const params = new URLSearchParams()
+    if (filter.senderId) params.set('senderId', filter.senderId)
+    if (filter.receiverId) params.set('receiverId', filter.receiverId)
+    const query = params.toString()
+    return query ? `/diamonds/transactions?${query}` : '/diamonds/transactions'
+  },
   diamondTransaction: (id: string) => `/diamonds/transactions/${id}`,
   adjustments: '/diamonds/adjustments',
 
@@ -123,6 +136,12 @@ export const ROUTES = {
    * other list in this panel does.
    */
   announcements: '/announcements',
+  /**
+   * Emoji packs (plan.md §3.4, phase G4). **In Platform, not under
+   * `/diamonds`** — a pack has no price, and the Diamonds section is about
+   * money.
+   */
+  emojiPacks: '/emoji-packs',
 
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,

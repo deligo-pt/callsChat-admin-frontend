@@ -1093,3 +1093,65 @@ test('every top-up status and method badge is legible on its own background', as
     ).toBeGreaterThan(4.5)
   }
 })
+
+/*
+ * Phase G6 — the gift & emoji catalog and the gift ledger.
+ *
+ * ⚠️ In local mock mode every catalog thumbnail renders the "Unsafe asset URL"
+ * warning (the API base is not `https:`), so that warning's tone is measured
+ * on every row here — it is what an operator sees whenever an asset is
+ * refused, not only in development.
+ */
+
+test('the gift catalog and its editor have no contrast violations', async ({
+  page,
+}) => {
+  await signIn(page)
+  await page.goto('/diamonds/gifts')
+  await expect(page.getByRole('heading', { name: 'Popular Gifts' })).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+
+  /* The editor carries the free-gift price warning, the one new tone in G3. */
+  await page.getByRole('button', { name: 'Actions for Heart Icon' }).click()
+  await page.getByRole('menuitem', { name: 'Edit' }).click()
+  await expect(page.getByRole('dialog', { name: 'Edit gift' })).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('emoji packs and the bulk dialog have no contrast violations', async ({
+  page,
+}) => {
+  await signIn(page)
+  await page.goto('/emoji-packs')
+  await expect(page.getByRole('heading', { name: 'Official Emojis' })).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+
+  await page.getByRole('button', { name: 'Actions for Official Emojis' }).click()
+  await page.getByRole('menuitem', { name: 'Add several' }).click()
+  await page
+    .getByRole('dialog', { name: 'Add several emojis' })
+    .getByLabel('Emoji files')
+    .setInputFiles(['tests/e2e/files/party_face.json', 'tests/e2e/files/sleepy.json'])
+  await expect(page.getByLabel('Shortcode for sleepy.json')).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('the gift ledger has no contrast violations, filter chip included', async ({
+  page,
+}) => {
+  await signIn(page)
+  await page.goto('/diamonds/transactions?contextId=cmvph9tft00kp01p68mid7a91')
+  await expect(page.getByText('Room:')).toBeVisible()
+  await expect(page.getByText('Chocolate Box (as sent)').first()).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})

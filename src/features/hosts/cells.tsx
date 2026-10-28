@@ -1,3 +1,8 @@
+import { Link } from 'react-router'
+
+import { ROUTES } from '@/app/routes'
+import { PERMISSIONS } from '@/auth/permissions'
+import { useCan } from '@/auth/useAuth'
 import { DateTime } from '@/components/display'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/cn'
@@ -282,6 +287,7 @@ export function EarningsCell({ record }: { record: LiveHost }) {
  */
 export function LifetimeEarningsCell({ record }: { record: LiveHost }) {
   const share = record.revenueSharePercent
+  const canOpenLedger = useCan(PERMISSIONS.ledgerView)
 
   return (
     <span className="flex min-w-[8rem] flex-col gap-0.5">
@@ -292,6 +298,21 @@ export function LifetimeEarningsCell({ record }: { record: LiveHost }) {
           : 'gifts unknown'}
         {typeof share === 'number' ? ` · ${share}% share` : ''}
       </span>
+      {/*
+       * Phase G5 (plan.md §3.2). ⚠️ A link BESIDE the count, never the count
+       * itself: measured 2026-10-28, this counter does not agree with the
+       * ledger — 35 here against 13 rows (120 gifts by quantity) for the same
+       * host, and 0 against 9 rows for another (plan.md O15). A count that
+       * opens a list contradicting it would read as a bug in the panel.
+       */}
+      {canOpenLedger && record.userId ? (
+        <Link
+          to={ROUTES.giftLedger({ receiverId: record.userId })}
+          className="w-fit text-caption font-medium text-primary hover:underline"
+        >
+          Gifts received
+        </Link>
+      ) : null}
     </span>
   )
 }

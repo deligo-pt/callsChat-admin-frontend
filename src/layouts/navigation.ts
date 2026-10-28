@@ -1,7 +1,9 @@
 import {
   Activity,
+  ArrowLeftRight,
   BadgeCheck,
   Gem,
+  Gift,
   LayoutDashboard,
   Megaphone,
   MessageSquare,
@@ -10,6 +12,7 @@ import {
   Radio,
   Settings2,
   ShieldCheck,
+  Smile,
   Users,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -258,6 +261,28 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         matchPrefix: '/diamonds/packages',
       },
       /*
+       * Phase G2. `walletsView` for the same reason as the price list above:
+       * an ADMIN answering "what did that gift cost" needs to read it.
+       */
+      {
+        label: 'Gift catalog',
+        to: ROUTES.gifts,
+        icon: Gift,
+        permission: PERMISSIONS.walletsView,
+        matchPrefix: '/diamonds/gifts',
+      },
+      /*
+       * Phase G5. `ledgerView`. Named for what it holds — gifts — because
+       * the diamond ledger it sits in the place of does not exist (O9).
+       */
+      {
+        label: 'Gift transactions',
+        to: ROUTES.diamondTransactions,
+        icon: ArrowLeftRight,
+        permission: PERMISSIONS.ledgerView,
+        matchPrefix: '/diamonds/transactions',
+      },
+      /*
        * ⚠️ **No "Adjust a wallet" entry, and that is a decision rather than an
        * omission** (plan.md §4.2, revised 2026-10-27). Adjusting a balance is
        * an action *on a person*, and a page of its own could not show who an
@@ -317,6 +342,18 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Megaphone,
         permission: PERMISSIONS.notificationsBroadcast,
         matchPrefix: '/announcements',
+      },
+      /*
+       * Phase G4. Beside Announcements because both are platform content
+       * pushed to every client and neither costs anything (plan.md §3.4).
+       * `giftsConfigure`, Super-Admin-only — an ADMIN does not see it.
+       */
+      {
+        label: 'Emoji packs',
+        to: ROUTES.emojiPacks,
+        icon: Smile,
+        permission: PERMISSIONS.giftsConfigure,
+        matchPrefix: '/emoji-packs',
       },
       {
         label: 'System Settings',

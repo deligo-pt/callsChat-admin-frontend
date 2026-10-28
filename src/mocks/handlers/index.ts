@@ -1,6 +1,7 @@
 import { announcementHandlers } from './announcements'
 import { authHandlers } from './auth'
 import { bootstrapHandlers } from './bootstrap'
+import { catalogHandlers } from './catalog'
 import { feedbackHandlers } from './feedback'
 import { hostHandlers } from './hosts'
 import { resourceHandlers } from './resources'
@@ -23,6 +24,7 @@ export const handlers = [
   ...feedbackHandlers,
   ...verificationHandlers,
   ...walletHandlers,
+  ...catalogHandlers,
   /*
    * Also before `resourceHandlers`, and for a sharper reason than the others:
    * the catch-all there would answer `GET /admin/announcements/:id` with a

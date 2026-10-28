@@ -1,5 +1,6 @@
 import { Info } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 
 import {
   DateTime,
@@ -9,6 +10,7 @@ import {
   StatusBadge,
   type KeyValueItem,
 } from '@/components/display'
+import { ROUTES } from '@/app/routes'
 import { EmptyState } from '@/components/feedback'
 import { PERMISSIONS } from '@/auth/permissions'
 import { useAuth } from '@/auth/useAuth'
@@ -580,7 +582,29 @@ export function SafetyPanel({ user }: { user: UserDetail }) {
 
 export function FinancePanel({ user }: { user: UserDetail }) {
   const f = user.finance
-  const canAdjust = useAuth().can(PERMISSIONS.diamondsAdjust)
+  const auth = useAuth()
+  const canAdjust = auth.can(PERMISSIONS.diamondsAdjust)
+  const canOpenLedger = auth.can(PERMISSIONS.ledgerView)
+  const userId = user.identity.id
+
+  /*
+   * Phase G5 (plan.md §3.2). ⚠️ The figure stays a figure and the link sits
+   * beside it, labelled for what it opens: these are Diamond VALUES (0 for
+   * everyone while the catalog is free), not counts, so the figure itself
+   * cannot describe the list behind it.
+   */
+  const ledgerLink = (
+    filter: { senderId: string } | { receiverId: string },
+    label: string,
+  ) =>
+    canOpenLedger ? (
+      <Link
+        to={ROUTES.giftLedger(filter)}
+        className="text-caption font-medium text-primary hover:underline"
+      >
+        {label}
+      </Link>
+    ) : null
 
   return (
     <Panel
@@ -630,11 +654,21 @@ export function FinancePanel({ user }: { user: UserDetail }) {
             },
             {
               label: 'Gifts sent',
-              value: <DiamondAmount amount={f.totalGiftsSent} variant="neutral" />,
+              value: (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <DiamondAmount amount={f.totalGiftsSent} variant="neutral" />
+                  {ledgerLink({ senderId: userId }, 'See gifts sent')}
+                </span>
+              ),
             },
             {
               label: 'Gifts received',
-              value: <DiamondAmount amount={f.totalGiftsReceived} variant="neutral" />,
+              value: (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <DiamondAmount amount={f.totalGiftsReceived} variant="neutral" />
+                  {ledgerLink({ receiverId: userId }, 'See gifts received')}
+                </span>
+              ),
             },
           ]}
         />
@@ -644,8 +678,8 @@ export function FinancePanel({ user }: { user: UserDetail }) {
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>
           Available and locked Diamonds are separate balances and are never combined.
-          There is still no endpoint for reading the transaction ledger, so an
-          adjustment made here will not show up on this page.
+          Gifts have a ledger; top-ups and adjustments still do not, so an adjustment
+          made here will not show up anywhere in this panel.
         </span>
       </p>
     </Panel>

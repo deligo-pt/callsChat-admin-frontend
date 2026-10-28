@@ -41,19 +41,23 @@ describe('the Diamonds section', () => {
     expect(section('diamonds')?.items[0]?.permission).toBe(PERMISSIONS.walletsView)
   })
 
-  it('holds two places and no actions', () => {
+  it('holds four places and no actions', () => {
     /*
      * ⚠️ **"Adjust a wallet" was here until 2026-10-27 and is deliberately
      * gone.** Adjusting a balance is an action *on a person*, not a place: the
      * page it had could not show whose account an opaque `userId` was, and had
      * to warn the operator it could not verify it. It now sits on the user
      * record beside suspend, ban and change-role. Both entries left are
-     * places, and both are readable by the operations tier.
+     * places, and both are readable by the operations tier. The gift
+     * catalog (G2) joined them on the same terms, and the gift ledger (G5)
+     * on `ledger.view` — also granted to ADMIN.
      */
     const items = section('diamonds')?.items ?? []
     expect(items.map((item) => item.permission)).toEqual([
       PERMISSIONS.walletsView,
       PERMISSIONS.walletsView,
+      PERMISSIONS.walletsView,
+      PERMISSIONS.ledgerView,
     ])
   })
 
@@ -67,6 +71,8 @@ describe('the Diamonds section', () => {
     expect(items.map((item) => item.to)).toEqual([
       ROUTES.topUps,
       ROUTES.diamondPackages,
+      ROUTES.gifts,
+      ROUTES.diamondTransactions,
     ])
   })
 
@@ -82,6 +88,8 @@ describe('the Diamonds section', () => {
     expect(items.map((item) => item.matchPrefix)).toEqual([
       '/diamonds/top-ups',
       '/diamonds/packages',
+      '/diamonds/gifts',
+      '/diamonds/transactions',
     ])
   })
 })

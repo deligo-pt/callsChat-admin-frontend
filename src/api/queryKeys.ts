@@ -75,6 +75,10 @@ export const queryKeys = {
   /** The manual top-up queue — `GET /admin/wallet/requests` (plan.md §5, W2). */
   topUpRequests: domain('top-up-requests'),
   gifts: domain('gifts'),
+  /** The gift ledger — not `diamondTransactions`, which it is not (plan.md O9, G5). */
+  giftTransactions: domain('gift-transactions'),
+  /** Emoji packs with their nested emojis (plan.md §3.4, G4). */
+  emojiPacks: domain('emoji-packs'),
   payoutRates: domain('payout-rates'),
 
   payments: domain('payments'),
