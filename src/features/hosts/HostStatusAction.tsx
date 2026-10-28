@@ -143,7 +143,26 @@ export function HostStatusAction({ host }: { host: LiveHost }) {
           onOpenChange={(open) => !open && setAction(null)}
           title={COPY[action].title}
           target={name}
-          effect={COPY[action].effect}
+          /*
+           * ⚠️ **"If they are broadcasting right now" becomes "they are
+           * broadcasting right now" when the row says so** — phase W6.
+           *
+           * The static copy has to hedge because, until the roster started
+           * reading `isLive`, the panel genuinely did not know. It does now,
+           * and a conditional an operator has to resolve themselves is the
+           * part of a warning they skim. This is the difference between
+           * reading about a possibility and being told you are about to cut
+           * somebody off mid-sentence.
+           *
+           * ⚠️ Still no claim that the teardown happened. The panel has no
+           * view of rooms (plan.md O6), so this says what is true *now* and
+           * what the backend *will* do — never what it did.
+           */
+          effect={
+            host.isLive === true && action !== 'ACTIVE'
+              ? `${name} is broadcasting right now. ${COPY[action].effect}`
+              : COPY[action].effect
+          }
           severity={action === 'ACTIVE' ? 'info' : 'critical'}
           confirmLabel={COPY[action].confirm}
           loading={mutation.isPending}

@@ -139,6 +139,24 @@ describe('the roster', () => {
   })
 })
 
+describe('the creator earnings group', () => {
+  it('has no violations with every figure on screen', async () => {
+    /*
+     * ⚠️ Three money figures, a percentage and a live badge were added to a
+     * row that already carried four columns (phase W6). Density is where
+     * contrast and name wiring break, and the 360px case is where the group
+     * either wraps or escapes the card.
+     */
+    seedMockHosts()
+    setViewport(360)
+    const { container } = mount(<HostsPage />, '/hosts', '/hosts')
+    await screen.findByText('Alex Rivers')
+    await screen.findAllByText('withdrawable')
+
+    await expectNoA11yViolations(container, BODY_SCAN)
+  })
+})
+
 describe('names that stand on their own', () => {
   it('names every row control by its host, not by its position', async () => {
     /*

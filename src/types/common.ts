@@ -192,6 +192,22 @@ export const errorCodeSchema = z.enum([
    */
   'ROUTE_NOT_FOUND',
   'CONFLICT',
+  /**
+   * Verified live 2026-10-28 on `/admin/emoji/emojis`, where a duplicate
+   * shortcode is refused.
+   *
+   * ⚠️ **Its message names no field**, which is a backend defect an operator
+   * reads verbatim: *"A record with this unknown field already exists."* The
+   * word "unknown" is literal — the field name never resolves. Anything
+   * surfacing this code has to supply the field itself (plan.md O4).
+   */
+  'RECORD_ALREADY_EXISTS',
+  /**
+   * Verified live 2026-10-28: `PATCH /admin/gifts/:id {"categoryId":"nope"}`
+   * answers `422` with *"Operation failed due to a foreign key constraint. The
+   * referenced record does not exist."* — Prisma's, surfaced as-is.
+   */
+  'FOREIGN_KEY_CONSTRAINT',
   'INVALID_STATE_TRANSITION',
   'IDEMPOTENCY_CONFLICT',
   'RATE_LIMITED',

@@ -70,6 +70,18 @@ export class ConflictError extends AppError {
   }
 }
 
+/**
+ * A write named a record that does not exist — Prisma's foreign-key failure,
+ * surfaced by the catalog routes as `422 FOREIGN_KEY_CONSTRAINT` (measured
+ * 2026-10-28). Its message names no field, so callers re-word it.
+ */
+export class MissingReferenceError extends AppError {
+  override readonly code = 'FOREIGN_KEY_CONSTRAINT' as const
+  constructor(message: string, correlationId?: string) {
+    super(message, 422, correlationId)
+  }
+}
+
 /** The record moved on: the requested transition is not legal from its state. */
 export class InvalidStateTransitionError extends AppError {
   override readonly code = 'INVALID_STATE_TRANSITION' as const
@@ -179,6 +191,7 @@ const ERROR_BY_CODE: Readonly<
   FORBIDDEN: (m, c) => new ForbiddenError(m, c),
   NOT_FOUND: (m, c) => new NotFoundError(m, c),
   CONFLICT: (m, c) => new ConflictError(m, c),
+  FOREIGN_KEY_CONSTRAINT: (m, c) => new MissingReferenceError(m, c),
   INVALID_STATE_TRANSITION: (m, c) => new InvalidStateTransitionError(m, c),
   IDEMPOTENCY_CONFLICT: (m, c) => new IdempotencyConflictError(m, c),
   RATE_LIMITED: (m, c) => new RateLimitedError(m, c),

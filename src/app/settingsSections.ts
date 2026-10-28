@@ -81,6 +81,18 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     description: 'Languages, store links and the payment placeholder flags.',
     shipped: true,
   },
+  /*
+   * Added 2026-10-27 in W7, with `shipped: true` from the start: the two
+   * fields save on arrival, so there is no read-only stage to hide.
+   */
+  {
+    value: 'economy',
+    label: 'Diamond economy',
+    to: ROUTES.settingsEconomy,
+    description:
+      'The signup bonus and the floor on a creator moving earnings into their spending wallet.',
+    shipped: true,
+  },
   {
     value: 'bootstrap',
     label: 'Mobile bootstrap',

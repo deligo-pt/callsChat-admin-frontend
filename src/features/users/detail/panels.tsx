@@ -1,5 +1,6 @@
 import { Info } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 
 import {
   DateTime,
@@ -9,6 +10,7 @@ import {
   StatusBadge,
   type KeyValueItem,
 } from '@/components/display'
+import { ROUTES } from '@/app/routes'
 import { EmptyState } from '@/components/feedback'
 import { PERMISSIONS } from '@/auth/permissions'
 import { useAuth } from '@/auth/useAuth'
@@ -21,6 +23,7 @@ import type {
   UserSession,
 } from '@/types/identity'
 
+import { AdjustBalanceAction } from './AdjustBalanceAction'
 import { AddRestrictionAction, RemoveRestrictionAction } from './RestrictionActions'
 import { RevokeAllSessionsAction, RevokeSessionAction } from './SessionActions'
 
@@ -579,11 +582,52 @@ export function SafetyPanel({ user }: { user: UserDetail }) {
 
 export function FinancePanel({ user }: { user: UserDetail }) {
   const f = user.finance
+  const auth = useAuth()
+  const canAdjust = auth.can(PERMISSIONS.diamondsAdjust)
+  const canOpenLedger = auth.can(PERMISSIONS.ledgerView)
+  const userId = user.identity.id
+
+  /*
+   * Phase G5 (plan.md §3.2). ⚠️ The figure stays a figure and the link sits
+   * beside it, labelled for what it opens: these are Diamond VALUES (0 for
+   * everyone while the catalog is free), not counts, so the figure itself
+   * cannot describe the list behind it.
+   */
+  const ledgerLink = (
+    filter: { senderId: string } | { receiverId: string },
+    label: string,
+  ) =>
+    canOpenLedger ? (
+      <Link
+        to={ROUTES.giftLedger(filter)}
+        className="text-caption font-medium text-primary hover:underline"
+      >
+        {label}
+      </Link>
+    ) : null
 
   return (
     <Panel
       title="Diamond summary"
-      description="Read-only. Balances are adjusted from the Diamond economy module, never from here."
+      /*
+       * ⚠️ **This description used to say "never from here", and that stopped
+       * being true on 2026-10-27.**
+       *
+       * It was written before any Diamond economy module existed, as a note
+       * that the users module shipped no mutation control — not as a rule
+       * about where such a control belongs. When the module arrived, the
+       * adjustment first got a page of its own to honour the sentence
+       * literally. That page could not show whose account an opaque `userId`
+       * was and had to warn the operator it could not verify it; here the
+       * name, both balances and the restriction history are already in front
+       * of them. So the action moved and the sentence went with it (plan.md
+       * §4.2, revised).
+       *
+       * The *endpoint* and the *permission* still belong to the diamonds
+       * module. Only the button moved.
+       */
+      description="Balances are read from the Diamond economy module. Adjusting one writes a permanent ledger row and cannot be undone."
+      action={canAdjust ? <AdjustBalanceAction user={user.identity} /> : undefined}
     >
       {/*
         plan.md §3.2 / §9: available and locked are ALWAYS separate figures and
@@ -610,11 +654,21 @@ export function FinancePanel({ user }: { user: UserDetail }) {
             },
             {
               label: 'Gifts sent',
-              value: <DiamondAmount amount={f.totalGiftsSent} variant="neutral" />,
+              value: (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <DiamondAmount amount={f.totalGiftsSent} variant="neutral" />
+                  {ledgerLink({ senderId: userId }, 'See gifts sent')}
+                </span>
+              ),
             },
             {
               label: 'Gifts received',
-              value: <DiamondAmount amount={f.totalGiftsReceived} variant="neutral" />,
+              value: (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <DiamondAmount amount={f.totalGiftsReceived} variant="neutral" />
+                  {ledgerLink({ receiverId: userId }, 'See gifts received')}
+                </span>
+              ),
             },
           ]}
         />
@@ -624,7 +678,8 @@ export function FinancePanel({ user }: { user: UserDetail }) {
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>
           Available and locked Diamonds are separate balances and are never combined.
-          The transaction ledger arrives with the Diamond economy module.
+          Gifts have a ledger; top-ups and adjustments still do not, so an adjustment
+          made here will not show up anywhere in this panel.
         </span>
       </p>
     </Panel>

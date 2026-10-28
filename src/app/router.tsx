@@ -64,6 +64,12 @@ const MaintenanceTab = lazy(() =>
 const ChatTab = lazy(() =>
   import('@/features/settings/chat/ChatTab').then((m) => ({ default: m.ChatTab })),
 )
+const EconomyTab = lazy(() =>
+  import('@/features/settings/economy/EconomyTab').then((m) => ({
+    default: m.EconomyTab,
+  })),
+)
+
 const PlatformTab = lazy(() =>
   import('@/features/settings/platform/PlatformTab').then((m) => ({
     default: m.PlatformTab,
@@ -82,6 +88,33 @@ const DatabaseTab = lazy(() =>
 const HostApplicationsPage = lazy(() =>
   import('@/features/hosts/HostApplicationsPage').then((m) => ({
     default: m.HostApplicationsPage,
+  })),
+)
+
+const TopUpRequestsPage = lazy(() =>
+  import('@/features/diamonds/TopUpRequestsPage').then((m) => ({
+    default: m.TopUpRequestsPage,
+  })),
+)
+
+const PackagesPage = lazy(() =>
+  import('@/features/diamonds/PackagesPage').then((m) => ({
+    default: m.PackagesPage,
+  })),
+)
+const EmojiPacksPage = lazy(() =>
+  import('@/features/emoji/EmojiPacksPage').then((m) => ({
+    default: m.EmojiPacksPage,
+  })),
+)
+const GiftTransactionsPage = lazy(() =>
+  import('@/features/ledger/GiftTransactionsPage').then((m) => ({
+    default: m.GiftTransactionsPage,
+  })),
+)
+const GiftCatalogPage = lazy(() =>
+  import('@/features/gifts/GiftCatalogPage').then((m) => ({
+    default: m.GiftCatalogPage,
   })),
 )
 const HostsPage = lazy(() =>
@@ -224,6 +257,7 @@ const moduleRoutes: RouteObject[] = [
       { path: 'maintenance', element: suspended(<MaintenanceTab />) },
       { path: 'chat', element: suspended(<ChatTab />) },
       { path: 'platform', element: suspended(<PlatformTab />) },
+      { path: 'economy', element: suspended(<EconomyTab />) },
       /*
        * Bootstrap — what mobile clients actually read at cold start
        * (plan.md §4.1). Same guard as every other section; the API's own
@@ -282,6 +316,89 @@ const moduleRoutes: RouteObject[] = [
    * because the only credential available is a SUPER_ADMIN that bypasses
    * module permissions entirely (plan.md O2).
    */
+  /*
+   * Phase W2 — the manual top-up queue (plan.md §5).
+   *
+   * ⚠️ Gated on `walletsView`, which ADMIN holds, and **not** on
+   * `diamondsAdjust`, which is Super-Admin-only. Approving a request credits
+   * diamonds — the act `diamonds.adjust` reserves — but the backend enforces
+   * only `ADMIN | SUPER_ADMIN` on this route, so a stricter client gate would
+   * hide the screen while leaving the endpoint open to the same token. That is
+   * theatre, and it would make the queue unusable for the operations tier it
+   * exists for. Recorded as plan.md O2 for the backend.
+   */
+  {
+    path: ROUTES.topUps,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.walletsView}
+        resource="top-up requests"
+      >
+        {suspended(<TopUpRequestsPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase W4 — the diamond price list (plan.md §5).
+   *
+   * ⚠️ Gated on `walletsView` for **reading**, which ADMIN holds, while every
+   * write inside is gated on `diamondPackagesConfigure`, which is
+   * Super-Admin-only. That split is deliberate and is not the top-up queue's
+   * situation: there, a stricter client gate would have been theatre because
+   * the backend enforces only `ADMIN | SUPER_ADMIN`. Here
+   * `doc/RBAC, Security, and Privacy.md:52` reserves pricing for Super Admin
+   * with the rest of the finance class, so hiding the controls reflects the
+   * policy rather than inventing one. An ADMIN still needs to read the list —
+   * it is how they answer "what did this person buy".
+   */
+  {
+    path: ROUTES.diamondPackages,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.walletsView}
+        resource="diamond packages"
+      >
+        {suspended(<PackagesPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase G2 — the gift catalog (plan.md §3.1).
+   *
+   * ⚠️ The same read/write split as diamond packages: `walletsView` reads,
+   * and every write inside gates itself on `giftsConfigure`, which is
+   * Super-Admin-only by RBAC policy.
+   */
+  {
+    path: ROUTES.gifts,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.walletsView}
+        resource="the gift catalog"
+      >
+        {suspended(<GiftCatalogPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase G5 — the gift ledger (plan.md §3.1). `ledgerView`, which ADMIN
+   * holds: the operations tier reads who sent what to whom.
+   */
+  {
+    path: ROUTES.diamondTransactions,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.ledgerView}
+        resource="gift transactions"
+      >
+        {suspended(<GiftTransactionsPage />)}
+      </RequirePermission>
+    ),
+  },
+
   {
     path: ROUTES.hostApplications,
     element: (
@@ -383,6 +500,21 @@ const moduleRoutes: RouteObject[] = [
         resource="announcements"
       >
         {suspended(<AnnouncementsPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase G4 — emoji packs (plan.md §3.4).
+   *
+   * ⚠️ `giftsConfigure` for reading too (plan.md §3.1). The page has no
+   * read-only mode: every control on it is a write.
+   */
+  {
+    path: ROUTES.emojiPacks,
+    element: (
+      <RequirePermission permission={PERMISSIONS.giftsConfigure} resource="emoji packs">
+        {suspended(<EmojiPacksPage />)}
       </RequirePermission>
     ),
   },

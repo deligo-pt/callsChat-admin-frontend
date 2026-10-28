@@ -28,11 +28,36 @@ export const ROUTES = {
   moderationCase: (id: string) => `/moderation/${id}`,
   moderationReports: '/moderation/reports',
 
+  /**
+   * Diamond Wallet & Creator Economy (plan.md §4.1, phase W2).
+   *
+   * ⚠️ `/diamonds/*` was reserved here long before the module existed, and
+   * `features/users/detail/panels.tsx` already calls it "the Diamond economy
+   * module" in copy that is on screen. The namespace is reused rather than
+   * renamed.
+   *
+   * `topUps` is the one slot that was not already cut — there is no counters
+   * endpoint and no detail route for it, so one path serves the whole queue.
+   */
+  topUps: '/diamonds/top-ups',
   diamondPackages: '/diamonds/packages',
   gifts: '/diamonds/gifts',
   wallets: '/diamonds/wallets',
   wallet: (id: string) => `/diamonds/wallets/${id}`,
+  /**
+   * ⚠️ The **gift** ledger, under the name reserved for a diamond ledger that
+   * does not exist yet (plan.md §3.3, O9). Top-ups and adjustments are not in
+   * it.
+   */
   diamondTransactions: '/diamonds/transactions',
+  /** Phase G5. `senderId` and `receiverId` are the two filters measured to work. */
+  giftLedger: (filter: { senderId?: string; receiverId?: string }) => {
+    const params = new URLSearchParams()
+    if (filter.senderId) params.set('senderId', filter.senderId)
+    if (filter.receiverId) params.set('receiverId', filter.receiverId)
+    const query = params.toString()
+    return query ? `/diamonds/transactions?${query}` : '/diamonds/transactions'
+  },
   diamondTransaction: (id: string) => `/diamonds/transactions/${id}`,
   adjustments: '/diamonds/adjustments',
 
@@ -111,6 +136,12 @@ export const ROUTES = {
    * other list in this panel does.
    */
   announcements: '/announcements',
+  /**
+   * Emoji packs (plan.md §3.4, phase G4). **In Platform, not under
+   * `/diamonds`** — a pack has no price, and the Diamonds section is about
+   * money.
+   */
+  emojiPacks: '/emoji-packs',
 
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,
@@ -131,6 +162,16 @@ export const ROUTES = {
   settingsMaintenance: '/settings/maintenance',
   settingsChat: '/settings/chat',
   settingsPlatform: '/settings/platform',
+  /**
+   * Diamond economy (plan.md §4.3, phase W7).
+   *
+   * ⚠️ In `/settings/*` rather than `/diamonds/*`, although the diamonds
+   * module owns the endpoint. `PATCH /admin/settings/economy` writes the same
+   * `id: "primary"` singleton every other tab here writes, and two features
+   * mutating one record through two optimistic paths is the class of bug the
+   * bootstrap work spent a phase removing.
+   */
+  settingsEconomy: '/settings/economy',
   /**
    * Bootstrap Configuration (plan.md §4.1).
    *

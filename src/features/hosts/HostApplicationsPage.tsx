@@ -24,6 +24,7 @@ import { ApplicationDrawer } from './ApplicationDrawer'
 import { ApplicantCell, NicheCell, StatusCell, SubmittedCell } from './cells'
 import { ANY } from './listParams'
 import { StatsStrip } from './StatsStrip'
+import { useHostApplicationStatsFallback } from './statsFallback'
 import { useHostApplicationListParams } from './useHostApplicationListParams'
 import { useHostApplicationListQuery, useHostApplicationStatsQuery } from './useHosts'
 
@@ -108,6 +109,17 @@ export function HostApplicationsPage() {
   const list = useHostApplicationListQuery(query)
   const stats = useHostApplicationStatsQuery()
 
+  /*
+   * ⚠️ **The counters' route is a `404` on the live backend** (plan.md O1,
+   * phase W0). `useHostApplicationStatsFallback` rebuilds the same six numbers
+   * from `pagination.total` on the list routes, and runs **only** while the
+   * real endpoint is failing — so a healthy backend costs nothing, and the day
+   * the route is fixed this line goes quiet on its own.
+   */
+  const fallback = useHostApplicationStatsFallback(stats.isError)
+  const counters = stats.data ?? fallback.stats
+  const countersPending = stats.isPending || fallback.isPending
+
   const rows = list.data?.data ?? []
   const pagination = list.data?.pagination
 
@@ -144,8 +156,8 @@ export function HostApplicationsPage() {
       />
 
       <StatsStrip
-        stats={stats.data}
-        loading={stats.isPending}
+        stats={counters}
+        loading={countersPending}
         activeStatus={status}
         onSelectStatus={setStatus}
       />

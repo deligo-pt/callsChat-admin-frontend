@@ -78,9 +78,27 @@ test('status and capability restrictions stay structurally separate', async ({
   ).toBeVisible()
 })
 
-test('finance is read-only and never combines available with locked', async ({
+test('finance never combines available with locked, and edits nothing inline', async ({
   page,
 }) => {
+  /*
+   * ⚠️ **This test asserted "no wallet mutation anywhere in this module" and
+   * that stopped being true on 2026-10-27** — the fourth assertion in this
+   * suite to be updated by a shipped feature, after Announcements, Hosts and
+   * Diamonds in `auth.spec.ts`.
+   *
+   * `plan.md §3.2` said the users module carried no mutation control, and
+   * `FinancePanel` said the same in its own copy. That was a scoping note
+   * written before any Diamond economy module existed, not a rule about where
+   * such a control belongs. When the module shipped, the adjustment first got
+   * a page of its own to honour it literally — and that page could not show
+   * whose account an opaque `userId` was. It moved here, where the name and
+   * both balances are already on screen (plan.md §4.2, revised).
+   *
+   * What survives unchanged is the part that was always the point: the two
+   * balances stay separate, and nothing on the panel edits in place. The form
+   * is a dialog, so the panel itself still holds no textbox.
+   */
   await page.goto('/users/usr_000001')
   await page.getByRole('tab', { name: 'Finance' }).click()
 
@@ -88,11 +106,26 @@ test('finance is read-only and never combines available with locked', async ({
   await expect(panel.getByText('Available', { exact: true })).toBeVisible()
   await expect(panel.getByText('Locked', { exact: true })).toBeVisible()
 
-  // plan.md §3.2: there is no wallet mutation anywhere in this module.
-  await expect(
-    panel.getByRole('button', { name: /adjust|edit|add|remove/i }),
-  ).toHaveCount(0)
+  /*
+   * ⚠️ The two figures are never summed into one "spendable" number. That is
+   * the assertion this test was really written for, and it is untouched.
+   */
+  await expect(panel.getByText(/spendable|total balance/i)).toHaveCount(0)
+
+  /* Nothing is edited in place — the adjustment opens a dialog. */
   await expect(panel.getByRole('textbox')).toHaveCount(0)
+
+  /*
+   * The one control that may now appear, and only for an account holding
+   * `diamonds.adjust`. Opening it must not change anything by itself.
+   */
+  const adjust = panel.getByRole('button', { name: /adjust the diamond balance/i })
+  await expect(adjust).toBeVisible()
+
+  await adjust.click()
+  await expect(
+    page.getByRole('dialog', { name: /adjust diamond balance/i }),
+  ).toBeVisible()
 })
 
 test('an unknown user id shows not-found, not a crash', async ({ page }) => {

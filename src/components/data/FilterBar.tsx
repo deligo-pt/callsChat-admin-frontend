@@ -55,32 +55,11 @@ export function FilterBar({
 
   const chips =
     applied.length > 0 ? (
-      <div className="flex flex-wrap items-center gap-2">
-        {applied.map((filter) => (
-          <span
-            key={filter.id}
-            className="inline-flex items-center gap-1.5 rounded-sm bg-primary-soft py-1 pr-1 pl-2 text-caption text-primary-700"
-          >
-            <span className="text-foreground-subtle">{filter.label}:</span>
-            <span className="font-medium">{filter.value}</span>
-            {onRemove ? (
-              <button
-                type="button"
-                onClick={() => onRemove(filter.id)}
-                aria-label={`Remove ${filter.label} filter`}
-                className="rounded-sm p-0.5 hover:bg-primary-100 focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <X className="size-3" />
-              </button>
-            ) : null}
-          </span>
-        ))}
-        {onClearAll ? (
-          <Button variant="link" size="sm" onClick={onClearAll} className="h-auto p-0">
-            Clear all
-          </Button>
-        ) : null}
-      </div>
+      <AppliedFilterChips
+        applied={applied}
+        onRemove={onRemove}
+        onClearAll={onClearAll}
+      />
     ) : null
 
   if (isDesktop) {
@@ -139,6 +118,50 @@ export function FilterBar({
       </div>
 
       {chips}
+    </div>
+  )
+}
+
+/**
+ * The applied-filter chips on their own, for a list whose filters arrive by
+ * link rather than through controls (the gift ledger, phase G5).
+ */
+export function AppliedFilterChips({
+  applied,
+  onRemove,
+  onClearAll,
+}: {
+  applied: readonly AppliedFilter[]
+  onRemove?: ((id: string) => void) | undefined
+  onClearAll?: (() => void) | undefined
+}) {
+  if (applied.length === 0) return null
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {applied.map((filter) => (
+        <span
+          key={filter.id}
+          className="inline-flex items-center gap-1.5 rounded-sm bg-primary-soft py-1 pr-1 pl-2 text-caption text-primary-700"
+        >
+          <span className="text-foreground-subtle">{filter.label}:</span>
+          <span className="font-medium">{filter.value}</span>
+          {onRemove ? (
+            <button
+              type="button"
+              onClick={() => onRemove(filter.id)}
+              aria-label={`Remove ${filter.label} filter`}
+              className="rounded-sm p-0.5 hover:bg-primary-100 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X className="size-3" />
+            </button>
+          ) : null}
+        </span>
+      ))}
+      {onClearAll ? (
+        <Button variant="link" size="sm" onClick={onClearAll} className="h-auto p-0">
+          Clear all
+        </Button>
+      ) : null}
     </div>
   )
 }

@@ -189,10 +189,47 @@ export const liveHostSchema = z.object({
   status: liveHostStatusSchema.or(z.string()).nullable().optional(),
 
   badgeLevel: z.number().nullable().optional(),
-  /** ⚠️ A float in the doc's example (`48.5`) — never coerce to an integer. */
+  level: z.number().nullable().optional(),
+  xp: z.number().nullable().optional(),
+  /** ⚠️ A float on the wire (`5.313609166666667`) — never coerce to an integer. */
   totalLiveHours: z.number().nullable().optional(),
-  totalDiamondsEarned: z.number().nullable().optional(),
+  totalLiveSessions: z.number().nullable().optional(),
+  peakViewers: z.number().nullable().optional(),
   followersCount: z.number().nullable().optional(),
+
+  /* ----------------------------------------------------------------- *
+   * Creator Studio — measured on a live record 2026-10-27, phase W6.
+   * ----------------------------------------------------------------- */
+
+  /**
+   * ⚠️ **`withdrawableDiamonds` is NOT the host's spending balance**, and the
+   * two must never be added together or shown unlabelled beside each other.
+   *
+   * The whole dual-balance architecture exists to stop promotional diamonds
+   * being cashed out: `Wallet.diamondBalance` is spending money that can never
+   * become fiat, and `LiveHostProfile.withdrawableDiamonds` is gift revenue
+   * that can. A column that blurs them teaches an operator the opposite of the
+   * rule the backend enforces — and `FinancePanel` already got this right for
+   * available-vs-locked, in a module that cannot even see these numbers.
+   */
+  withdrawableDiamonds: z.number().nullable().optional(),
+  /**
+   * ⚠️ **Readable and not actionable.** No admin payout endpoint exists
+   * (plan.md O3) — `/admin/wallet/withdrawals` and `/admin/withdrawals` are
+   * both `ROUTE_NOT_FOUND` — so the panel can report what is in flight and can
+   * do nothing about it. Anything rendering this says so.
+   */
+  pendingWithdrawal: z.number().nullable().optional(),
+  /** Lifetime gift revenue, before the platform's share. */
+  totalDiamondsEarned: z.number().nullable().optional(),
+  totalGiftsReceived: z.number().nullable().optional(),
+  /** The host's share of a gift, as a whole percent (`70` on every live row). */
+  revenueSharePercent: z.number().nullable().optional(),
+
+  /** ⚠️ Live *now*. A suspension ends an active broadcast (doc §5.2). */
+  isLive: z.boolean().nullable().optional(),
+  currentLiveRoomId: z.string().nullable().optional(),
+  lastLiveAt: isoDateTime.or(z.string()).nullable().optional(),
 
   approvedAt: isoDateTime.or(z.string()).nullable().optional(),
   suspendedAt: isoDateTime.or(z.string()).nullable().optional(),

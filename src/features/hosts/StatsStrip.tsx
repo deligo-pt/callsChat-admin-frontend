@@ -115,12 +115,29 @@ export function StatsStrip({
     )
   }
 
-  if (!stats) return null
+  /*
+   * ⚠️ **The strip used to return `null` here, and that was the right call for
+   * the wrong failure.** H4 reasoned that a failed counter query must not look
+   * like a failure of the queue it decorates, so the strip went away quietly.
+   * That holds for a transient 500. It does not hold for what the backend
+   * actually did: `GET …/host-applications/stats` has returned `404`
+   * permanently since 2026-10-27 (plan.md O1), and "quietly absent" then means
+   * the four status filters and the **only two links to `/hosts`** are gone
+   * from the screen for everyone, forever, with nothing on the page to say so.
+   *
+   * So the tiles stay. Every count renders as an em-dash — never a `0`, which
+   * would read as "handled, nothing to do" — and the caption says the totals
+   * could not be loaded. A control that still works is worth more than a tidy
+   * absence.
+   */
+  const unavailable = !stats
 
   return (
     <section aria-label="All host applications" className={cn('space-y-2', className)}>
       <p className="text-caption text-foreground-muted">
-        Platform totals, unaffected by the filters below.
+        {unavailable
+          ? 'Platform totals could not be loaded. The filters below still work.'
+          : 'Platform totals, unaffected by the filters below.'}
       </p>
 
       {/*

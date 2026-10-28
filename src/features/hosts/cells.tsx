@@ -1,3 +1,8 @@
+import { Link } from 'react-router'
+
+import { ROUTES } from '@/app/routes'
+import { PERMISSIONS } from '@/auth/permissions'
+import { useCan } from '@/auth/useAuth'
 import { DateTime } from '@/components/display'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/cn'
@@ -214,5 +219,129 @@ export function SuspensionReasonCell({ record }: { record: LiveHost }) {
     <span className="line-clamp-2 wrap-anywhere" title={reason}>
       {reason}
     </span>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * Creator Studio — phase W6
+ * ------------------------------------------------------------------ */
+
+/** Whole diamonds, defensively — a float must not take the table down. */
+function diamonds(amount: number | null | undefined): string {
+  if (typeof amount !== 'number' || !Number.isFinite(amount)) return '—'
+  return formatCount(amount)
+}
+
+/**
+ * What the host can actually cash out, and what is already in flight.
+ *
+ * ⚠️ **`withdrawableDiamonds` is not a spending balance and must never be
+ * presented as one.** The platform runs a deliberate dual-balance economy: a
+ * user's `diamondBalance` is spending money that can never become fiat, while
+ * a host's `withdrawableDiamonds` is gift revenue that can. The whole point is
+ * to stop promotional diamonds being laundered into cash-outs. A column that
+ * showed one number, or summed the two, would teach an operator the opposite
+ * of the rule the backend enforces — so both figures are labelled, every time,
+ * and they are never added.
+ *
+ * ⚠️ **`pendingWithdrawal` is readable and not actionable.** No admin payout
+ * endpoint exists (plan.md O3): `/admin/wallet/withdrawals` and
+ * `/admin/withdrawals` are both `ROUTE_NOT_FOUND`. An operator can see that
+ * money is in flight and can do nothing about it from here, so the cell says
+ * "in flight" rather than implying a queue they can work.
+ */
+export function EarningsCell({ record }: { record: LiveHost }) {
+  const pending = record.pendingWithdrawal
+
+  return (
+    <span className="flex min-w-[8rem] flex-col gap-0.5">
+      {/*
+       * ⚠️ The figure and its label are separate elements, not one text node.
+       * Run together they read as `12,189withdrawable` to anything parsing
+       * text content — a screen reader, a copy-paste, or a test — and the
+       * label is the entire reason this number is safe to show.
+       */}
+      <span className="flex flex-wrap items-baseline gap-1">
+        <span className="tabular font-medium">
+          {diamonds(record.withdrawableDiamonds)}
+        </span>
+        <span className="text-caption text-foreground-muted">withdrawable</span>
+      </span>
+
+      {typeof pending === 'number' && pending > 0 ? (
+        <span className="truncate tabular text-caption text-warning-foreground">
+          {diamonds(pending)} in flight
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
+/**
+ * Lifetime gift revenue and the split it was earned under.
+ *
+ * ⚠️ `totalDiamondsEarned` is gross, before the platform's share, and
+ * `revenueSharePercent` is what the host keeps. Showing the percentage beside
+ * the total is the only thing that stops the gross number reading as take-home
+ * pay — and the split is per host, not a global setting (plan.md O9).
+ */
+export function LifetimeEarningsCell({ record }: { record: LiveHost }) {
+  const share = record.revenueSharePercent
+  const canOpenLedger = useCan(PERMISSIONS.ledgerView)
+
+  return (
+    <span className="flex min-w-[8rem] flex-col gap-0.5">
+      <span className="tabular">{diamonds(record.totalDiamondsEarned)}</span>
+      <span className="truncate text-caption text-foreground-muted">
+        {typeof record.totalGiftsReceived === 'number'
+          ? `${formatCount(record.totalGiftsReceived)} gifts`
+          : 'gifts unknown'}
+        {typeof share === 'number' ? ` · ${share}% share` : ''}
+      </span>
+      {/*
+       * Phase G5 (plan.md §3.2). ⚠️ A link BESIDE the count, never the count
+       * itself: measured 2026-10-28, this counter does not agree with the
+       * ledger — 35 here against 13 rows (120 gifts by quantity) for the same
+       * host, and 0 against 9 rows for another (plan.md O15). A count that
+       * opens a list contradicting it would read as a bug in the panel.
+       */}
+      {canOpenLedger && record.userId ? (
+        <Link
+          to={ROUTES.giftLedger({ receiverId: record.userId })}
+          className="w-fit text-caption font-medium text-primary hover:underline"
+        >
+          Gifts received
+        </Link>
+      ) : null}
+    </span>
+  )
+}
+
+/**
+ * Whether they are broadcasting right now.
+ *
+ * ⚠️ **This is the one field that changes what a suspension does.** Doc §5.2:
+ * suspending a live host ends their broadcast and evicts the room. An operator
+ * about to suspend somebody needs to know whether they are about to cut a
+ * stream off mid-sentence, and the roster is the only place that can tell them
+ * — the panel cannot see rooms at all (plan.md O6).
+ */
+export function LiveNowCell({ record }: { record: LiveHost }) {
+  if (record.isLive !== true) {
+    return (
+      <span className="text-caption text-foreground-muted">
+        {record.lastLiveAt ? <DateTime value={record.lastLiveAt} relative /> : '—'}
+      </span>
+    )
+  }
+
+  return (
+    <Badge className="w-fit bg-danger-soft text-danger-foreground">
+      <span
+        className="mr-1.5 inline-block size-1.5 rounded-full bg-danger"
+        aria-hidden="true"
+      />
+      Live now
+    </Badge>
   )
 }

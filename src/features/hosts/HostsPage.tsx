@@ -20,9 +20,12 @@ import {
 import { LIVE_HOST_STATUSES, type LiveHost } from '@/types/hosts'
 
 import {
+  EarningsCell,
   HostActivityCell,
   HostCell,
   HostStatusCell,
+  LifetimeEarningsCell,
+  LiveNowCell,
   SuspensionReasonCell,
 } from './cells'
 import { HostStatusAction } from './HostStatusAction'
@@ -59,6 +62,32 @@ const COLUMNS: readonly AdminColumn<LiveHost>[] = [
     header: 'Status',
     cell: (row) => <HostStatusCell record={row} />,
     card: 'status',
+  },
+  /*
+   * ⚠️ **Before Activity, and that ordering is the point of phase W6.**
+   * `/admin/live/hosts` has been returning the whole Creator Studio on every
+   * row since H6 and the roster discarded all of it: an operator deciding
+   * whether to suspend someone could see their follower count but not that
+   * 12,189 withdrawable diamonds and a payout in flight were attached to the
+   * same account.
+   */
+  {
+    id: 'live',
+    header: 'Live',
+    cell: (row) => <LiveNowCell record={row} />,
+    card: 'meta',
+  },
+  {
+    id: 'earnings',
+    header: 'Creator balance',
+    cell: (row) => <EarningsCell record={row} />,
+    card: 'meta',
+  },
+  {
+    id: 'lifetime',
+    header: 'Lifetime earned',
+    cell: (row) => <LifetimeEarningsCell record={row} />,
+    card: 'meta',
   },
   {
     id: 'activity',
