@@ -47,7 +47,7 @@ import {
 } from './useGifts'
 
 /**
- * The gift catalog — `/diamonds/gifts` (plan.md §4, phases G2–G3).
+ * The gift catalog — `/gift-catalog` (plan.md §4, phases G2–G3; moved in T0).
  *
  * ⚠️ **Everything on this page is live.** A reorder bumps `giftVersion` and
  * the apps pick it up on their next catalog check; there is no draft.

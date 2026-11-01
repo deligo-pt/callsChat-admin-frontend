@@ -26,6 +26,7 @@ import type {
 import { AdjustBalanceAction } from './AdjustBalanceAction'
 import { AddRestrictionAction, RemoveRestrictionAction } from './RestrictionActions'
 import { RevokeAllSessionsAction, RevokeSessionAction } from './SessionActions'
+import { WalletHistory } from './WalletHistory'
 
 /* -------------------------------------------------------------------------
  * Shared pieces
@@ -607,82 +608,92 @@ export function FinancePanel({ user }: { user: UserDetail }) {
     ) : null
 
   return (
-    <Panel
-      title="Diamond summary"
-      /*
-       * ⚠️ **This description used to say "never from here", and that stopped
-       * being true on 2026-10-27.**
-       *
-       * It was written before any Diamond economy module existed, as a note
-       * that the users module shipped no mutation control — not as a rule
-       * about where such a control belongs. When the module arrived, the
-       * adjustment first got a page of its own to honour the sentence
-       * literally. That page could not show whose account an opaque `userId`
-       * was and had to warn the operator it could not verify it; here the
-       * name, both balances and the restriction history are already in front
-       * of them. So the action moved and the sentence went with it (plan.md
-       * §4.2, revised).
-       *
-       * The *endpoint* and the *permission* still belong to the diamonds
-       * module. Only the button moved.
-       */
-      description="Balances are read from the Diamond economy module. Adjusting one writes a permanent ledger row and cannot be undone."
-      action={canAdjust ? <AdjustBalanceAction user={user.identity} /> : undefined}
-    >
-      {/*
+    <div className="space-y-6">
+      <Panel
+        title="Diamond summary"
+        /*
+         * ⚠️ **This description used to say "never from here", and that stopped
+         * being true on 2026-10-27.**
+         *
+         * It was written before any Diamond economy module existed, as a note
+         * that the users module shipped no mutation control — not as a rule
+         * about where such a control belongs. When the module arrived, the
+         * adjustment first got a page of its own to honour the sentence
+         * literally. That page could not show whose account an opaque `userId`
+         * was and had to warn the operator it could not verify it; here the
+         * name, both balances and the restriction history are already in front
+         * of them. So the action moved and the sentence went with it (plan.md
+         * §4.2, revised).
+         *
+         * The *endpoint* and the *permission* still belong to the diamonds
+         * module. Only the button moved.
+         */
+        description="Balances are read from the Diamond economy module. Adjusting one writes a permanent ledger row and cannot be undone."
+        action={canAdjust ? <AdjustBalanceAction user={user.identity} /> : undefined}
+      >
+        {/*
         plan.md §3.2 / §9: available and locked are ALWAYS separate figures and
         are never added together into one "spendable" number. There is
         deliberately no mutation control anywhere in this module.
       */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-md border border-border p-4">
-          <p className="text-overline text-foreground-subtle uppercase">Available</p>
-          <DiamondAmount amount={f.availableDiamonds} variant="available" size="lg" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-md border border-border p-4">
+            <p className="text-overline text-foreground-subtle uppercase">Available</p>
+            <DiamondAmount amount={f.availableDiamonds} variant="available" size="lg" />
+          </div>
+          <div className="rounded-md border border-border p-4">
+            <p className="text-overline text-foreground-subtle uppercase">Locked</p>
+            <DiamondAmount amount={f.lockedDiamonds} variant="locked" size="lg" />
+          </div>
         </div>
-        <div className="rounded-md border border-border p-4">
-          <p className="text-overline text-foreground-subtle uppercase">Locked</p>
-          <DiamondAmount amount={f.lockedDiamonds} variant="locked" size="lg" />
+
+        <div className="mt-4">
+          <KeyValueGrid
+            items={[
+              {
+                label: 'Total purchased',
+                value: <DiamondAmount amount={f.totalPurchased} variant="neutral" />,
+              },
+              {
+                label: 'Gifts sent',
+                value: (
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <DiamondAmount amount={f.totalGiftsSent} variant="neutral" />
+                    {ledgerLink({ senderId: userId }, 'See gifts sent')}
+                  </span>
+                ),
+              },
+              {
+                label: 'Gifts received',
+                value: (
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <DiamondAmount amount={f.totalGiftsReceived} variant="neutral" />
+                    {ledgerLink({ receiverId: userId }, 'See gifts received')}
+                  </span>
+                ),
+              },
+            ]}
+          />
         </div>
-      </div>
 
-      <div className="mt-4">
-        <KeyValueGrid
-          items={[
-            {
-              label: 'Total purchased',
-              value: <DiamondAmount amount={f.totalPurchased} variant="neutral" />,
-            },
-            {
-              label: 'Gifts sent',
-              value: (
-                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <DiamondAmount amount={f.totalGiftsSent} variant="neutral" />
-                  {ledgerLink({ senderId: userId }, 'See gifts sent')}
-                </span>
-              ),
-            },
-            {
-              label: 'Gifts received',
-              value: (
-                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <DiamondAmount amount={f.totalGiftsReceived} variant="neutral" />
-                  {ledgerLink({ receiverId: userId }, 'See gifts received')}
-                </span>
-              ),
-            },
-          ]}
-        />
-      </div>
+        <p className="mt-4 flex items-start gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-caption text-foreground-muted">
+          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>
+            Available and locked Diamonds are separate balances and are never combined.
+            An adjustment changes Available only; Total purchased counts approved
+            top-ups.
+            {canOpenLedger
+              ? ' Every top-up, adjustment and gift is listed in the wallet history below.'
+              : ''}
+          </span>
+        </p>
+      </Panel>
 
-      <p className="mt-4 flex items-start gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-caption text-foreground-muted">
-        <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        <span>
-          Available and locked Diamonds are separate balances and are never combined.
-          Gifts have a ledger; top-ups and adjustments still do not, so an adjustment
-          made here will not show up anywhere in this panel.
-        </span>
-      </p>
-    </Panel>
+      {/* Phase T4. Gated here, so without `ledger.view` the request is never sent. */}
+      {canOpenLedger ? (
+        <WalletHistory userId={userId} displayName={user.identity.displayName} />
+      ) : null}
+    </div>
   )
 }
 

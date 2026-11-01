@@ -98,6 +98,48 @@ export const userRoleSchema = z.enum(['USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN
 export type UserRole = z.infer<typeof userRoleSchema>
 
 /**
+ * One entry of `activeRestrictions` on the user list.
+ *
+ * ⚠️ **Measured 2026-11-01, the first time any live user had one:** the list
+ * sends a full record, not the bare capability the schema assumed while every
+ * array was empty —
+ * `{ id, capability, reason, startsAt, expiresAt }`. Until this was accepted,
+ * one restricted user failed the whole page's contract check and the directory
+ * showed "Something went wrong".
+ *
+ * The bare string is still accepted (the mock seed and older fixtures use it),
+ * and `restrictionOf` reads either form.
+ */
+export const listRestrictionSchema = z.looseObject({
+  id: z.string().optional(),
+  capability: capabilitySchema.or(z.string()),
+  reason: z.string().nullable().optional(),
+  startsAt: isoDateTime.nullable().optional(),
+  expiresAt: isoDateTime.nullable().optional(),
+})
+export type ListRestriction = z.infer<typeof listRestrictionSchema>
+
+export const listRestrictionEntrySchema = capabilitySchema
+  .or(z.string())
+  .or(listRestrictionSchema)
+export type ListRestrictionEntry = z.infer<typeof listRestrictionEntrySchema>
+
+/** Either form of a list restriction, as one shape. */
+export function restrictionOf(entry: ListRestrictionEntry): {
+  capability: string
+  reason: string | null
+  expiresAt: string | null
+} {
+  if (typeof entry === 'string')
+    return { capability: entry, reason: null, expiresAt: null }
+  return {
+    capability: entry.capability,
+    reason: entry.reason?.trim() || null,
+    expiresAt: entry.expiresAt ?? null,
+  }
+}
+
+/**
  * A row from `GET /admin/users`.
  *
  * `activeRestrictions` arrives as an array on the list endpoint (the detail
@@ -118,7 +160,7 @@ export const userSummarySchema = z.object({
   status: accountStatusValueSchema,
   accountType: accountTypeSchema,
   isHost: z.boolean(),
-  activeRestrictions: z.array(capabilitySchema.or(z.string())),
+  activeRestrictions: z.array(listRestrictionEntrySchema),
   createdAt: isoDateTime,
   lastActiveAt: isoDateTime.nullable(),
 })

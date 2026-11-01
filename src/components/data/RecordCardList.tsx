@@ -17,6 +17,8 @@ export interface RecordCardListProps<TRow> {
   rowLabel?: (row: TRow) => string
   onRowClick?: (row: TRow) => void
   rowActions?: (row: TRow) => ReactNode
+  /** Show the open control even when `rowActions` is set. */
+  keepOpenControl?: boolean
   className?: string
 }
 
@@ -35,6 +37,7 @@ export function RecordCardList<TRow>({
   rowLabel,
   onRowClick,
   rowActions,
+  keepOpenControl = false,
   className,
 }: RecordCardListProps<TRow>) {
   const title = titleColumn(columns)
@@ -108,7 +111,7 @@ export function RecordCardList<TRow>({
 
                 <div className="flex shrink-0 items-center gap-2">
                   {status ? status.cell(row) : null}
-                  {interactive && !rowActions && onRowClick ? (
+                  {interactive && (!rowActions || keepOpenControl) && onRowClick ? (
                     <button
                       type="button"
                       onClick={() => onRowClick(row)}

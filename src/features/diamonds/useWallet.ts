@@ -80,6 +80,12 @@ export function useApproveTopUpMutation() {
     mutationFn: (id: string) => approveTopUpRequest(id),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: queryKeys.topUpRequests.all })
+      /*
+       * plan.md T5: approving credits the wallet and writes a `TOP_UP` row, so
+       * a cached ledger (or the payer's Finance tab) must not show the old one.
+       */
+      void client.invalidateQueries({ queryKey: queryKeys.walletTransactions.all })
+      void client.invalidateQueries({ queryKey: queryKeys.users.all })
     },
   })
 }

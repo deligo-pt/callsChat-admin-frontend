@@ -1,6 +1,8 @@
 import { http, HttpResponse } from 'msw'
 
+import { users } from '../seed'
 import { API_PREFIX, applyScenario, errorResponse, isEmptyScenario } from './shared'
+import { recordMockAdjustment, recordMockTopUp } from './walletTransactions'
 
 /**
  * Diamond Wallet & Creator Economy — a mock of a backend that currently holds
@@ -504,6 +506,27 @@ export const walletHandlers = [
     row.reviewedAt = new Date().toISOString()
     row.updatedAt = row.reviewedAt
 
+    /* The credit and its ledger row, as live writes them (plan.md T5). */
+    const payer = users.find((candidate) => candidate.id === row.userId)
+    if (payer) payer.wallet.availableDiamonds += row.diamonds
+    recordMockTopUp({
+      requestId: row.id,
+      user: {
+        id: row.userId,
+        displayName: payer?.displayName ?? row.user?.profile?.displayName ?? null,
+        username: payer?.username ?? row.user?.profile?.username ?? null,
+        avatarUrl: payer?.avatarUrl ?? row.user?.profile?.avatarUrl ?? null,
+        email: payer?.email ?? row.user?.email ?? null,
+        phoneMasked: payer?.phoneMasked ?? null,
+        role: payer?.role ?? 'USER',
+        status: payer?.status ?? 'ACTIVE',
+      },
+      diamonds: row.diamonds,
+      method: row.method,
+      transactionId: row.transactionId,
+      ...(payer ? { balanceAfter: payer.wallet.availableDiamonds } : {}),
+    })
+
     return HttpResponse.json({
       success: true,
       message: 'Top-up request approved and diamonds credited successfully.',
@@ -668,18 +691,54 @@ export const walletHandlers = [
       return errorResponse(400, VALIDATION, 'body/amount Amount cannot be zero')
     }
 
+    /*
+     * Moves the seeded wallet, so `GET /admin/users/:id` reads the new
+     * Available back — as live does since 2026-10-31. An overdraft is refused
+     * with the live message.
+     */
+    const amount = body!['amount'] as number
+    const target = users.find((row) => row.id === body!['userId'])
+    const current = target?.wallet.availableDiamonds ?? 4180 - amount
+    if (current + amount < 0) {
+      return errorResponse(
+        400,
+        'BAD_REQUEST',
+        `Insufficient diamond balance for debit adjustment. Current: ${current}, debit: ${-amount}.`,
+      )
+    }
+    const balance = current + amount
+    if (target) {
+      target.wallet.availableDiamonds = balance
+      /* And the ledger row live writes, so the history moves too (T1). */
+      recordMockAdjustment({
+        user: {
+          id: target.id,
+          displayName: target.displayName,
+          username: target.username,
+          avatarUrl: target.avatarUrl,
+          email: target.email,
+          phoneMasked: target.phoneMasked,
+          role: target.role,
+          status: target.status,
+        },
+        amount,
+        balanceAfter: balance,
+        note: body!['note'] as string,
+      })
+    }
+
     return HttpResponse.json({
       success: true,
       message: 'User wallet adjusted successfully.',
       data: {
         userId: body!['userId'],
         amountAdjusted: body!['amount'],
-        newDiamondBalance: 4180,
+        newDiamondBalance: balance,
         transaction: {
           id: `cmvtx_adj_${Date.now().toString(36)}`,
           type: 'ADMIN_ADJUSTMENT',
           amount: body!['amount'],
-          balanceAfter: 4180,
+          balanceAfter: balance,
           note: body!['note'],
           createdAt: new Date().toISOString(),
         },

@@ -1,16 +1,24 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { queryKeys } from '@/api/queryKeys'
+import { createMemoryRouter, RouterProvider } from 'react-router'
+
+import { ROUTES } from '@/app/routes'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { setSession } from '@/auth/tokenStore'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { signInMockAdmin } from '@/mocks/handlers/auth'
+import { users } from '@/mocks/seed'
 import { server } from '@/mocks/server'
 import type { UserIdentity } from '@/types/identity'
 import { render, screen, setViewport, waitFor, within } from '@tests/render'
 
+import { formatCount } from '@/lib/format'
+
+import { UserDetailPage } from '../UserDetailPage'
 import { AdjustBalanceAction } from './AdjustBalanceAction'
 
 /**
@@ -32,8 +40,10 @@ const USER = {
 /** Every `POST /admin/wallet/adjust` body the action sent. */
 let sent: Array<Record<string, unknown>> = []
 
+let client: QueryClient
+
 function renderAction() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   render(
     <QueryClientProvider client={client}>
@@ -178,12 +188,55 @@ describe('what the form refuses to send', () => {
 })
 
 describe('after it is applied', () => {
-  it('warns that this page will not show the result', async () => {
+  it('re-reads the user record, so Available moves', async () => {
     /*
-     * ⚠️ No ledger or balance endpoint exists for the panel (plan.md O4), so
-     * the figures behind this dialog will not move. Saying so beats implying
-     * a confirmation that never arrives.
+     * ⚠️ Until 2026-10-31 `finance` was 0 for everyone and this dialog said
+     * nothing would update. The backend now fills it from the real wallet,
+     * so a credit that leaves the old figure on screen reads as a failure.
      */
+    const user = renderAction()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    await review(user, { amount: '500', note: 'Compensation for a dropped call.' })
+
+    const confirm = await screen.findByRole('dialog', { name: /credit this wallet/i })
+    await user.type(within(confirm).getByLabelText(/type/i), '500')
+    await user.click(
+      within(confirm).getByRole('button', { name: /credit the wallet/i }),
+    )
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: queryKeys.users.detail(USER.id),
+      }),
+    )
+  })
+
+  it('does not re-read the record when the server refuses', async () => {
+    server.use(
+      http.post('*/admin/wallet/adjust', () =>
+        HttpResponse.json(
+          { success: false, error: { code: 'BAD_REQUEST', message: 'Refused.' } },
+          { status: 400 },
+        ),
+      ),
+    )
+    const user = renderAction()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    await review(user, { amount: '500', note: 'Compensation for a dropped call.' })
+
+    const confirm = await screen.findByRole('dialog', { name: /credit this wallet/i })
+    await user.type(within(confirm).getByLabelText(/type/i), '500')
+    await user.click(
+      within(confirm).getByRole('button', { name: /credit the wallet/i }),
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /credit this wallet/i })).toBeNull(),
+    )
+    expect(invalidate).not.toHaveBeenCalled()
+  })
+
+  it('says what moves and what does not', async () => {
     const user = renderAction()
     await user.click(
       screen.getByRole('button', { name: /adjust the diamond balance/i }),
@@ -191,7 +244,10 @@ describe('after it is applied', () => {
 
     const form = await screen.findByRole('dialog', { name: /adjust diamond balance/i })
     expect(
-      within(form).getByText(/no endpoint for reading balances back/i),
+      within(form).getByText(/changes their Available balance/),
+    ).toBeInTheDocument()
+    expect(
+      within(form).getByText(/Total purchased does not change/),
     ).toBeInTheDocument()
   })
 
@@ -231,5 +287,52 @@ describe('after it is applied', () => {
     expect(within(form).getByLabelText(/^Note/)).toHaveValue(
       'Reversing a duplicate credit from the 24th.',
     )
+  })
+})
+
+describe('on the user record', () => {
+  it('shows the new Available figure without a reload', async () => {
+    /* The default mock moves the seeded wallet, as live does. */
+    server.resetHandlers()
+    const target = users[0]!
+    const before = target.wallet.availableDiamonds
+
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const router = createMemoryRouter(
+      [{ path: '/users/:userId', element: <UserDetailPage /> }],
+      { initialEntries: [ROUTES.user(target.id)] },
+    )
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <TooltipProvider delayDuration={0}>
+            <RouterProvider router={router} />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>,
+    )
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('tab', { name: 'Finance' }))
+    expect(await screen.findByText(formatCount(before))).toBeInTheDocument()
+
+    await user.click(
+      await screen.findByRole('button', { name: /adjust the diamond balance/i }),
+    )
+    const form = await screen.findByRole('dialog', { name: /adjust diamond balance/i })
+    await user.type(within(form).getByLabelText(/^Amount/), '500')
+    await user.type(
+      within(form).getByLabelText(/^Note/),
+      'Compensation for a dropped call.',
+    )
+    await user.click(within(form).getByRole('button', { name: /review adjustment/i }))
+    const confirm = await screen.findByRole('dialog', { name: /credit this wallet/i })
+    await user.type(within(confirm).getByLabelText(/type/i), '500')
+    await user.click(
+      within(confirm).getByRole('button', { name: /credit the wallet/i }),
+    )
+
+    expect(await screen.findByText(formatCount(before + 500))).toBeInTheDocument()
+    target.wallet.availableDiamonds = before
   })
 })

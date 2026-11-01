@@ -1,8 +1,9 @@
-import { Radio } from 'lucide-react'
-
 import { MaskedValue, StatusBadge } from '@/components/display'
+import { formatDate } from '@/lib/datetime'
 import { resolveStatus } from '@/lib/status'
-import type { UserSummary } from '@/types/identity'
+import { restrictionOf, type UserSummary } from '@/types/identity'
+
+import { HostBadge } from './HostBadge'
 
 /**
  * Cell renderers for the user directory.
@@ -20,7 +21,7 @@ import type { UserSummary } from '@/types/identity'
  * indicator. A gifting block is a restriction badge; it is not a status.
  */
 export function RestrictionCell({ user }: { user: UserSummary }) {
-  const restrictions = user.activeRestrictions
+  const restrictions = user.activeRestrictions.map(restrictionOf)
 
   if (restrictions.length === 0) {
     return <span className="text-caption text-foreground-subtle">None</span>
@@ -32,16 +33,15 @@ export function RestrictionCell({ user }: { user: UserSummary }) {
 
   return (
     <span className="flex flex-wrap items-center gap-1">
-      {shown.map((capability) => (
-        <StatusBadge key={capability} domain="restriction" value={capability} />
+      {shown.map((restriction) => (
+        <span key={restriction.capability} title={describe(restriction)}>
+          <StatusBadge domain="restriction" value={restriction.capability} />
+        </span>
       ))}
       {remaining > 0 ? (
         <span
           className="text-caption text-foreground-muted"
-          title={restrictions
-            .slice(2)
-            .map((capability) => resolveStatus('restriction', capability).label)
-            .join(', ')}
+          title={restrictions.slice(2).map(describe).join('\n')}
         >
           +{remaining}
         </span>
@@ -50,20 +50,25 @@ export function RestrictionCell({ user }: { user: UserSummary }) {
   )
 }
 
+/**
+ * "Messaging — <reason> · until 5 Nov 2026", from whatever the row carries.
+ * The list sends the reason and expiry since 2026-11-01 (`restrictionOf`).
+ */
+function describe(restriction: ReturnType<typeof restrictionOf>): string {
+  const parts = [resolveStatus('restriction', restriction.capability).label]
+  if (restriction.reason) parts.push(restriction.reason)
+  parts.push(
+    restriction.expiresAt ? `until ${formatDate(restriction.expiresAt)}` : 'no expiry',
+  )
+  return parts.join(' — ')
+}
+
 export function IdentityCell({ user }: { user: UserSummary }) {
   return (
     <span className="flex min-w-0 flex-col gap-0.5">
       <span className="flex items-center gap-1.5">
         <span className="truncate font-medium">{user.displayName}</span>
-        {user.isHost ? (
-          <span
-            className="inline-flex items-center gap-1 rounded-sm bg-info-soft px-1.5 py-0.5 text-overline text-info-foreground"
-            title="Approved Host"
-          >
-            <Radio className="size-3" aria-hidden="true" />
-            Host
-          </span>
-        ) : null}
+        <HostBadge user={user} />
       </span>
       {user.username ? (
         <span className="truncate text-caption text-foreground-muted">

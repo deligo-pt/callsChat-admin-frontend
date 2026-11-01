@@ -1,7 +1,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import axe from 'axe-core'
 
-import { ACCOUNTS, seedHostFixtures, seedWalletFixtures, signIn } from './fixtures'
+import {
+  ACCOUNTS,
+  seedHostFixtures,
+  seedLedgerHistory,
+  seedWalletFixtures,
+  signIn,
+} from './fixtures'
 
 /**
  * Colour contrast, checked in a real browser.
@@ -1107,7 +1113,7 @@ test('the gift catalog and its editor have no contrast violations', async ({
   page,
 }) => {
   await signIn(page)
-  await page.goto('/diamonds/gifts')
+  await page.goto('/gift-catalog')
   await expect(page.getByRole('heading', { name: 'Popular Gifts' })).toBeVisible()
 
   await settled(page)
@@ -1154,4 +1160,84 @@ test('the gift ledger has no contrast violations, filter chip included', async (
 
   await settled(page)
   expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+/*
+ * The wallet transaction history (plan.md T6): the ledger with its chips,
+ * one entry, the Finance tab history, and the drawer note for an approved
+ * payment.
+ */
+test('the wallet ledger, filter chips included, has no contrast violations', async ({
+  page,
+}) => {
+  await seedLedgerHistory(page)
+  await signIn(page)
+  await page.goto(
+    '/diamonds/wallet-transactions?userId=usr_000001&type=ADMIN_ADJUSTMENT',
+  )
+  await expect(page.getByRole('button', { name: 'Remove Type filter' })).toBeVisible()
+  await expect(page.getByText(/Goodwill credit/).first()).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('a wallet entry has no contrast violations', async ({ page }) => {
+  await seedLedgerHistory(page)
+  await signIn(page)
+  await page.goto('/diamonds/wallet-transactions/cmvtx_hist_12')
+  await expect(
+    page.getByRole('heading', { name: 'Adjustment', level: 1 }),
+  ).toBeVisible()
+  await expect(page.getByText('Technical details')).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('the Finance tab wallet history and its pager have no contrast violations', async ({
+  page,
+}) => {
+  await seedLedgerHistory(page)
+  await signIn(page)
+  await page.goto('/users/usr_000001?tab=finance&walletPage=2')
+  const history = page.getByRole('region', { name: 'Wallet history' })
+  await expect(history.getByText('Showing 6–10 of 12')).toBeVisible()
+
+  await settled(page)
+  expect(
+    (
+      await contrastViolations(
+        page,
+        'section[aria-labelledby="wallet-history-heading"]',
+      )
+    ).filter(DEBT),
+  ).toEqual([])
+})
+
+test('the user row menu has no contrast violations', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/users')
+  await page
+    .getByRole('button', { name: /^More for / })
+    .first()
+    .click()
+  await expect(page.getByRole('menuitem', { name: 'Wallet history' })).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, '[role="menu"]')).filter(DEBT)).toEqual([])
+})
+
+test('an approved payment’s wallet note is legible', async ({ page }) => {
+  await seedWalletFixtures(page)
+  await signIn(page)
+  await page.goto('/diamonds/top-ups?status=APPROVED')
+  await page.getByText('Nabila').first().click()
+  const drawer = page.getByRole('dialog').filter({ hasText: 'How it was paid' })
+  await expect(
+    drawer.getByText('No wallet entry was found for this payment.'),
+  ).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
 })

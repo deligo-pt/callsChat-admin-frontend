@@ -17,6 +17,12 @@ export interface PaginationProps {
   state: PaginationState
   onPageChange: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
+  /**
+   * Sizes to offer instead of the list default (25 / 50 / 100) — e.g. 5 / 10
+   * for a short history inside a panel. A custom set is shown at every
+   * width: it is small, and it is the reason the page offers paging at all.
+   */
+  pageSizeOptions?: readonly number[]
   className?: string
 }
 
@@ -41,8 +47,10 @@ export function Pagination({
   state,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions,
   className,
 }: PaginationProps) {
+  const sizes = pageSizeOptions ?? PAGE_SIZE_OPTIONS
   const { page, pageSize, total, totalPages } = state
 
   const firstRow = total === 0 ? 0 : (page - 1) * pageSize + 1
@@ -69,7 +77,12 @@ export function Pagination({
       <div className="order-1 flex items-center justify-between gap-2 sm:order-2 sm:justify-end">
         {/* Page size — desktop only, mobile keeps the control set minimal */}
         {onPageSizeChange ? (
-          <div className="hidden items-center gap-2 lg:flex">
+          <div
+            className={cn(
+              'items-center gap-2',
+              pageSizeOptions ? 'flex' : 'hidden lg:flex',
+            )}
+          >
             <span className="text-caption text-foreground-muted">Rows</span>
             <Select
               value={String(pageSize)}
@@ -83,7 +96,7 @@ export function Pagination({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((option) => (
+                {sizes.map((option) => (
                   <SelectItem key={option} value={String(option)}>
                     {option}
                   </SelectItem>

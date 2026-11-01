@@ -172,3 +172,14 @@ export async function seedWalletFixtures(page: Page): Promise<void> {
     sessionStorage.setItem('callschat.mocks.wallet.seeded', '1')
   })
 }
+
+/**
+ * Give `usr_000001` a 12-row wallet history (plan.md T6), before the app
+ * boots. Same contract as {@link seedWalletFixtures}: the flag survives
+ * `page.goto` and `page.reload`, so paging can be checked across a refresh.
+ */
+export async function seedLedgerHistory(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('callschat.mocks.ledger.history', '1')
+  })
+}

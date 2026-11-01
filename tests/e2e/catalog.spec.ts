@@ -47,9 +47,17 @@ function storageRequests(page: Page) {
 }
 
 test.describe('the gift catalog', () => {
-  test('lays out the hostile gift name without sideways scroll', async ({ page }) => {
+  test('still opens from its old Diamonds address', async ({ page }) => {
+    /* Moved to Platform in T0; G2–G6 links and bookmarks point at the old one. */
     await signIn(page)
     await page.goto('/diamonds/gifts')
+    await expect(page).toHaveURL(/\/gift-catalog$/)
+    await expect(page.getByRole('heading', { name: 'Popular Gifts' })).toBeVisible()
+  })
+
+  test('lays out the hostile gift name without sideways scroll', async ({ page }) => {
+    await signIn(page)
+    await page.goto('/gift-catalog')
     await expect(page.getByRole('heading', { name: 'Popular Gifts' })).toBeVisible()
     await expect(page.getByText('Love Guitar')).toBeVisible()
     await expectNoSidewaysScroll(page)
@@ -70,7 +78,7 @@ test.describe('the gift catalog', () => {
     })
 
     await signIn(page)
-    await page.goto('/diamonds/gifts')
+    await page.goto('/gift-catalog')
     const create = page.getByRole('button', { name: 'New gift' })
     await expect(create).toBeEnabled()
     await create.click()
@@ -103,7 +111,7 @@ test.describe('the gift catalog', () => {
 
   test('keeps the price field’s focus ring inside the editor', async ({ page }) => {
     await signIn(page)
-    await page.goto('/diamonds/gifts')
+    await page.goto('/gift-catalog')
     await page.getByRole('button', { name: 'Actions for Heart Icon' }).click()
     await page.getByRole('menuitem', { name: 'Edit' }).click()
     const price = page
@@ -210,7 +218,7 @@ test.describe('who may open what', () => {
   }) => {
     await signIn(page, ACCOUNTS.admin)
 
-    await page.goto('/diamonds/gifts')
+    await page.goto('/gift-catalog')
     await expect(page.getByRole('heading', { name: 'Popular Gifts' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'New gift' })).toHaveCount(0)
 
@@ -224,7 +232,7 @@ test.describe('who may open what', () => {
 
   test('a Moderator is refused all three', async ({ page }) => {
     await signIn(page, ACCOUNTS.moderator)
-    for (const route of ['/diamonds/gifts', '/diamonds/transactions', '/emoji-packs']) {
+    for (const route of ['/gift-catalog', '/diamonds/transactions', '/emoji-packs']) {
       await page.goto(route)
       await expect(page.getByText(/do not have access/i)).toBeVisible()
     }

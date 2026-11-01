@@ -1,9 +1,10 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { toast } from 'sonner'
 
 import { adjustWallet } from '@/api/wallet'
 import { isAppError } from '@/api/errors'
+import { queryKeys } from '@/api/queryKeys'
 import { ConfirmActionDialog } from '@/components/feedback'
 import { FormField } from '@/components/form'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,7 @@ export function AdjustBalanceAction({ user }: { user: UserIdentity }) {
   const [note, setNote] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const queryClient = useQueryClient()
   const mutation = useMutation({ mutationFn: adjustWallet })
 
   const values = { userId: user.id, direction, amount, note }
@@ -90,6 +92,20 @@ export function AdjustBalanceAction({ user }: { user: UserIdentity }) {
 
     mutation.mutate(buildAdjustPayload(parsed.data), {
       onSuccess: () => {
+        /*
+         * ⚠️ Re-read the record so Available moves. Until 2026-10-31 the
+         * `finance` block was 0 for everyone, so there was nothing to re-read;
+         * the backend now fills it from the real wallet. The adjust response
+         * carries `newDiamondBalance`, but only for Available — a refetch keeps
+         * every figure on the panel from the same source.
+         */
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.users.detail(user.id),
+        })
+        /* plan.md T4: the new ledger row, on Finance and in the ledger. */
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.walletTransactions.all,
+        })
         toast.success(
           `${signedAmount(values) < 0 ? 'Debited' : 'Credited'} ${Math.abs(
             Number(amount),
@@ -132,7 +148,7 @@ export function AdjustBalanceAction({ user }: { user: UserIdentity }) {
         }}
         title="Adjust diamond balance"
         target={`${user.displayName} (${user.id})`}
-        effect="This changes their spendable diamond balance immediately and writes a permanent row to the ledger under your name. The panel has no endpoint for reading balances back, so nothing on this page will update afterwards."
+        effect="This changes their Available balance immediately and writes a permanent row to the ledger under your name. Total purchased does not change: only approved top-ups count as purchases."
         severity="critical"
         confirmLabel="Review adjustment"
         /*

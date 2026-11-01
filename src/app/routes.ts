@@ -40,8 +40,15 @@ export const ROUTES = {
    * endpoint and no detail route for it, so one path serves the whole queue.
    */
   topUps: '/diamonds/top-ups',
+  /**
+   * The top-up queue searched for one payment. ⚠️ The search matches the
+   * payment TrxID and the username — **not** the request id (measured
+   * 2026-11-01), and there is no `/wallet/requests/:id` route — so a TrxID is
+   * how one request is found.
+   */
+  topUpsFor: (search: string) =>
+    `/diamonds/top-ups?${new URLSearchParams({ search }).toString()}`,
   diamondPackages: '/diamonds/packages',
-  gifts: '/diamonds/gifts',
   wallets: '/diamonds/wallets',
   wallet: (id: string) => `/diamonds/wallets/${id}`,
   /**
@@ -59,6 +66,35 @@ export const ROUTES = {
     return query ? `/diamonds/transactions?${query}` : '/diamonds/transactions'
   },
   diamondTransaction: (id: string) => `/diamonds/transactions/${id}`,
+  /**
+   * The **wallet** ledger (plan.md §4, phases T1–T3): every diamond movement —
+   * top-ups, adjustments, gifts, conversions. A new name rather than the
+   * reserved `diamondTransactions`, which G5 links already point at the gift
+   * ledger.
+   */
+  walletTransactions: '/diamonds/wallet-transactions',
+  walletTransaction: (id: string) =>
+    `/diamonds/wallet-transactions/${encodeURIComponent(id)}`,
+  /** Into the wallet ledger, pre-filtered — from a user record or a row. */
+  walletLedger: (filter: {
+    userId?: string
+    type?: string
+    search?: string
+    /** Bangladesh calendar days, `yyyy-MM-dd`. */
+    fromDate?: string
+    toDate?: string
+  }) => {
+    const params = new URLSearchParams()
+    if (filter.userId) params.set('userId', filter.userId)
+    if (filter.type) params.set('type', filter.type)
+    if (filter.search) params.set('search', filter.search)
+    if (filter.fromDate) params.set('fromDate', filter.fromDate)
+    if (filter.toDate) params.set('toDate', filter.toDate)
+    const query = params.toString()
+    return query
+      ? `/diamonds/wallet-transactions?${query}`
+      : '/diamonds/wallet-transactions'
+  },
   adjustments: '/diamonds/adjustments',
 
   payments: '/payments',
@@ -142,6 +178,14 @@ export const ROUTES = {
    * money.
    */
   emojiPacks: '/emoji-packs',
+  /**
+   * The gift catalog (plan.md §4, phase T0). **Moved to Platform 2026-11-01**,
+   * beside emoji packs: both are staff-curated content pushed to every client.
+   * Its old address redirects here, so G2–G6 links and bookmarks keep
+   * working.
+   */
+  gifts: '/gift-catalog',
+  legacyGifts: '/diamonds/gifts',
 
   auditLogs: '/audit-logs',
   auditLog: (id: string) => `/audit-logs/${id}`,

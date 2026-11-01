@@ -3,6 +3,7 @@ import { setupWorker } from 'msw/browser'
 import { handlers } from './handlers'
 import { exposeHostFixtureControls } from './handlers/hosts'
 import { exposeWalletFixtureControls } from './handlers/wallet'
+import { exposeLedgerFixtureControls } from './handlers/walletTransactions'
 import { exposeScenarioControls } from './scenarios'
 
 export const worker = setupWorker(...handlers)
@@ -17,6 +18,7 @@ export async function startMockBackend(): Promise<void> {
   exposeScenarioControls()
   exposeHostFixtureControls()
   exposeWalletFixtureControls()
+  exposeLedgerFixtureControls()
 
   await worker.start({
     onUnhandledRequest: 'bypass',

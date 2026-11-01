@@ -39,8 +39,24 @@ export const UNSUPPORTED_FILTERS: readonly { label: string; note: string }[] = [
     note: 'the API ignores every date parameter it accepts',
   },
   { label: 'Restriction type', note: 'not implemented server-side' },
-  { label: 'Host', note: 'returns no results for either value' },
+  /*
+   * Measured 2026-11-01: every non-empty `hasRestrictions` value — `false`,
+   * `0`, `no` — returns the restricted users, so "No restrictions" listed
+   * exactly the accounts it claimed to exclude. "Has restrictions" works.
+   */
+  { label: 'No restrictions', note: 'any value returns restricted users' },
 ]
+
+/**
+ * The Host filter, which the **browser** applies (plan.md §3, T0).
+ *
+ * ⚠️ `isHost` is not filterable server-side: `?isHost=` returns 0 users for
+ * every value, and `isHost` itself is false for every user (H1, H2). So the
+ * roster on `/admin/live/hosts` decides — see `useUserDirectory`. Kept out of
+ * `UserListParams` so it can never reach the API.
+ */
+export const HOST_FILTER_VALUES = ['host', 'user'] as const
+export type HostFilter = (typeof HOST_FILTER_VALUES)[number]
 
 /** Server default is `createdAt` descending — newest accounts first. */
 export const DEFAULT_SORT_BY = 'createdAt'

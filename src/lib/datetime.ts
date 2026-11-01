@@ -96,3 +96,42 @@ export function formatRelative(
 export function toISODate(date: Date): string {
   return formatInTimeZone(date, 'UTC', 'yyyy-MM-dd')
 }
+
+/**
+ * The Bangladesh calendar day (`yyyy-MM-dd`) an instant falls on — the
+ * inverse of `bangladeshDayBounds`. `null` for anything unparseable.
+ */
+export function bangladeshDay(value: string | Date | null | undefined): string | null {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return formatInTimeZone(date, 'Asia/Dhaka', 'yyyy-MM-dd')
+}
+
+/** Bangladesh Standard Time: UTC+6 all year, no daylight saving. */
+const BANGLADESH_OFFSET_MS = 6 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * A Bangladesh calendar day (`yyyy-MM-dd`) as the UTC instants that bound it,
+ * both inclusive — for APIs that take full ISO timestamps only.
+ *
+ * `2026-10-29` → `2026-10-28T18:00:00.000Z` … `2026-10-29T17:59:59.999Z`.
+ *
+ * `null` for anything that is not a real day: `2026-02-31` would otherwise
+ * roll over to 3 March and filter on a day nobody picked.
+ */
+export function bangladeshDayBounds(
+  day: string,
+): { start: string; end: string } | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
+  if (!match) return null
+  const [, year, month, date] = match.map(Number) as [number, number, number, number]
+  const midnightUtc = Date.UTC(year, month - 1, date)
+  if (new Date(midnightUtc).toISOString().slice(0, 10) !== day) return null
+  const start = midnightUtc - BANGLADESH_OFFSET_MS
+  return {
+    start: new Date(start).toISOString(),
+    end: new Date(start + DAY_MS - 1).toISOString(),
+  }
+}

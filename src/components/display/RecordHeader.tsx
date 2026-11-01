@@ -57,7 +57,14 @@ export function RecordHeader({
         </div>
 
         {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 [&>*]:flex-1 sm:[&>*]:flex-initial">
+          <div
+            /*
+             * Phone: two to a row, each wide enough for its label — a
+             * zero-basis `flex-1` never wrapped, it shrank the buttons until
+             * "Change email" read "Change ema". From `sm`: natural width.
+             */
+            className="flex shrink-0 flex-wrap items-center gap-2 [&>*]:grow [&>*]:basis-[calc(50%-0.25rem)] sm:[&>*]:grow-0 sm:[&>*]:basis-auto"
+          >
             {actions}
           </div>
         ) : null}

@@ -40,10 +40,14 @@ describe('where the entry sits', () => {
      * addressed to a *segment* and leads back to no individual record.
      */
     expect(announcements).toBeDefined()
-    /* Emoji packs joined Platform in phase G4 — no price, so not Diamonds. */
+    /*
+     * Emoji packs joined Platform in phase G4 — no price, so not Diamonds —
+     * and the gift catalog followed in T0.
+     */
     expect(platform?.items.map((item) => item.label)).toEqual([
       'Announcements',
       'Emoji packs',
+      'Gift catalog',
       'System Settings',
     ])
   })

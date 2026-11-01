@@ -43,8 +43,8 @@ const LOTTIE = JSON.stringify({
 function renderScreen() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const router = createMemoryRouter(
-    [{ path: '/diamonds/gifts', element: <GiftCatalogPage /> }],
-    { initialEntries: ['/diamonds/gifts'] },
+    [{ path: '/gift-catalog', element: <GiftCatalogPage /> }],
+    { initialEntries: ['/gift-catalog'] },
   )
   render(
     <QueryClientProvider client={client}>

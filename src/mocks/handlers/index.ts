@@ -10,6 +10,7 @@ import { settingsHandlers } from './settings'
 import { staffHandlers } from './staff'
 import { verificationHandlers } from './verifications'
 import { walletHandlers } from './wallet'
+import { walletTransactionHandlers } from './walletTransactions'
 
 export const handlers = [
   ...authHandlers,
@@ -24,6 +25,7 @@ export const handlers = [
   ...feedbackHandlers,
   ...verificationHandlers,
   ...walletHandlers,
+  ...walletTransactionHandlers,
   ...catalogHandlers,
   /*
    * Also before `resourceHandlers`, and for a sharper reason than the others:
