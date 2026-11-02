@@ -2,6 +2,7 @@ import { setupWorker } from 'msw/browser'
 
 import { handlers } from './handlers'
 import { exposeHostFixtureControls } from './handlers/hosts'
+import { exposeLiveFixtureControls } from './handlers/liveRooms'
 import { exposeWalletFixtureControls } from './handlers/wallet'
 import { exposeLedgerFixtureControls } from './handlers/walletTransactions'
 import { exposeScenarioControls } from './scenarios'
@@ -19,6 +20,7 @@ export async function startMockBackend(): Promise<void> {
   exposeHostFixtureControls()
   exposeWalletFixtureControls()
   exposeLedgerFixtureControls()
+  exposeLiveFixtureControls()
 
   await worker.start({
     onUnhandledRequest: 'bypass',
@@ -32,6 +34,7 @@ export async function startMockBackend(): Promise<void> {
       "Toggle failure states with __mockScenario.set('error' | 'empty' | 'forbidden' | 'slow' | 'normal'). " +
       'The host queue and roster start empty, as production does — ' +
       'populate them with __mockHosts.seed(). The diamond wallet queue and ' +
-      'packages do the same: __mockWallet.seed().',
+      'packages do the same: __mockWallet.seed(). Live streams start with ' +
+      'every room ended, as staging is — add live rooms with __mockLive.seed().',
   )
 }

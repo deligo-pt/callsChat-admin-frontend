@@ -20,6 +20,7 @@ import {
 } from '@/types/identity'
 
 import {
+  activateUser,
   availableStatusActions,
   banUser,
   restoreUser,
@@ -107,11 +108,24 @@ export function StatusActions({ user, can }: Props) {
     onSuccess: close,
   })
 
+  const activate = useUserMutation({
+    userId: user.id,
+    mutationFn: (reason: string) => activateUser(user.id, reason),
+    successMessage: 'Account activated.',
+    onSuccess: close,
+  })
+
   const allowed = availableStatusActions(user.status)
   const show = (action: UserAction) => allowed.includes(action)
 
   return (
     <>
+      {show('activate') && can.suspend ? (
+        <Button size="sm" onClick={() => setOpenAction('activate')}>
+          Activate
+        </Button>
+      ) : null}
+
       {show('suspend') && can.suspend ? (
         <Button variant="outline" size="sm" onClick={() => setOpenAction('suspend')}>
           Suspend
@@ -135,6 +149,23 @@ export function StatusActions({ user, can }: Props) {
           Restore account
         </Button>
       ) : null}
+
+      {/* ------------------------------------------------------ Activate */}
+      <ConfirmActionDialog
+        open={openAction === 'activate'}
+        onOpenChange={(open) => (open ? undefined : close())}
+        title="Activate account"
+        target={user.displayName}
+        effect={
+          user.status === 'INACTIVE'
+            ? 'The account becomes active again, as if the user had never gone dormant.'
+            : 'The account is approved and becomes active straight away, without waiting for the user to finish verification. Use this only when you have confirmed who they are.'
+        }
+        severity="info"
+        confirmLabel="Activate"
+        loading={activate.isPending}
+        onConfirm={(reason) => activate.mutate(reason)}
+      />
 
       {/* ------------------------------------------------------- Suspend */}
       <ConfirmActionDialog

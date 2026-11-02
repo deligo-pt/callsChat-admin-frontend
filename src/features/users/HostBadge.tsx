@@ -26,7 +26,7 @@ export function HostBadge({
   size = 'sm',
   link = false,
 }: {
-  user: { id: string; isHost: boolean }
+  user: { id: string; isHost: boolean; username?: string | null | undefined }
   size?: 'sm' | 'md'
   link?: boolean
 }) {
@@ -65,7 +65,12 @@ export function HostBadge({
 
   return link ? (
     <Link
-      to={ROUTES.hosts}
+      to={
+        /* Live L4: straight to this host in the roster, not the whole list. */
+        user.username
+          ? `${ROUTES.hosts}?search=${encodeURIComponent(user.username)}`
+          : ROUTES.hosts
+      }
       className={cn(className, 'hover:underline')}
       title="Open the Live hosts roster"
     >

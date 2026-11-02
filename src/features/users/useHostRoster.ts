@@ -28,6 +28,9 @@ const MAX_PAGES = 20
 
 export interface HostRosterEntry {
   readonly status: string | null
+  /** Live L4: whether they are broadcasting now, and in which room. */
+  readonly isLive?: boolean
+  readonly currentLiveRoomId?: string | null
 }
 
 /** The roster as `userId → entry`. Shared by the badge and the Host filter. */
@@ -36,7 +39,13 @@ export async function fetchHostRoster(signal?: AbortSignal) {
   for (let page = 1; page <= MAX_PAGES; page += 1) {
     const result = await fetchLiveHosts({ page, limit: PAGE_SIZE }, signal)
     for (const host of result.data) {
-      if (host.userId) roster.set(host.userId, { status: host.status ?? null })
+      if (host.userId) {
+        roster.set(host.userId, {
+          status: host.status ?? null,
+          isLive: host.isLive === true,
+          currentLiveRoomId: host.currentLiveRoomId ?? null,
+        })
+      }
     }
     if (page >= result.pagination.totalPages || result.data.length === 0) break
   }

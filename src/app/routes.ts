@@ -24,6 +24,21 @@ export const ROUTES = {
   hosts: '/hosts',
   host: (id: string) => `/hosts/${id}`,
 
+  /**
+   * Live stream management (plan.md §4, phase L0). One page with two tabs
+   * (`?tab=live` default, `?tab=past`) and a room page.
+   */
+  liveStreams: '/live-streams',
+  liveStream: (id: string) => `/live-streams/${encodeURIComponent(id)}`,
+  /** The list, pre-filtered — `hostId` is undocumented but measured to work. */
+  liveStreamsFor: (filter: { hostId?: string; tab?: 'live' | 'past' }) => {
+    const params = new URLSearchParams()
+    if (filter.tab === 'past') params.set('tab', 'past')
+    if (filter.hostId) params.set('hostId', filter.hostId)
+    const query = params.toString()
+    return query ? `/live-streams?${query}` : '/live-streams'
+  },
+
   moderation: '/moderation',
   moderationCase: (id: string) => `/moderation/${id}`,
   moderationReports: '/moderation/reports',
@@ -58,10 +73,16 @@ export const ROUTES = {
    */
   diamondTransactions: '/diamonds/transactions',
   /** Phase G5. `senderId` and `receiverId` are the two filters measured to work. */
-  giftLedger: (filter: { senderId?: string; receiverId?: string }) => {
+  giftLedger: (filter: {
+    senderId?: string
+    receiverId?: string
+    contextId?: string
+  }) => {
     const params = new URLSearchParams()
     if (filter.senderId) params.set('senderId', filter.senderId)
     if (filter.receiverId) params.set('receiverId', filter.receiverId)
+    /* A live room's gifts: the gift's `contextId` is the room id (Live L2). */
+    if (filter.contextId) params.set('contextId', filter.contextId)
     const query = params.toString()
     return query ? `/diamonds/transactions?${query}` : '/diamonds/transactions'
   },

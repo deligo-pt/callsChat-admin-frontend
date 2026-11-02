@@ -4,6 +4,7 @@ import { bootstrapHandlers } from './bootstrap'
 import { catalogHandlers } from './catalog'
 import { feedbackHandlers } from './feedback'
 import { hostHandlers } from './hosts'
+import { liveRoomHandlers } from './liveRooms'
 import { resourceHandlers } from './resources'
 import { searchHandlers } from './search'
 import { settingsHandlers } from './settings'
@@ -42,5 +43,7 @@ export const handlers = [
    * routes in front of anything generic that is added later.
    */
   ...hostHandlers,
+  /* Live rooms (plan.md L0) — also under `/admin/live/*`, also before the generic handlers. */
+  ...liveRoomHandlers,
   ...resourceHandlers,
 ]

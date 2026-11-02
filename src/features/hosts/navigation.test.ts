@@ -39,6 +39,7 @@ describe('where the entry sits', () => {
       'Feedback',
       'Host applications',
       'Live hosts',
+      'Live streams',
     ])
   })
 

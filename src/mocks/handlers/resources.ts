@@ -465,6 +465,35 @@ export const resourceHandlers = [
     return HttpResponse.json({ success: true, message: 'User banned.' })
   }),
 
+  /*
+   * `POST /:id/status` — the Postman "Unified Status Mutation". The panel uses
+   * it only to activate. ⚠️ Its real enum and rules are unmeasured; the mock
+   * accepts the five account states and requires a status.
+   */
+  http.post(`${API_PREFIX}/admin/users/:id/status`, async ({ request }) => {
+    const scenario = await applyScenario()
+    if (scenario) return scenario
+    const body = (await request.json()) as { status?: string }
+    const STATUSES = [
+      'ACTIVE',
+      'INACTIVE',
+      'SUSPENDED',
+      'BANNED',
+      'PENDING_VERIFICATION',
+    ]
+    if (!body.status) {
+      return errorResponse(400, 'FST_ERR_VALIDATION', 'body/status Required')
+    }
+    if (!STATUSES.includes(body.status)) {
+      return errorResponse(
+        400,
+        'FST_ERR_VALIDATION',
+        `body/status Invalid enum value. Expected ${STATUSES.map((s) => `'${s}'`).join(' | ')}, received '${body.status}'`,
+      )
+    }
+    return HttpResponse.json({ success: true, message: 'User status updated.' })
+  }),
+
   http.post(`${API_PREFIX}/admin/users/:id/restore`, async ({ request }) => {
     const scenario = await applyScenario()
     if (scenario) return scenario

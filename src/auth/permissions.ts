@@ -48,6 +48,17 @@ export const PERMISSIONS = {
   reportsView: 'reports.view',
   reportsResolve: 'reports.resolve',
 
+  /**
+   * Live stream management — `/admin/live/rooms/*` (plan.md L0, decision C).
+   * The backend guard is `verifyAdmin` (ADMIN + SUPER_ADMIN), so view and
+   * moderate match it. `live.listen` — silent listening, which plays room
+   * audio — is Super Admin only by the user's decision A (2026-11-01), a
+   * narrower gate than the server's.
+   */
+  liveView: 'live.view',
+  liveModerate: 'live.moderate',
+  liveListen: 'live.listen',
+
   analyticsView: 'analytics.view',
   exportData: 'export_data',
 
@@ -181,6 +192,8 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.hostApplicationsView,
   PERMISSIONS.hostApplicationsApprove,
   PERMISSIONS.hostApplicationsReject,
+  PERMISSIONS.liveView,
+  PERMISSIONS.liveModerate,
   PERMISSIONS.walletsView,
   PERMISSIONS.ledgerView,
   PERMISSIONS.paymentsView,

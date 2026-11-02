@@ -63,6 +63,23 @@ export async function restoreUser(userId: string, reason: string): Promise<void>
   await apiClient.post<unknown>(path(userId, '/restore'), { body: { reason } })
 }
 
+/**
+ * Approve a pending (or inactive) account — `POST /admin/users/:id/status`
+ * with `status: "ACTIVE"`.
+ *
+ * ⚠️ The one action on the generic `/status` route rather than a named
+ * command: there is no `/activate` or `/verify`. The backend team confirmed an
+ * admin can move a `PENDING_VERIFICATION` account to `ACTIVE` (2026-11-01);
+ * the body is the Postman "Unified Status Mutation" shape with only the
+ * fields that apply. Not yet called on staging — the first real use is the
+ * check.
+ */
+export async function activateUser(userId: string, reason: string): Promise<void> {
+  await apiClient.post<unknown>(path(userId, '/status'), {
+    body: { status: 'ACTIVE', reason },
+  })
+}
+
 /* ------------------------------------------------------------------ Role */
 
 export async function changeUserRole(
@@ -198,7 +215,13 @@ export async function revokeAllSessions(userId: string, reason: string): Promise
 /* ------------------------------------------------------------ Transitions */
 
 export type UserAction =
-  'suspend' | 'unsuspend' | 'ban' | 'restore' | 'restrict' | 'revokeSessions'
+  | 'activate'
+  | 'suspend'
+  | 'unsuspend'
+  | 'ban'
+  | 'restore'
+  | 'restrict'
+  | 'revokeSessions'
 
 /**
  * Which status transitions are offered for a given state.
@@ -229,6 +252,14 @@ export function availableStatusActions(
      */
     case 'SCHEDULED_FOR_DELETION':
       return ['suspend', 'ban']
+    /*
+     * Waiting on verification, or dormant: an admin can approve the account
+     * straight to ACTIVE (backend-confirmed 2026-11-01). The moderation
+     * levers stay alongside it.
+     */
+    case 'PENDING_VERIFICATION':
+    case 'INACTIVE':
+      return ['activate', 'suspend', 'ban']
     /*
      * ACTIVE, INACTIVE and PENDING_VERIFICATION can all be suspended or banned
      * — and so can a status this build has never heard of, which is now a case

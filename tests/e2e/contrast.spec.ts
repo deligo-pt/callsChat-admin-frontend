@@ -5,6 +5,7 @@ import {
   ACCOUNTS,
   seedHostFixtures,
   seedLedgerHistory,
+  seedLiveFixtures,
   seedWalletFixtures,
   signIn,
 } from './fixtures'
@@ -1240,4 +1241,122 @@ test('an approved payment’s wallet note is legible', async ({ page }) => {
 
   await settled(page)
   expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+/*
+ * Live stream management (plan.md Live L7). The on-air badges pulse forever,
+ * which `settled` would wait on indefinitely, so these run with reduced motion
+ * — the badges carry `motion-reduce:animate-none` for exactly this.
+ */
+async function openLive(page: Page, path: string) {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await seedLiveFixtures(page)
+  await signIn(page)
+  await page.goto(path)
+}
+
+test('the Live now list and its counters have no contrast violations', async ({
+  page,
+}) => {
+  await openLive(page, '/live-streams')
+  await expect(page.getByText('Friday Night Acoustic Stage').first()).toBeVisible()
+  await expect(page.getByText('Platform-wide · today')).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('Past streams, with filter chips, have no contrast violations', async ({
+  page,
+}) => {
+  await openLive(page, '/live-streams?tab=past&fromDate=2026-11-01&toDate=2026-11-01')
+  await expect(page.getByText('7 past streams found.')).toBeAttached()
+
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('a live room — stage, audience, money, log, Listen — is legible', async ({
+  page,
+}) => {
+  await openLive(page, '/live-streams/lr_live_stage')
+  await expect(page.getByRole('region', { name: 'Listen silently' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Moderation log' })).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, 'main')).filter(DEBT)).toEqual([])
+})
+
+test('an ended room and its moderation log are legible', async ({ page }) => {
+  await openLive(page, '/live-streams/cmvph9tft00kp01p68mid7a91')
+  await expect(page.getByText(/This stream has ended/)).toBeVisible()
+
+  await settled(page)
+  expect((await contrastViolations(page, 'main')).filter(DEBT)).toEqual([])
+})
+
+test('every live moderation dialog is legible, terminate included', async ({
+  page,
+}) => {
+  await openLive(page, '/live-streams/lr_live_stage')
+  const actions = page.getByRole('group', { name: 'Moderation actions' })
+  for (const [button, title] of [
+    ['Warn', 'Warn the host'],
+    ['Lockdown', 'Lock down the room'],
+    ['Purge chat', 'Purge the chat'],
+    ['Terminate', 'Terminate the stream'],
+  ] as const) {
+    await actions.getByRole('button', { name: button }).click()
+    await expect(
+      page.getByRole('dialog').getByRole('heading', { name: title }),
+    ).toBeVisible()
+    await settled(page)
+    expect(
+      (await contrastViolations(page, '[role="dialog"]')).filter(DEBT),
+      title,
+    ).toEqual([])
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+  }
+})
+
+test('the seat menu and the stale-sweep dialog are legible', async ({ page }) => {
+  await openLive(page, '/live-streams/lr_live_stage')
+  await page
+    .getByRole('region', { name: 'Stage', exact: true })
+    .getByRole('button', { name: /^Actions for / })
+    .first()
+    .click()
+  await expect(page.getByRole('menuitem', { name: 'Block' })).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page, '[role="menu"]')).filter(DEBT)).toEqual([])
+  await page.keyboard.press('Escape')
+
+  await page.goto('/live-streams')
+  await page.getByRole('button', { name: 'Run stale-stream sweep' }).click()
+  await page.getByRole('dialog').getByRole('textbox').fill('0')
+  await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('the Listen confirmation and its error state are legible', async ({ page }) => {
+  await openLive(page, '/live-streams/lr_live_stage')
+  const panel = page.getByRole('region', { name: 'Listen silently' })
+  await panel.getByRole('button', { name: 'Listen' }).click()
+  await expect(page.getByRole('dialog')).toContainText('Nothing is recorded')
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Start listening' })
+    .click()
+  await expect(panel.getByRole('alert')).toBeVisible({ timeout: 20_000 })
+  await settled(page)
+  expect(
+    (await contrastViolations(page, 'section[aria-label="Listen silently"]')).filter(
+      DEBT,
+    ),
+  ).toEqual([])
 })

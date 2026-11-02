@@ -79,6 +79,12 @@ export const queryKeys = {
   giftTransactions: domain('gift-transactions'),
   /** The wallet ledger — `GET /admin/wallet/transactions` (plan.md T1). */
   walletTransactions: domain('wallet-transactions'),
+  /** Live stream management (plan.md L0). History and analytics keyed apart from the live list. */
+  liveRooms: {
+    ...domain('live-rooms'),
+    history: (params?: ListParams) => ['live-rooms', 'history', params ?? {}] as const,
+    analytics: () => ['live-rooms', 'analytics'] as const,
+  },
   /** Emoji packs with their nested emojis (plan.md §3.4, G4). */
   emojiPacks: domain('emoji-packs'),
   payoutRates: domain('payout-rates'),

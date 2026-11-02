@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 
+import { mockOnAirHosts } from './liveRooms'
 import { API_PREFIX, applyScenario, errorResponse, isEmptyScenario } from './shared'
 
 /**
@@ -76,6 +77,8 @@ interface MockHost {
   pendingWithdrawal: number | null
   revenueSharePercent: number | null
   isLive: boolean | null
+  /** Live L4 — the room they are broadcasting in, when live. */
+  currentLiveRoomId?: string | null
   lastLiveAt: string | null
   followersCount: number | null
   approvedAt: string | null
@@ -466,6 +469,53 @@ function matchesSearch(row: MockApplication | MockHost, term: string): boolean {
  * Handlers
  * ------------------------------------------------------------------ */
 
+/**
+ * The roster as the live-room mock sees it: a host broadcasting gets
+ * `isLive` and `currentLiveRoomId`, and a room host missing from the roster
+ * is added — every real room host is on it. With no room on air (the
+ * default, as on staging) this changes nothing.
+ */
+function withOnAirHosts(roster: readonly MockHost[]): MockHost[] {
+  const onAir = mockOnAirHosts()
+  if (onAir.length === 0) return [...roster]
+  const byHost = new Map(onAir.map((entry) => [entry.hostId, entry]))
+  const merged: MockHost[] = roster.map((row) => {
+    const live = byHost.get(row.userId)
+    return live ? { ...row, isLive: true, currentLiveRoomId: live.roomId } : row
+  })
+  for (const live of onAir) {
+    if (merged.some((row) => row.userId === live.hostId)) continue
+    merged.push({
+      id: `prof_${live.hostId}`,
+      userId: live.hostId,
+      status: live.status,
+      badgeLevel: null,
+      totalLiveHours: null,
+      totalLiveSessions: null,
+      peakViewers: null,
+      totalDiamondsEarned: null,
+      totalGiftsReceived: null,
+      withdrawableDiamonds: null,
+      pendingWithdrawal: null,
+      revenueSharePercent: null,
+      isLive: true,
+      currentLiveRoomId: live.roomId,
+      lastLiveAt: new Date().toISOString(),
+      followersCount: null,
+      approvedAt: null,
+      suspendedAt: null,
+      suspendedById: null,
+      suspendedReason: null,
+      user: {
+        id: live.hostId,
+        email: null,
+        profile: { ...live.profile, avatarUrl: null },
+      },
+    })
+  }
+  return merged
+}
+
 export const hostHandlers = [
   /**
    * `GET /admin/live/host-applications/stats`.
@@ -627,7 +677,7 @@ export const hostHandlers = [
     return HttpResponse.json({ success: true, data: row })
   }),
 
-  /** `GET /admin/live/hosts`. */
+  /** `GET /admin/live/hosts` — overlaid with who is on air (Live L4). */
   http.get(HOSTS, async ({ request }) => {
     const scenario = await applyScenario()
     if (scenario) return scenario
@@ -641,7 +691,7 @@ export const hostHandlers = [
     const status = params.get('status')
     const search = params.get('search')
 
-    const rows = hosts.filter((row) => {
+    const rows = withOnAirHosts(hosts).filter((row) => {
       if (status !== null && row.status !== status) return false
       if (search !== null && search !== '' && !matchesSearch(row, search)) return false
       return true

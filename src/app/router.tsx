@@ -130,6 +130,16 @@ const GiftCatalogPage = lazy(() =>
 const HostsPage = lazy(() =>
   import('@/features/hosts/HostsPage').then((m) => ({ default: m.HostsPage })),
 )
+const LiveStreamsPage = lazy(() =>
+  import('@/features/liveStreams/LiveStreamsPage').then((m) => ({
+    default: m.LiveStreamsPage,
+  })),
+)
+const LiveRoomPage = lazy(() =>
+  import('@/features/liveStreams/LiveRoomPage').then((m) => ({
+    default: m.LiveRoomPage,
+  })),
+)
 const FeedbackListPage = lazy(() =>
   import('@/features/feedback/FeedbackListPage').then((m) => ({
     default: m.FeedbackListPage,
@@ -475,6 +485,28 @@ const moduleRoutes: RouteObject[] = [
         resource="live hosts"
       >
         {suspended(<HostsPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Live stream management — the Live streams page (plan.md Live §5.1, L1).
+   * `live.view`: ADMIN and SUPER_ADMIN, as the guide says (L-B1 unmeasured).
+   */
+  {
+    path: ROUTES.liveStreams,
+    element: (
+      <RequirePermission permission={PERMISSIONS.liveView} resource="live streams">
+        {suspended(<LiveStreamsPage />)}
+      </RequirePermission>
+    ),
+  },
+  /* One room (plan.md Live §5.2, L2) — guarded identically. */
+  {
+    path: '/live-streams/:roomId',
+    element: (
+      <RequirePermission permission={PERMISSIONS.liveView} resource="live streams">
+        {suspended(<LiveRoomPage />)}
       </RequirePermission>
     ),
   },

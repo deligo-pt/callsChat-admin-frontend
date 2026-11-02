@@ -23,6 +23,7 @@ import type { UserDetail } from '@/types/identity'
 
 import { fetchUser } from './api'
 import { HostBadge } from './HostBadge'
+import { HostLiveLinks } from './HostLiveLinks'
 import { EditEmailAction, EditProfileAction } from './detail/EditActions'
 import { RoleAction } from './detail/RoleAction'
 import { StatusActions } from './detail/StatusActions'
@@ -105,6 +106,7 @@ function Header({ user }: { user: UserDetail }) {
               'never'
             )}
           </span>
+          <HostLiveLinks user={identity} />
         </>
       }
       actions={

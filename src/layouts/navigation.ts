@@ -2,6 +2,7 @@ import {
   Activity,
   ArrowLeftRight,
   BadgeCheck,
+  Cast,
   Gem,
   Gift,
   LayoutDashboard,
@@ -171,6 +172,17 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Radio,
         permission: PERMISSIONS.hostApplicationsView,
         matchPrefix: '/hosts',
+      },
+      /*
+       * Live streams (plan.md Live §4): the rooms themselves, beside the
+       * people who run them. `Cast`, not `Radio` — Live hosts owns that glyph.
+       */
+      {
+        label: 'Live streams',
+        to: ROUTES.liveStreams,
+        icon: Cast,
+        permission: PERMISSIONS.liveView,
+        matchPrefix: '/live-streams',
       },
     ],
   },

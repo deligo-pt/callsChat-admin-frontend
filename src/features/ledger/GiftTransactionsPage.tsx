@@ -3,6 +3,8 @@ import { Link } from 'react-router'
 
 import { isAppError } from '@/api/errors'
 import { ROUTES } from '@/app/routes'
+import { PERMISSIONS } from '@/auth/permissions'
+import { useCan } from '@/auth/useAuth'
 import {
   AppliedFilterChips,
   DataList,
@@ -11,6 +13,7 @@ import {
   type AppliedFilter,
 } from '@/components/data'
 import { PageHeader } from '@/components/display'
+import { useLiveRoomTitle } from '@/components/live'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { bangladeshDay } from '@/lib/datetime'
@@ -51,7 +54,8 @@ function partyName(
   key: LedgerFilterKey,
   id: string,
 ): string {
-  if (key === 'contextId') return id
+  /* A room is named by `roomChipName` — never its raw id. */
+  if (key === 'contextId') return 'This live room'
   const party = key === 'senderId' ? rows[0]?.sender : rows[0]?.receiver
   return party?.id === id && party.displayName?.trim() ? party.displayName.trim() : id
 }
@@ -120,12 +124,20 @@ export function GiftTransactionsPage() {
   const pagination = list.data?.pagination
   const filtered = activeFilterCount > 0
 
+  /* The room's title for its chip (plan.md Live L4); words, never the id. */
+  const canViewLive = useCan(PERMISSIONS.liveView)
+  const roomTitle = useLiveRoomTitle(filters.contextId ?? '', canViewLive)
+  const roomChipName =
+    roomTitle.data === null
+      ? 'A room that no longer exists'
+      : (roomTitle.data ?? 'This live room')
+
   const applied: AppliedFilter[] = (
     Object.entries(filters) as [LedgerFilterKey, string][]
   ).map(([key, id]) => ({
     id: key,
     label: FILTER_LABELS[key],
-    value: partyName(rows, key, id),
+    value: key === 'contextId' ? roomChipName : partyName(rows, key, id),
   }))
 
   /*

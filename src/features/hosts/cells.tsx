@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 
 import { ROUTES } from '@/app/routes'
 import { PERMISSIONS } from '@/auth/permissions'
@@ -336,12 +336,36 @@ export function LiveNowCell({ record }: { record: LiveHost }) {
   }
 
   return (
-    <Badge className="w-fit bg-danger-soft text-danger-foreground">
-      <span
-        className="mr-1.5 inline-block size-1.5 rounded-full bg-danger"
-        aria-hidden="true"
-      />
-      Live now
-    </Badge>
+    <span className="flex flex-col items-start gap-1">
+      <Badge className="w-fit bg-danger-soft text-danger-foreground">
+        <span
+          className="mr-1.5 inline-block size-1.5 rounded-full bg-danger"
+          aria-hidden="true"
+        />
+        Live now
+      </Badge>
+      {record.currentLiveRoomId ? (
+        <OpenRoomLink roomId={record.currentLiveRoomId} />
+      ) : null}
+    </span>
+  )
+}
+
+/**
+ * From a live host to the room they are broadcasting (plan.md Live L4). Only
+ * with `live.view`; "back" on the room returns to this roster as it was.
+ */
+function OpenRoomLink({ roomId }: { roomId: string }) {
+  const canView = useCan(PERMISSIONS.liveView)
+  const { pathname, search } = useLocation()
+  if (!canView) return null
+  return (
+    <Link
+      to={ROUTES.liveStream(roomId)}
+      state={{ backTo: `${pathname}${search}` }}
+      className="text-caption font-medium whitespace-nowrap text-primary hover:underline"
+    >
+      Open room
+    </Link>
   )
 }
