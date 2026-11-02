@@ -349,6 +349,9 @@ export async function requestUploadUrl(
  * Lottie file large enough to need a direct-to-storage upload is large enough
  * that a silent bar is a broken one.
  */
+/** No upload progress for this long means the storage host isn't answering. */
+export const UPLOAD_STALL_MS = 30_000
+
 export function uploadToStorage(
   uploadUrl: string,
   file: File,
@@ -365,12 +368,30 @@ export function uploadToStorage(
     request.open('PUT', uploadUrl, true)
     request.setRequestHeader('Content-Type', contentType)
 
+    /*
+     * ⚠️ A storage host that never answers leaves an XHR open for minutes
+     * with the bar at 0% (measured 2026-11-02: media.callschat.com timed out
+     * on every port). Give up when nothing has moved for a while, and say so.
+     */
+    let stalled = false
+    let watchdog = setTimeout(stall, UPLOAD_STALL_MS)
+    function stall() {
+      stalled = true
+      request.abort()
+    }
+    function settle() {
+      clearTimeout(watchdog)
+    }
+
     request.upload.onprogress = (event) => {
+      clearTimeout(watchdog)
+      watchdog = setTimeout(stall, UPLOAD_STALL_MS)
       if (!onProgress || !event.lengthComputable) return
       onProgress(Math.round((event.loaded / event.total) * 100))
     }
 
     request.onload = () => {
+      settle()
       if (request.status >= 200 && request.status < 300) {
         resolve()
         return
@@ -382,11 +403,22 @@ export function uploadToStorage(
       reject(new Error(`The file could not be uploaded (status ${request.status}).`))
     }
 
-    request.onerror = () =>
+    request.onerror = () => {
+      settle()
       reject(
         new Error('The file could not be uploaded. The storage host did not respond.'),
       )
-    request.onabort = () => reject(new Error('The upload was cancelled.'))
+    }
+    request.onabort = () => {
+      settle()
+      reject(
+        new Error(
+          stalled
+            ? `The storage server did not respond for ${UPLOAD_STALL_MS / 1000} seconds, so the upload was stopped.`
+            : 'The upload was cancelled.',
+        ),
+      )
+    }
 
     request.send(file)
   })

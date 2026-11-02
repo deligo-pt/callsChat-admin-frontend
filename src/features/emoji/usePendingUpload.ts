@@ -41,7 +41,11 @@ export function usePendingUpload(folder: Folder) {
       setError(verdict.message)
       return null
     }
-    const next = { file, mimetype: verdict.mimetype, impliedType: verdict.impliedType }
+    const next = {
+      file: verdict.file,
+      mimetype: verdict.mimetype,
+      impliedType: verdict.impliedType,
+    }
     setChosen(next)
     return next
   }
