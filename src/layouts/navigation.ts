@@ -2,6 +2,7 @@ import {
   Activity,
   ArrowLeftRight,
   BadgeCheck,
+  Cast,
   Gem,
   Gift,
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   ShieldCheck,
   Smile,
   Users,
+  Wallet,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
@@ -171,6 +173,17 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         permission: PERMISSIONS.hostApplicationsView,
         matchPrefix: '/hosts',
       },
+      /*
+       * Live streams (plan.md Live §4): the rooms themselves, beside the
+       * people who run them. `Cast`, not `Radio` — Live hosts owns that glyph.
+       */
+      {
+        label: 'Live streams',
+        to: ROUTES.liveStreams,
+        icon: Cast,
+        permission: PERMISSIONS.liveView,
+        matchPrefix: '/live-streams',
+      },
     ],
   },
   /*
@@ -261,19 +274,19 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         matchPrefix: '/diamonds/packages',
       },
       /*
-       * Phase G2. `walletsView` for the same reason as the price list above:
-       * an ADMIN answering "what did that gift cost" needs to read it.
+       * Phase T2. `ledgerView`. Every diamond movement on every wallet —
+       * top-ups, adjustments, gifts, conversions.
        */
       {
-        label: 'Gift catalog',
-        to: ROUTES.gifts,
-        icon: Gift,
-        permission: PERMISSIONS.walletsView,
-        matchPrefix: '/diamonds/gifts',
+        label: 'Wallet transactions',
+        to: ROUTES.walletTransactions,
+        icon: Wallet,
+        permission: PERMISSIONS.ledgerView,
+        matchPrefix: '/diamonds/wallet-transactions',
       },
       /*
-       * Phase G5. `ledgerView`. Named for what it holds — gifts — because
-       * the diamond ledger it sits in the place of does not exist (O9).
+       * Phase G5. `ledgerView`. Gift sends between users, with sender,
+       * receiver and room — the wallet ledger shows only the sender's debit.
        */
       {
         label: 'Gift transactions',
@@ -354,6 +367,19 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Smile,
         permission: PERMISSIONS.giftsConfigure,
         matchPrefix: '/emoji-packs',
+      },
+      /*
+       * Phase G2, moved here from Diamonds in T0 (plan.md §4): like emoji
+       * packs, it is staff-curated content pushed to every client. Still
+       * `walletsView` — an ADMIN answering "what did that gift cost" needs to
+       * read it — while every write inside gates on `giftsConfigure`.
+       */
+      {
+        label: 'Gift catalog',
+        to: ROUTES.gifts,
+        icon: Gift,
+        permission: PERMISSIONS.walletsView,
+        matchPrefix: '/gift-catalog',
       },
       {
         label: 'System Settings',

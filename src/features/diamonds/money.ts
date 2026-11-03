@@ -1,47 +1,11 @@
-import { formatCount, formatDiamonds } from '@/lib/format'
+import { formatCount, formatDiamonds, formatWholeCurrency } from '@/lib/format'
 
 /**
  * Money and diamonds, as this module's payloads actually carry them.
- *
- * ⚠️ **`lib/format.ts#formatMoney` does not fit here, and using it would be
- * wrong by a factor of a hundred.** It takes *minor units* — `formatMoney(3600,
- * 'USD')` is `$36.00` — because every other financial surface in this panel
- * receives paisa and cents. The wallet payloads do not: `amountBdt: 1200` is
- * twelve hundred taka and `priceUsd: 25.5` is twenty-five and a half dollars,
- * both verified against the guide's examples and the live package rows. Passing
- * either through `formatMoney` renders `৳12.00`, which is a believable number
- * and therefore the dangerous kind of wrong.
- *
- * ⚠️ **`priceUsd` is a float**, so nothing here may coerce to an integer.
+ * `formatWholeCurrency` moved to `lib/format.ts` (the wallet ledger needs it
+ * too, and a feature may not import a sibling); re-exported for this module.
  */
-export function formatWholeCurrency(
-  amount: number | null | undefined,
-  currency: string,
-  locale?: string,
-): string {
-  if (typeof amount !== 'number' || !Number.isFinite(amount)) return '—'
-
-  /*
-   * ⚠️ No forced locale, matching every other formatter in `lib/format.ts`.
-   * One consequence worth knowing: under an English locale `Intl` renders BDT
-   * as `BDT 3,000` rather than `৳3,000`. That is the better outcome for an
-   * operations tool — `৳` is also used for the Indian rupee in some fonts and
-   * contexts, and an unambiguous ISO code beats a glyph when the number is a
-   * payment somebody is about to approve.
-   */
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-    currencyDisplay: 'symbol',
-    /*
-     * Whole-unit amounts are usually round, and `৳1,200` reads better than
-     * `৳1,200.00` in a dense table — but a price of `25.5` must not become
-     * `$26`, so the fraction is allowed when it is there.
-     */
-    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
-}
+export { formatWholeCurrency }
 
 /**
  * Diamonds, defensively.

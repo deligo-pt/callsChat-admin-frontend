@@ -1,11 +1,13 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 
 import { ROUTES } from '@/app/routes'
 import { useCan } from '@/auth/useAuth'
 import { PERMISSIONS } from '@/auth/permissions'
 import { DateTime, DiamondAmount } from '@/components/display'
+import { useLiveRoomTitle } from '@/components/live'
 import { CatalogAsset } from '@/components/media/CatalogAsset'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { formatCount } from '@/lib/format'
 import type { GiftTransaction } from '@/types/catalog'
 
@@ -115,10 +117,49 @@ const CONTEXT_LABELS: Record<string, string> = {
 }
 
 /**
+ * A live room by its title, linked to its page (plan.md Live L4) — never the
+ * raw id. Without `live.view` it is just "Live room". A room the API no longer
+ * has reads "A live room that no longer exists", unlinked.
+ */
+export function LiveRoomName({
+  roomId,
+  link = true,
+}: {
+  roomId: string
+  link?: boolean
+}) {
+  const canView = useCan(PERMISSIONS.liveView)
+  const { pathname, search } = useLocation()
+  const title = useLiveRoomTitle(roomId, canView)
+
+  if (!canView) return <span>Live room</span>
+  if (title.isPending)
+    return <Skeleton className="inline-block h-4 w-28 align-middle" />
+  if (title.data === null) {
+    return (
+      <span className="text-foreground-muted">A live room that no longer exists</span>
+    )
+  }
+  const name = title.data ?? 'Live room'
+  if (!link) return <span className="wrap-anywhere">{name}</span>
+  return (
+    <Link
+      to={ROUTES.liveStream(roomId)}
+      state={{ backTo: `${pathname}${search}` }}
+      className="line-clamp-2 font-medium wrap-anywhere text-primary hover:underline"
+      title={name}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {name}
+    </Link>
+  )
+}
+
+/**
  * Where it was sent, with a way to see everything sent there.
  *
- * Only `LIVE_ROOM` has been seen live. Any other value is shown as the server
- * sent it rather than guessed at.
+ * Only `LIVE_ROOM` has been seen live; there the room's title links to its
+ * page. Any other value is shown as the server sent it rather than guessed at.
  */
 export function ContextCell({
   record,
@@ -129,12 +170,19 @@ export function ContextCell({
 }) {
   const type = record.contextType?.trim()
   const id = record.contextId?.trim()
-  const place = type === 'LIVE_ROOM' ? 'room' : 'context'
+  const isRoom = type === 'LIVE_ROOM'
+  const place = isRoom ? 'room' : 'context'
 
   return (
     <span className="flex w-full min-w-0 flex-col items-start gap-0.5 lg:min-w-[9rem]">
-      <span>{type ? (CONTEXT_LABELS[type] ?? type) : '—'}</span>
-      {id ? (
+      <span className={isRoom && id ? 'text-caption text-foreground-muted' : undefined}>
+        {type ? (CONTEXT_LABELS[type] ?? type) : '—'}
+      </span>
+      {id && isRoom ? (
+        <span className="block w-full max-w-[14rem]">
+          <LiveRoomName roomId={id} />
+        </span>
+      ) : id ? (
         <span
           className="block w-full max-w-[12rem] truncate font-mono text-caption text-foreground-muted"
           title={id}
@@ -148,7 +196,7 @@ export function ContextCell({
           size="sm"
           className="h-auto p-0 text-caption"
           onClick={() => onOnlyThis(id)}
-          aria-label={`Only gifts sent in ${place} ${id}`}
+          aria-label={`Only gifts sent in this ${place}`}
         >
           Only this {place}
         </Button>

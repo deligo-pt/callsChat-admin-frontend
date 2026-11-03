@@ -31,6 +31,8 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
+    "fflate": "^0.8.3",
+    "livekit-client": "^2.23.0",
     "lottie-web": "^5.13.0",
     "lucide-react": "^1.32.0",
     "radix-ui": "^1.6.7",

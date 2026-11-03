@@ -222,13 +222,15 @@ describe('filters arrive by link', () => {
     const urls = requests()
     const user = renderAt(ROUTES.diamondTransactions)
     const buttons = await screen.findAllByRole('button', {
-      name: /Only gifts sent in room/,
+      name: /Only gifts sent in this room/,
     })
     await user.click(buttons[0]!)
     await waitFor(() =>
       expect(lastQuery(urls)).toMatchObject({ contextId: 'cmvph9tft00kp01p68mid7a91' }),
     )
-    expect(screen.queryByRole('button', { name: /Only gifts sent in room/ })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /Only gifts sent in this room/ }),
+    ).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Remove Room filter' }))
     await waitFor(() => expect(lastQuery(urls)).not.toHaveProperty('contextId'))

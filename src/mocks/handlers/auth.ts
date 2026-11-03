@@ -138,6 +138,28 @@ export function signInMockAdmin(role: AdminRole = 'SUPER_ADMIN'): void {
   })
 }
 
+/** The signed-in mock admin's id — who a mock write was made by. */
+export function currentMockAdminId(): string | null {
+  return readSession()?.id ?? null
+}
+
+/** The signed-in mock admin's role and name — for role-guarded routes and audit rows. */
+export function currentMockAdmin(): {
+  id: string
+  role: string
+  displayName: string | null
+  username: string | null
+} | null {
+  const session = readSession()
+  if (!session) return null
+  return {
+    id: session.id,
+    role: session.role,
+    displayName: session.profile?.displayName ?? null,
+    username: session.profile?.username ?? null,
+  }
+}
+
 /** Clear the mock session, for a test that needs a signed-out state. */
 export function signOutMockAdmin(): void {
   writeSession(null)

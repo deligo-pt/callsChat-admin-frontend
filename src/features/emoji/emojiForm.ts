@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { isLottieFile, resolveMime } from '@/lib/catalogFile'
+import { isDotLottie, unpackDotLottie } from '@/lib/dotLottie'
 import {
   ALLOWED_UPLOAD_MIME,
   MAX_CATALOG_NAME,
@@ -211,12 +212,17 @@ export function fileBadge(mimetype: string): string {
 export const MAX_EMOJI_FILE_BYTES = 5 * 1024 * 1024
 
 export const EMOJI_FILE_ACCEPT =
-  '.json,application/json,.png,image/png,.webp,image/webp'
+  '.json,application/json,.lottie,.png,image/png,.webp,image/webp'
 export const COVER_FILE_ACCEPT = '.png,image/png,.webp,image/webp,.jpg,.jpeg,image/jpeg'
 
 export type FileVerdict =
   | {
       readonly ok: true
+      /**
+       * The file to upload. The picked file itself, except for a `.lottie`,
+       * which becomes the Lottie JSON inside it.
+       */
+      readonly file: File
       readonly mimetype: string
       /** The type the file implies, where it implies one. */
       readonly impliedType: EmojiType | null
@@ -235,6 +241,26 @@ export async function checkCatalogFile(
   file: File,
   folder: Extract<UploadFolder, 'emojis' | 'packs'>,
 ): Promise<FileVerdict> {
+  /*
+   * `.lottie` is a ZIP the upload service won't take; the JSON inside is a
+   * plain Lottie it does take for emojis (measured 2026-11-02). Pack covers
+   * refuse JSON at the server, so a `.lottie` can't be a cover.
+   */
+  if (isDotLottie(file)) {
+    if (folder === 'packs') {
+      return {
+        ok: false,
+        message: `“${file.name}” is an animation. The upload service takes only PNG, WebP or JPEG images for pack covers.`,
+      }
+    }
+    const unpacked = await unpackDotLottie(file)
+    if (!unpacked.ok) return unpacked
+    const verdict = await checkCatalogFile(unpacked.file, folder)
+    return verdict.ok
+      ? verdict
+      : { ok: false, message: verdict.message.replace(unpacked.file.name, file.name) }
+  }
+
   const mimetype = resolveMime(file)
   const allowed = ALLOWED_UPLOAD_MIME[folder]
 
@@ -249,7 +275,7 @@ export async function checkCatalogFile(
              * cannot be uploaded as such.
              */
             `“${file.name}” is not a PNG, WebP or JPEG image. The upload service takes only images for pack covers.`
-          : `“${file.name}” is not a Lottie (.json), PNG or WebP file.`,
+          : `“${file.name}” is not a Lottie (.json or .lottie), PNG or WebP file.`,
     }
   }
 
@@ -264,12 +290,17 @@ export async function checkCatalogFile(
         message: `“${file.name}” is not a Lottie animation, or is larger than 2 MB.`,
       }
     }
-    return { ok: true, mimetype, impliedType: 'ANIMATED' }
+    return { ok: true, file, mimetype, impliedType: 'ANIMATED' }
   }
 
   /*
    * A PNG cannot animate. WebP can, so it implies nothing and the operator
    * chooses.
    */
-  return { ok: true, mimetype, impliedType: mimetype === 'image/png' ? 'STATIC' : null }
+  return {
+    ok: true,
+    file,
+    mimetype,
+    impliedType: mimetype === 'image/png' ? 'STATIC' : null,
+  }
 }

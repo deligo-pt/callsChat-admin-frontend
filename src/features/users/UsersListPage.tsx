@@ -1,10 +1,8 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Info, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { isAppError } from '@/api/errors'
-import { queryKeys } from '@/api/queryKeys'
 import { ROUTES } from '@/app/routes'
 import { PERMISSIONS } from '@/auth/permissions'
 import { useAuth } from '@/auth/useAuth'
@@ -36,9 +34,11 @@ import {
   type UserSummary,
 } from '@/types/identity'
 
-import { exportUsers, fetchUsers } from './api'
+import { exportUsers } from './api'
 import { CreateUserAction } from './CreateUserAction'
 import { UNSUPPORTED_FILTERS } from './listParams'
+import { UserRowMenu } from './UserRowMenu'
+import { useUserDirectory } from './useUserDirectory'
 import { useUserListParams, type FilterKey } from './useUserListParams'
 import { userColumns } from './userColumns'
 
@@ -46,9 +46,16 @@ const STATUS_OPTIONS = accountStatusSchema.options
 const ROLE_OPTIONS = userRoleSchema.options
 const ACCOUNT_TYPE_OPTIONS = accountTypeSchema.options
 
-const RESTRICTION_OPTIONS = [
-  { value: 'true', label: 'Has restrictions' },
-  { value: 'false', label: 'No restrictions' },
+/*
+ * "No restrictions" is gone: the API reads any non-empty value as "has
+ * restrictions" (`UNSUPPORTED_FILTERS`), so it listed exactly the accounts it
+ * claimed to exclude.
+ */
+const RESTRICTION_OPTIONS = [{ value: 'true', label: 'Has restrictions' }] as const
+
+const HOST_OPTIONS = [
+  { value: 'host', label: 'Hosts' },
+  { value: 'user', label: 'Non-hosts' },
 ] as const
 
 const FILTER_LABELS: Readonly<Record<FilterKey, string>> = {
@@ -57,6 +64,7 @@ const FILTER_LABELS: Readonly<Record<FilterKey, string>> = {
   role: 'Role',
   accountType: 'Type',
   hasRestrictions: 'Restrictions',
+  host: 'Host',
 }
 
 /** A labelled select that reads and writes one URL-backed filter. */
@@ -99,10 +107,12 @@ function FilterSelect({
  */
 export function UsersListPage() {
   const navigate = useNavigate()
-  const { can } = useAuth()
+  const { can, ready } = useAuth()
   const [exporting, setExporting] = useState(false)
+  const canFilterHosts = can(PERMISSIONS.hostApplicationsView)
   const {
     params,
+    hostFilter: requestedHostFilter,
     filters,
     setFilter,
     setPage,
@@ -112,16 +122,16 @@ export function UsersListPage() {
     activeFilterCount,
   } = useUserListParams()
 
-  const query = useQuery({
-    queryKey: queryKeys.users.list(params),
-    queryFn: ({ signal }) => fetchUsers(params, signal),
-    /*
-     * Keep the previous page visible while the next one loads. Without this,
-     * paging or changing a filter blanks the table to a skeleton on every
-     * keystroke, which reads as a broken page rather than a loading one.
-     */
-    placeholderData: keepPreviousData,
-  })
+  /*
+   * The Host filter needs the host roster, which only `host_applications.view`
+   * may read. Without it the control is absent and a `?host=` link is ignored.
+   */
+  const hostFilter = canFilterHosts ? requestedHostFilter : undefined
+  /*
+   * Until the session is known, "may read the roster" reads as no — so a
+   * `?host=` link would first load everyone. Wait for it instead.
+   */
+  const query = useUserDirectory(params, hostFilter, !requestedHostFilter || ready)
 
   const rows = query.data?.data ?? []
   const pagination = query.data?.pagination
@@ -137,17 +147,20 @@ export function UsersListPage() {
           activeFilterCount === 1 ? '' : 's'
         }`
 
-  const appliedChips: AppliedFilter[] = Object.entries(filters).map(([key, value]) => {
-    const filterKey = key as FilterKey
-    let display = value
+  const appliedChips: AppliedFilter[] = Object.entries(filters)
+    .filter(([key]) => key !== 'host' || hostFilter)
+    .map(([key, value]) => {
+      const filterKey = key as FilterKey
+      let display = value
 
-    if (filterKey === 'status') display = resolveStatus('user', value).label
-    if (filterKey === 'accountType') display = resolveStatus('accountType', value).label
-    if (filterKey === 'hasRestrictions')
-      display = value === 'true' ? 'Has restrictions' : 'None'
+      if (filterKey === 'status') display = resolveStatus('user', value).label
+      if (filterKey === 'accountType')
+        display = resolveStatus('accountType', value).label
+      if (filterKey === 'hasRestrictions') display = 'Has restrictions'
+      if (filterKey === 'host') display = value === 'host' ? 'Hosts' : 'Non-hosts'
 
-    return { id: filterKey, label: FILTER_LABELS[filterKey], value: display }
-  })
+      return { id: filterKey, label: FILTER_LABELS[filterKey], value: display }
+    })
 
   return (
     <div className="space-y-6">
@@ -159,7 +172,12 @@ export function UsersListPage() {
           <>
             {can(PERMISSIONS.usersCreate) ? <CreateUserAction /> : null}
             <ExportButton
-              canExport={can(PERMISSIONS.exportData)}
+              /*
+               * The export endpoint takes the server filters only, so with the
+               * Host filter on it would download a different set from the one
+               * on screen. Hidden rather than wrong.
+               */
+              canExport={can(PERMISSIONS.exportData) && !hostFilter}
               rowCount={pagination?.total ?? 0}
               resource="users"
               scopeDescription={exportScope}
@@ -251,6 +269,22 @@ export function UsersListPage() {
               ))}
             </FilterSelect>
 
+            {canFilterHosts ? (
+              <FilterSelect
+                id="filter-host"
+                label="Host"
+                value={hostFilter}
+                onChange={(value) => setFilter('host', value)}
+              >
+                <SelectItem value="all">Everyone</SelectItem>
+                {HOST_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </FilterSelect>
+            ) : null}
+
             <FilterSelect
               id="filter-type"
               label="Account type"
@@ -327,6 +361,15 @@ export function UsersListPage() {
               onRowClick: (user: UserSummary) => {
                 void navigate(ROUTES.user(user.id))
               },
+            }
+          : {})}
+        /* plan.md T5: "Wallet history" per row, only with the ledger. */
+        {...(can(PERMISSIONS.ledgerView)
+          ? {
+              rowActions: (user: UserSummary) => (
+                <UserRowMenu user={user} canOpenRecord={can(PERMISSIONS.usersView)} />
+              ),
+              keepCardOpenControl: true,
             }
           : {})}
         emptyTitle={

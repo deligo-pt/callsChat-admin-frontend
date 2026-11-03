@@ -49,14 +49,14 @@ describe('the Diamonds section', () => {
      * to warn the operator it could not verify it. It now sits on the user
      * record beside suspend, ban and change-role. Both entries left are
      * places, and both are readable by the operations tier. The gift
-     * catalog (G2) joined them on the same terms, and the gift ledger (G5)
-     * on `ledger.view` — also granted to ADMIN.
+     * ledger (G5) joined them on `ledger.view` — also granted to ADMIN. The
+     * gift catalog (G2) was here too until it moved to Platform in T0.
      */
     const items = section('diamonds')?.items ?? []
     expect(items.map((item) => item.permission)).toEqual([
       PERMISSIONS.walletsView,
       PERMISSIONS.walletsView,
-      PERMISSIONS.walletsView,
+      PERMISSIONS.ledgerView,
       PERMISSIONS.ledgerView,
     ])
   })
@@ -71,7 +71,7 @@ describe('the Diamonds section', () => {
     expect(items.map((item) => item.to)).toEqual([
       ROUTES.topUps,
       ROUTES.diamondPackages,
-      ROUTES.gifts,
+      ROUTES.walletTransactions,
       ROUTES.diamondTransactions,
     ])
   })
@@ -88,8 +88,20 @@ describe('the Diamonds section', () => {
     expect(items.map((item) => item.matchPrefix)).toEqual([
       '/diamonds/top-ups',
       '/diamonds/packages',
-      '/diamonds/gifts',
+      '/diamonds/wallet-transactions',
       '/diamonds/transactions',
     ])
+  })
+})
+
+describe('the gift catalog', () => {
+  it('lives in Platform since T0, on the same read permission', () => {
+    const entry = section('platform')?.items.find((item) => item.to === ROUTES.gifts)
+    expect(ROUTES.gifts).toBe('/gift-catalog')
+    expect(entry?.permission).toBe(PERMISSIONS.walletsView)
+    expect(entry?.matchPrefix).toBe('/gift-catalog')
+    expect(
+      section('diamonds')?.items.some((item) => item.label === 'Gift catalog'),
+    ).toBe(false)
   })
 })

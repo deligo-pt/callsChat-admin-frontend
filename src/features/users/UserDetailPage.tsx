@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Radio } from 'lucide-react'
-import { Link, useParams } from 'react-router'
+import { ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router'
 
 import { isAppError, NotFoundError } from '@/api/errors'
 import { queryKeys } from '@/api/queryKeys'
@@ -21,6 +22,8 @@ import { humaniseEnum } from '@/lib/status'
 import type { UserDetail } from '@/types/identity'
 
 import { fetchUser } from './api'
+import { HostBadge } from './HostBadge'
+import { HostLiveLinks } from './HostLiveLinks'
 import { EditEmailAction, EditProfileAction } from './detail/EditActions'
 import { RoleAction } from './detail/RoleAction'
 import { StatusActions } from './detail/StatusActions'
@@ -33,9 +36,14 @@ import {
   SessionsPanel,
 } from './detail/panels'
 
+/**
+ * Back to the directory: top-left, above the record, at every width — as on
+ * the wallet entry. Passed to `PageHeader` as an action it was stretched
+ * full-width and centred on a phone, and it only repeated the breadcrumb.
+ */
 function BackToDirectory() {
   return (
-    <Button variant="ghost" size="sm" asChild>
+    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
       <Link to={ROUTES.users}>
         <ArrowLeft /> All users
       </Link>
@@ -76,11 +84,7 @@ function Header({ user }: { user: UserDetail }) {
               {identity.activeRestrictionsCount === 1 ? '' : 's'}
             </span>
           ) : null}
-          {identity.isHost ? (
-            <span className="inline-flex items-center gap-1 rounded-sm bg-info-soft px-2 py-1 text-overline whitespace-nowrap text-info-foreground uppercase">
-              <Radio className="size-3" aria-hidden="true" /> Host
-            </span>
-          ) : null}
+          <HostBadge user={identity} size="md" link />
         </>
       }
       identifiers={
@@ -102,6 +106,7 @@ function Header({ user }: { user: UserDetail }) {
               'never'
             )}
           </span>
+          <HostLiveLinks user={identity} />
         </>
       }
       actions={
@@ -130,6 +135,43 @@ function Header({ user }: { user: UserDetail }) {
  */
 export function UserDetailPage() {
   const { userId = '' } = useParams<{ userId: string }>()
+  /*
+   * The open tab lives in the URL (`?tab=finance`), so a link can open one —
+   * the wallet entry's "back" returns to Finance this way (plan.md T4).
+   * `replace`: switching tabs is not a step the Back button should retrace.
+   */
+  const [searchParams, setSearchParams] = useSearchParams()
+  /*
+   * ⚠️ Held locally as well: a tab switches in the same render it is clicked,
+   * as it did before it was in the URL — writing the URL alone made the
+   * switch land a tick later. A change made outside (a link to `?tab=…`) is
+   * still followed.
+   */
+  const urlTab = searchParams.get('tab') ?? ''
+  const [tab, setTab] = useState(urlTab)
+  const [seenUrlTab, setSeenUrlTab] = useState(urlTab)
+  if (seenUrlTab !== urlTab) {
+    setSeenUrlTab(urlTab)
+    setTab(urlTab)
+  }
+  function selectTab(next: string, first: string) {
+    const written = next === first ? '' : next
+    /*
+     * Only the local tab: the URL is still the old one until the write
+     * below lands, and marking it "seen" early made the sync above snap the
+     * tab back for a tick. When it lands it agrees with `next`.
+     */
+    setTab(next)
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current)
+        if (written) params.set('tab', written)
+        else params.delete('tab')
+        return params
+      },
+      { replace: true },
+    )
+  }
 
   const query = useQuery({
     queryKey: queryKeys.users.detail(userId),
@@ -143,10 +185,10 @@ export function UserDetailPage() {
   if (query.isPending) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="User"
-          breadcrumbs={[{ label: 'Users', to: ROUTES.users }, { label: 'Loading…' }]}
-        />
+        <div className="flex flex-col gap-2">
+          <BackToDirectory />
+          <PageHeader title="User" />
+        </div>
         <LoadingState variant="detail" />
       </div>
     )
@@ -156,14 +198,10 @@ export function UserDetailPage() {
     const notFound = query.error instanceof NotFoundError
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="User"
-          breadcrumbs={[
-            { label: 'Users', to: ROUTES.users },
-            { label: notFound ? 'Not found' : 'Error' },
-          ]}
-          actions={<BackToDirectory />}
-        />
+        <div className="flex flex-col gap-2">
+          <BackToDirectory />
+          <PageHeader title="User" />
+        </div>
         {notFound ? (
           <NotFoundState
             title="User not found"
@@ -217,22 +255,20 @@ export function UserDetailPage() {
   return (
     <div className="space-y-6">
       {/*
-        No `title`: the record card below already shows the display name, and
-        printing it here as well put the same name twice in a row. The
-        breadcrumb and the back link stay — they are navigation, not a repeat
-        of the heading. The card's name is promoted to the page's `h1`.
+        No page title: the record card below already shows the display name
+        (promoted to the page's `h1`). Only the way back sits above it.
       */}
-      <PageHeader
-        breadcrumbs={[
-          { label: 'Users', to: ROUTES.users },
-          { label: user.identity.displayName },
-        ]}
-        actions={<BackToDirectory />}
-      />
+      <div className="flex flex-col">
+        <BackToDirectory />
+      </div>
 
       <Header user={user} />
 
-      <DetailTabs tabs={tabs} />
+      <DetailTabs
+        tabs={tabs}
+        value={tabs.some((candidate) => candidate.value === tab) ? tab : tabs[0]!.value}
+        onValueChange={(next) => selectTab(next, tabs[0]!.value)}
+      />
     </div>
   )
 }

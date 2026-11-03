@@ -1,7 +1,8 @@
 import type { z } from 'zod'
 
 import { apiClient } from '@/api/client'
-import type { CountPage } from '@/types/common'
+import { bangladeshDayBounds } from '@/lib/datetime'
+import type { CountPage, Pagination } from '@/types/common'
 import {
   diamondPackageListSchema,
   topUpRequestListSchema,
@@ -12,6 +13,17 @@ import {
   type TopUpRequest,
   type UpdatePackagePayload,
 } from '@/types/wallet'
+import {
+  MAX_WALLET_LIMIT,
+  walletTransactionDetailEnvelopeSchema,
+  walletTransactionListSchema,
+  WALLET_DIRECTIONS,
+  WALLET_SORTS,
+  isWalletTransactionType,
+  type WalletSummary,
+  type WalletTransaction,
+  type WalletTransactionDetail,
+} from '@/types/walletTransactions'
 
 /**
  * Diamond Wallet & Creator Economy API (plan.md §2, phase W1).
@@ -43,6 +55,8 @@ const REQUESTS = '/admin/wallet/requests'
 const PACKAGES = '/admin/wallet/packages'
 const ADJUST = '/admin/wallet/adjust'
 const ECONOMY = '/admin/settings/economy'
+/** Canonical. `/admin/transactions` is an identical alias and is never used. */
+const TRANSACTIONS = '/admin/wallet/transactions'
 
 /* ------------------------------------------------------------------ *
  * Top-up requests
@@ -214,4 +228,146 @@ export async function updateEconomySettings(
   payload: EconomySettingsPatch,
 ): Promise<void> {
   await apiClient.patch(ECONOMY, { body: { ...payload }, resource: 'economy-settings' })
+}
+
+/* ------------------------------------------------------------------ *
+ * The wallet ledger (plan.md §2, phase T1)
+ * ------------------------------------------------------------------ */
+
+/**
+ * What a screen asks for. Loose on purpose — it is read straight from a URL —
+ * and turned into what the API accepts by `walletTransactionParams`.
+ *
+ * Dates are **Bangladesh calendar days** (`yyyy-MM-dd`), the way an operator
+ * thinks about them; the API wants UTC instants.
+ *
+ * ⚠️ There is no `maxAmount`: the API ignores it (plan.md B1), and a control
+ * bound to it would filter nothing.
+ */
+export interface WalletTransactionQuery {
+  readonly page?: number | string | undefined
+  readonly limit?: number | string | undefined
+  readonly userId?: string | undefined
+  readonly type?: string | undefined
+  readonly direction?: string | undefined
+  readonly fromDate?: string | undefined
+  readonly toDate?: string | undefined
+  readonly minAmount?: number | string | undefined
+  readonly search?: string | undefined
+  readonly sort?: string | undefined
+}
+
+function positiveInt(value: number | string | undefined): number | undefined {
+  if (value === undefined || value === '') return undefined
+  const number = typeof value === 'number' ? value : Number(value.trim())
+  return Number.isInteger(number) && number >= 1 ? number : undefined
+}
+
+function trimmed(value: string | undefined): string | undefined {
+  const text = value?.trim()
+  return text ? text : undefined
+}
+
+/**
+ * The query string, built so it can only hold values the API accepts.
+ *
+ * ⚠️ **This route is strict where most here are lax.** Measured 2026-11-01,
+ * each of these is a `400 FST_ERR_VALIDATION`, not an ignored parameter:
+ * an empty `type` / `sort` / `minAmount` / `limit` / date; a lowercase enum;
+ * a CSV or repeated `type`; `limit` above 100; a non-integer; a date without a
+ * time or with an offset (`2026-10-29`, `+06:00`). One bad value in a pasted
+ * URL would otherwise fail the whole page.
+ *
+ * So: blanks are dropped, enums are upper-cased and checked, numbers must be
+ * whole, `limit` is clamped, and days become UTC bounds. Anything that still
+ * does not fit is left out rather than sent. (Only `userId` and `search` are
+ * ignored server-side when empty; they are dropped anyway.)
+ */
+export function walletTransactionParams(
+  query: WalletTransactionQuery,
+): Record<string, string | number> {
+  const params: Record<string, string | number> = {}
+
+  const page = positiveInt(query.page)
+  if (page) params['page'] = page
+
+  const limit = positiveInt(query.limit)
+  if (limit) params['limit'] = Math.min(limit, MAX_WALLET_LIMIT)
+
+  const userId = trimmed(query.userId)
+  if (userId) params['userId'] = userId
+
+  const type = trimmed(query.type)?.toUpperCase()
+  if (type && isWalletTransactionType(type)) params['type'] = type
+
+  const direction = trimmed(query.direction)?.toUpperCase()
+  if (direction && (WALLET_DIRECTIONS as readonly string[]).includes(direction)) {
+    params['direction'] = direction
+  }
+
+  const from = query.fromDate ? bangladeshDayBounds(query.fromDate.trim()) : null
+  if (from) params['startDate'] = from.start
+  const to = query.toDate ? bangladeshDayBounds(query.toDate.trim()) : null
+  if (to) params['endDate'] = to.end
+
+  /* Compared with the amount's size, sign ignored — measured. */
+  const minAmount = positiveInt(query.minAmount)
+  if (minAmount) params['minAmount'] = minAmount
+
+  const search = trimmed(query.search)
+  if (search) params['search'] = search
+
+  const sort = trimmed(query.sort)?.toLowerCase()
+  if (sort && (WALLET_SORTS as readonly string[]).includes(sort)) params['sort'] = sort
+
+  return params
+}
+
+export interface WalletTransactionPage {
+  readonly data: readonly WalletTransaction[]
+  readonly pagination: Pagination & { readonly hasMore?: boolean | undefined }
+  /** ⚠️ Ignores `direction` (plan.md B3) — read through `summaryFor`. */
+  readonly summary: WalletSummary
+}
+
+/**
+ * `GET /admin/wallet/transactions` — every diamond movement, newest first by
+ * default. A page past the end answers `[]` with the true total.
+ */
+export async function fetchWalletTransactions(
+  query: WalletTransactionQuery,
+  signal?: AbortSignal,
+): Promise<WalletTransactionPage> {
+  const response = await apiClient.get<z.infer<typeof walletTransactionListSchema>>(
+    TRANSACTIONS,
+    {
+      params: walletTransactionParams(query),
+      schema: walletTransactionListSchema,
+      resource: 'wallet-transactions',
+      ...(signal ? { signal } : {}),
+    },
+  )
+  return {
+    data: response.data,
+    pagination: response.pagination,
+    summary: response.summary,
+  }
+}
+
+/**
+ * `GET /admin/wallet/transactions/:id` — the row plus the account's current
+ * balance. An unknown id is `404 NOT_FOUND "Transaction not found."`.
+ */
+export async function fetchWalletTransaction(
+  id: string,
+  signal?: AbortSignal,
+): Promise<WalletTransactionDetail> {
+  const response = await apiClient.get<
+    z.infer<typeof walletTransactionDetailEnvelopeSchema>
+  >(`${TRANSACTIONS}/${encodeURIComponent(id)}`, {
+    schema: walletTransactionDetailEnvelopeSchema,
+    resource: 'wallet-transaction',
+    ...(signal ? { signal } : {}),
+  })
+  return response.data
 }

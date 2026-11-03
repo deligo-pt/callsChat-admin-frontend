@@ -50,7 +50,13 @@ export function DetailTabs({
               key={tab.value}
               value={tab.value}
               className={cn(
-                'touch-target rounded-md px-3 py-2 text-body text-foreground-muted',
+                /*
+                 * `flex-auto shrink-0`, not the primitive's `flex-1`: a zero
+                 * basis made the `w-max` list measure itself too narrow, and
+                 * at tablet widths the labels ran into each other. Sized by
+                 * their text, they never overlap and still fill the row.
+                 */
+                'touch-target flex-auto shrink-0 rounded-md px-3 py-2 text-body text-foreground-muted',
                 'data-[state=active]:bg-primary-soft data-[state=active]:text-primary-700',
                 'data-[state=active]:shadow-none',
               )}

@@ -119,7 +119,7 @@ export function BulkEmojiDialog({
       }
       added.push({
         key: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
-        file,
+        file: verdict.file,
         mimetype: verdict.mimetype,
         name: nameFromFile(file.name),
         shortcode: suggestShortcode(file.name),
@@ -267,7 +267,7 @@ export function BulkEmojiDialog({
               {rows.length > 0 ? 'Add more files' : 'Choose files'}
             </Button>
             <span className="text-caption text-foreground-muted">
-              Lottie (.json), PNG or WebP · up to {MAX_BULK} at a time
+              Lottie (.json or .lottie), PNG or WebP · up to {MAX_BULK} at a time
             </span>
             <input
               ref={input}

@@ -107,6 +107,16 @@ const EmojiPacksPage = lazy(() =>
     default: m.EmojiPacksPage,
   })),
 )
+const WalletTransactionsPage = lazy(() =>
+  import('@/features/walletLedger/WalletTransactionsPage').then((m) => ({
+    default: m.WalletTransactionsPage,
+  })),
+)
+const WalletTransactionPage = lazy(() =>
+  import('@/features/walletLedger/WalletTransactionPage').then((m) => ({
+    default: m.WalletTransactionPage,
+  })),
+)
 const GiftTransactionsPage = lazy(() =>
   import('@/features/ledger/GiftTransactionsPage').then((m) => ({
     default: m.GiftTransactionsPage,
@@ -119,6 +129,16 @@ const GiftCatalogPage = lazy(() =>
 )
 const HostsPage = lazy(() =>
   import('@/features/hosts/HostsPage').then((m) => ({ default: m.HostsPage })),
+)
+const LiveStreamsPage = lazy(() =>
+  import('@/features/liveStreams/LiveStreamsPage').then((m) => ({
+    default: m.LiveStreamsPage,
+  })),
+)
+const LiveRoomPage = lazy(() =>
+  import('@/features/liveStreams/LiveRoomPage').then((m) => ({
+    default: m.LiveRoomPage,
+  })),
 )
 const FeedbackListPage = lazy(() =>
   import('@/features/feedback/FeedbackListPage').then((m) => ({
@@ -364,8 +384,11 @@ const moduleRoutes: RouteObject[] = [
     ),
   },
 
+  /* Phase T0: the catalog moved to Platform; the G2 address still lands on it. */
+  { path: ROUTES.legacyGifts, element: <Navigate to={ROUTES.gifts} replace /> },
+
   /*
-   * Phase G2 — the gift catalog (plan.md §3.1).
+   * Phase G2 — the gift catalog (plan.md §3.1), in Platform since T0.
    *
    * ⚠️ The same read/write split as diamond packages: `walletsView` reads,
    * and every write inside gates itself on `giftsConfigure`, which is
@@ -379,6 +402,34 @@ const moduleRoutes: RouteObject[] = [
         resource="the gift catalog"
       >
         {suspended(<GiftCatalogPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Phase T2 — the wallet ledger (plan.md §4). `ledgerView`, like the gift
+   * ledger: ADMIN and Super Admin read every diamond movement.
+   */
+  {
+    path: ROUTES.walletTransactions,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.ledgerView}
+        resource="wallet transactions"
+      >
+        {suspended(<WalletTransactionsPage />)}
+      </RequirePermission>
+    ),
+  },
+  /* Phase T3 — one entry, deep-linkable. Same gate as the ledger. */
+  {
+    path: `${ROUTES.walletTransactions}/:transactionId`,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.ledgerView}
+        resource="wallet transactions"
+      >
+        {suspended(<WalletTransactionPage />)}
       </RequirePermission>
     ),
   },
@@ -434,6 +485,28 @@ const moduleRoutes: RouteObject[] = [
         resource="live hosts"
       >
         {suspended(<HostsPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Live stream management — the Live streams page (plan.md Live §5.1, L1).
+   * `live.view`: ADMIN and SUPER_ADMIN, as the guide says (L-B1 unmeasured).
+   */
+  {
+    path: ROUTES.liveStreams,
+    element: (
+      <RequirePermission permission={PERMISSIONS.liveView} resource="live streams">
+        {suspended(<LiveStreamsPage />)}
+      </RequirePermission>
+    ),
+  },
+  /* One room (plan.md Live §5.2, L2) — guarded identically. */
+  {
+    path: '/live-streams/:roomId',
+    element: (
+      <RequirePermission permission={PERMISSIONS.liveView} resource="live streams">
+        {suspended(<LiveRoomPage />)}
       </RequirePermission>
     ),
   },

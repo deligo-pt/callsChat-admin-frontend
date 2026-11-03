@@ -180,8 +180,12 @@ test('names the account once, not twice', async ({ page }) => {
   // Removing the h1 must not leave the page without a top-level heading.
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
 
-  // The breadcrumb still names the record — that is navigation, not a repeat.
-  await expect(page.getByRole('navigation', { name: /breadcrumb/i })).toContainText(
-    name!.trim(),
-  )
+  /*
+   * No breadcrumb since T4 (plan.md): it only repeated the way back, which is
+   * now the top-left "All users" link — so the name appears nowhere else.
+   */
+  await expect(page.getByRole('navigation', { name: /breadcrumb/i })).toHaveCount(0)
+  await expect(
+    page.getByRole('main').getByRole('link', { name: 'All users', exact: true }),
+  ).toHaveAttribute('href', '/users')
 })

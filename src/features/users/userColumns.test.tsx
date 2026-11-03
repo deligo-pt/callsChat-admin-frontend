@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import { renderWithProviders, screen, setViewport } from '@tests/render'
+import { renderWithSession, screen, setViewport } from '@tests/render'
 import { DataList } from '@/components/data'
+import { setSession } from '@/auth/tokenStore'
+import { signInMockAdmin } from '@/mocks/handlers/auth'
 import type { UserSummary } from '@/types/identity'
 
 import { userColumns } from './userColumns'
@@ -33,7 +35,7 @@ function user(overrides: Partial<UserSummary> = {}): UserSummary {
 }
 
 function renderList(rows: UserSummary[]) {
-  return renderWithProviders(
+  return renderWithSession(
     <DataList<UserSummary>
       rows={rows}
       columns={userColumns}
@@ -41,6 +43,15 @@ function renderList(rows: UserSummary[]) {
     />,
   )
 }
+
+beforeEach(() => {
+  signInMockAdmin('SUPER_ADMIN')
+  setSession({
+    accessToken: 'test-token',
+    refreshToken: 'test-refresh',
+    expiresAt: Date.now() + 60_000,
+  })
+})
 
 describe('user directory columns', () => {
   it('renders a table at lg and above', () => {

@@ -4,12 +4,14 @@ import { bootstrapHandlers } from './bootstrap'
 import { catalogHandlers } from './catalog'
 import { feedbackHandlers } from './feedback'
 import { hostHandlers } from './hosts'
+import { liveRoomHandlers } from './liveRooms'
 import { resourceHandlers } from './resources'
 import { searchHandlers } from './search'
 import { settingsHandlers } from './settings'
 import { staffHandlers } from './staff'
 import { verificationHandlers } from './verifications'
 import { walletHandlers } from './wallet'
+import { walletTransactionHandlers } from './walletTransactions'
 
 export const handlers = [
   ...authHandlers,
@@ -24,6 +26,7 @@ export const handlers = [
   ...feedbackHandlers,
   ...verificationHandlers,
   ...walletHandlers,
+  ...walletTransactionHandlers,
   ...catalogHandlers,
   /*
    * Also before `resourceHandlers`, and for a sharper reason than the others:
@@ -40,5 +43,7 @@ export const handlers = [
    * routes in front of anything generic that is added later.
    */
   ...hostHandlers,
+  /* Live rooms (plan.md L0) — also under `/admin/live/*`, also before the generic handlers. */
+  ...liveRoomHandlers,
   ...resourceHandlers,
 ]

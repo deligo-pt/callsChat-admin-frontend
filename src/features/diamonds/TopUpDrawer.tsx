@@ -1,7 +1,15 @@
+import { useQuery } from '@tanstack/react-query'
+import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
+import { Link, useLocation } from 'react-router'
 import { toast } from 'sonner'
 
 import { isAppError } from '@/api/errors'
+import { queryKeys } from '@/api/queryKeys'
+import { fetchWalletTransactions } from '@/api/wallet'
+import { ROUTES } from '@/app/routes'
+import { PERMISSIONS } from '@/auth/permissions'
+import { useCan } from '@/auth/useAuth'
 import { DateTime } from '@/components/display'
 import { ConfirmActionDialog } from '@/components/feedback'
 import { Button } from '@/components/ui/button'
@@ -87,6 +95,54 @@ function payerName(record: TopUpRequest): string {
   )
 }
 
+/**
+ * plan.md T5 — from an approved payment to the wallet row it wrote.
+ *
+ * Approval writes one top-up row whose `refId` is this request's id, and the
+ * ledger's `search` matches `refId` (measured), so one small read finds it
+ * and the button opens that entry directly — no page of results with a raw
+ * id in its search box. No `type` filter: the undocumented
+ * `TOP_UP_PURCHASE` (B4) may carry it too.
+ */
+function SeeWalletEntry({ requestId }: { requestId: string }) {
+  /* "Back" on the entry returns to this queue, filters and all. */
+  const { pathname, search } = useLocation()
+  const lookup = useQuery({
+    queryKey: [...queryKeys.walletTransactions.all, 'for-request', requestId],
+    queryFn: ({ signal }) =>
+      fetchWalletTransactions({ search: requestId, limit: 5 }, signal),
+    staleTime: 60_000,
+  })
+  const entry = lookup.data?.data.find((row) => row.refId === requestId)
+
+  if (lookup.isPending) {
+    return (
+      <Button variant="outline" size="sm" disabled className="shrink-0">
+        Finding the wallet entry…
+      </Button>
+    )
+  }
+  if (!entry) {
+    return (
+      <p className="text-caption text-foreground-muted">
+        {lookup.isError
+          ? 'The wallet entry could not be looked up.'
+          : 'No wallet entry was found for this payment.'}
+      </p>
+    )
+  }
+  return (
+    <Button variant="outline" size="sm" asChild className="shrink-0">
+      <Link
+        to={ROUTES.walletTransaction(entry.id)}
+        state={{ backTo: `${pathname}${search}` }}
+      >
+        See wallet entry <ArrowRight />
+      </Link>
+    </Button>
+  )
+}
+
 export interface TopUpDrawerProps {
   request: TopUpRequest | null
   onClose: () => void
@@ -101,6 +157,9 @@ export function TopUpDrawer({ request, onClose }: TopUpDrawerProps) {
   const name = request ? payerName(request) : ''
   const pending = (request?.status ?? '').toUpperCase() === 'PENDING'
   const manual = isManualMethod(request?.method)
+  /* plan.md T5 — only with `ledger.view`: the queue alone does not grant it. */
+  const approved = (request?.status ?? '').toUpperCase() === 'APPROVED'
+  const canOpenLedger = useCan(PERMISSIONS.ledgerView)
 
   function finish(message: string) {
     setConfirming(null)
@@ -260,10 +319,15 @@ export function TopUpDrawer({ request, onClose }: TopUpDrawerProps) {
              * operator who sees no controls cannot tell whether the decision
              * was already made or whether their role is too low.
              */
-            <p className="border-t border-border px-4 py-4 text-caption text-foreground-muted">
-              This request has already been reviewed, so it cannot be approved or
-              rejected again.
-            </p>
+            <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-caption text-foreground-muted">
+                This request has already been reviewed, so it cannot be approved or
+                rejected again.
+              </p>
+              {approved && canOpenLedger ? (
+                <SeeWalletEntry requestId={request.id} />
+              ) : null}
+            </div>
           ) : null}
         </SheetContent>
       </Sheet>

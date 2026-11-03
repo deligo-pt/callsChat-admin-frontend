@@ -7,7 +7,9 @@ import { MAX_PAGE_SIZE, type SortOrder } from '@/types/common'
 import {
   DEFAULT_SORT_BY,
   DEFAULT_SORT_ORDER,
+  HOST_FILTER_VALUES,
   SORTABLE_FIELDS,
+  type HostFilter,
   type UserListParams,
 } from './listParams'
 
@@ -34,7 +36,19 @@ export const FILTER_KEYS = [
   'role',
   'accountType',
   'hasRestrictions',
+  'host',
 ] as const
+
+/**
+ * Values the API would misread are dropped on the way in, so a hand-edited or
+ * old link can never show a filter chip that filters nothing — or, worse,
+ * the opposite of what it says.
+ */
+const ACCEPTED: Partial<Record<FilterKey, readonly string[]>> = {
+  /* Any non-empty value means "has restrictions" live (`UNSUPPORTED_FILTERS`). */
+  hasRestrictions: ['true'],
+  host: HOST_FILTER_VALUES,
+}
 
 export type FilterKey = (typeof FILTER_KEYS)[number]
 
@@ -44,7 +58,10 @@ function readInt(params: URLSearchParams, key: string, fallback: number): number
 }
 
 export interface UseUserListParams {
+  /** What is sent to `GET /admin/users` — never the Host filter. */
   readonly params: UserListParams
+  /** Applied by the browser, not the API (`useUserDirectory`). */
+  readonly hostFilter: HostFilter | undefined
   readonly filters: Readonly<Partial<Record<FilterKey, string>>>
   readonly setFilter: (key: FilterKey, value: string | undefined) => void
   readonly setPage: (page: number) => void
@@ -61,10 +78,16 @@ export function useUserListParams(): UseUserListParams {
     const result: Partial<Record<FilterKey, string>> = {}
     for (const key of FILTER_KEYS) {
       const value = searchParams.get(key)?.trim()
-      if (value) result[key] = value
+      const accepted = ACCEPTED[key]
+      if (value && (!accepted || accepted.includes(value))) result[key] = value
     }
     return result
   }, [searchParams])
+
+  const serverFilters = useMemo(() => {
+    const { host: _host, ...rest } = filters
+    return rest
+  }, [filters])
 
   const params = useMemo<UserListParams>(() => {
     const sortBy = searchParams.get('sortBy') ?? DEFAULTS.sortBy
@@ -77,9 +100,9 @@ export function useUserListParams(): UseUserListParams {
       // Guard the allowlist so a hand-edited URL cannot 400 the whole page.
       sortBy: SORTABLE_FIELDS.includes(sortBy) ? sortBy : DEFAULTS.sortBy,
       sortOrder: sortOrder satisfies SortOrder,
-      ...filters,
+      ...serverFilters,
     }
-  }, [searchParams, filters])
+  }, [searchParams, serverFilters])
 
   /**
    * All writes go through here so one rule is enforced everywhere: changing
@@ -155,6 +178,7 @@ export function useUserListParams(): UseUserListParams {
 
   return {
     params,
+    hostFilter: filters.host as HostFilter | undefined,
     filters,
     setFilter,
     setPage,

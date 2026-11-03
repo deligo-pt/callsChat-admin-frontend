@@ -190,7 +190,7 @@ export function EmojiEditorDialog({
                 ? { file: file.chosen.file, badge: fileBadge(file.chosen.mimetype) }
                 : null
             }
-            hint="Lottie (.json), PNG or WebP."
+            hint="Lottie (.json or .lottie), PNG or WebP."
             accept={EMOJI_FILE_ACCEPT}
             disabled={busy}
             progress={file.progress}

@@ -1,6 +1,10 @@
-import { Info } from 'lucide-react'
+import { Info, Wallet } from 'lucide-react'
+import { Link } from 'react-router'
 
 import { isAppError } from '@/api/errors'
+import { ROUTES } from '@/app/routes'
+import { PERMISSIONS } from '@/auth/permissions'
+import { useCan } from '@/auth/useAuth'
 import {
   AppliedFilterChips,
   DataList,
@@ -9,7 +13,10 @@ import {
   type AppliedFilter,
 } from '@/components/data'
 import { PageHeader } from '@/components/display'
+import { useLiveRoomTitle } from '@/components/live'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { bangladeshDay } from '@/lib/datetime'
 import type { GiftTransaction } from '@/types/catalog'
 
 import { ContextCell, DiamondsCell, GiftCell, PartyCell, SentCell } from './cells'
@@ -47,9 +54,56 @@ function partyName(
   key: LedgerFilterKey,
   id: string,
 ): string {
-  if (key === 'contextId') return id
+  /* A room is named by `roomChipName` — never its raw id. */
+  if (key === 'contextId') return 'This live room'
   const party = key === 'senderId' ? rows[0]?.sender : rows[0]?.receiver
   return party?.id === id && party.displayName?.trim() ? party.displayName.trim() : id
+}
+
+/**
+ * plan.md T5 — from a gift to the sender's wallet. ⚠️ **There is no shared
+ * id** (R2: the wallet row's `refId` is the gift slug), so this opens the
+ * sender's gift spends on that Bangladesh day, and says so — it is the
+ * matching entries, not one proven entry. Free gifts (0 Diamonds) still
+ * write a wallet row, so the link is offered for those too.
+ *
+ * No permission check here: this page is itself behind `ledger.view`, the
+ * same key the wallet ledger needs.
+ */
+function SenderWalletLink({ row }: { row: GiftTransaction }) {
+  const day = bangladeshDay(row.createdAt)
+  if (!row.senderId || !day) return null
+  const who = row.sender?.displayName?.trim() || 'the sender'
+  const label = "Sender's wallet that day"
+  /*
+   * Icon-only in the table (a text button squeezed From / To into three
+   * lines at 1440), with the words on cards, where the actions get a row
+   * of their own. The table switches in at `lg`, as `DataList` does.
+   */
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="sm" asChild className="lg:size-9 lg:p-0">
+          <Link
+            to={ROUTES.walletLedger({
+              userId: row.senderId,
+              type: 'GIFT_SENT',
+              fromDate: day,
+              toDate: day,
+            })}
+            aria-label={`Wallet entries for gifts ${who} sent that day`}
+          >
+            <Wallet aria-hidden="true" />
+            <span className="lg:sr-only">{label}</span>
+          </Link>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64">
+        {label}. No shared id links the two records, so this lists the sender&apos;s
+        gift spends on the same Bangladesh day.
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 export function GiftTransactionsPage() {
@@ -70,12 +124,20 @@ export function GiftTransactionsPage() {
   const pagination = list.data?.pagination
   const filtered = activeFilterCount > 0
 
+  /* The room's title for its chip (plan.md Live L4); words, never the id. */
+  const canViewLive = useCan(PERMISSIONS.liveView)
+  const roomTitle = useLiveRoomTitle(filters.contextId ?? '', canViewLive)
+  const roomChipName =
+    roomTitle.data === null
+      ? 'A room that no longer exists'
+      : (roomTitle.data ?? 'This live room')
+
   const applied: AppliedFilter[] = (
     Object.entries(filters) as [LedgerFilterKey, string][]
   ).map(([key, id]) => ({
     id: key,
     label: FILTER_LABELS[key],
-    value: partyName(rows, key, id),
+    value: key === 'contextId' ? roomChipName : partyName(rows, key, id),
   }))
 
   /*
@@ -140,7 +202,12 @@ export function GiftTransactionsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Gift transactions"
-        description="Every gift sent between users, newest first. Top-ups and balance adjustments are not here — the backend has no ledger for them yet."
+        description="Every gift sent between users, newest first, with who received it and where. Top-ups, adjustments and every other diamond movement are in Wallet transactions."
+        actions={
+          <Button asChild variant="outline">
+            <Link to={ROUTES.walletTransactions}>Wallet transactions</Link>
+          </Button>
+        }
       />
 
       {/*
@@ -170,6 +237,7 @@ export function GiftTransactionsPage() {
         columns={columns}
         rowKey={(row) => row.id}
         rowLabel={(row) => row.snapshotName ?? row.id}
+        rowActions={(row) => <SenderWalletLink row={row} />}
         loading={list.isPending}
         error={
           list.isError

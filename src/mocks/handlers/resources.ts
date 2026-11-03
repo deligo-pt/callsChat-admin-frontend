@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw'
 
 import type { Paginated } from '@/types/common'
+import { restrictionOf } from '@/types/identity'
 
 import { queryCollection, type QueryConfig } from '../query'
 import {
@@ -65,13 +66,16 @@ function listHandler<TRow extends object>(
   path: string,
   rows: readonly TRow[],
   config: QueryConfig<TRow> = {},
+  /** Shapes each row as the live endpoint sends it, after filtering. */
+  present: (row: TRow) => unknown = (row) => row,
 ) {
   return http.get(`${API_PREFIX}${path}`, async ({ request }) => {
     const scenario = await applyScenario()
     if (scenario) return scenario
     if (isEmptyScenario()) return HttpResponse.json(EMPTY)
 
-    return HttpResponse.json(queryCollection(new URL(request.url), rows, config))
+    const page = queryCollection(new URL(request.url), rows, config)
+    return HttpResponse.json({ ...page, data: page.data.map(present) })
   })
 }
 
@@ -100,17 +104,38 @@ export const resourceHandlers = [
    * `restrictionType` are deliberately absent so the mock cannot make a
    * filter appear to work that would silently no-op in production.
    */
-  listHandler('/admin/users', users, {
-    searchFields: ['id', 'displayName', 'username', 'email'],
-    sortFields: ['createdAt', 'displayName', 'status', 'lastActiveAt'],
-    filters: {
-      status: (row, value) => row.status === value,
-      role: (row, value) => row.role === value,
-      accountType: (row, value) => row.accountType === value,
-      hasRestrictions: (row, value) =>
-        String(row.activeRestrictions.length > 0) === value,
+  listHandler(
+    '/admin/users',
+    users,
+    {
+      searchFields: ['id', 'displayName', 'username', 'email'],
+      sortFields: ['createdAt', 'displayName', 'status', 'lastActiveAt'],
+      filters: {
+        status: (row, value) => row.status === value,
+        role: (row, value) => row.role === value,
+        accountType: (row, value) => row.accountType === value,
+        /* Live: any non-empty value — `false` included — means "has some". */
+        hasRestrictions: (row) => row.activeRestrictions.length > 0,
+      },
     },
-  }),
+    (user) => ({
+      ...user,
+      /*
+       * Live since 2026-11-01: each restriction is a record, not the bare
+       * capability the seed stores (types/identity.ts, `listRestrictionSchema`).
+       */
+      activeRestrictions: user.activeRestrictions.map((entry, index) => {
+        const { capability } = restrictionOf(entry)
+        return {
+          id: `rst_${user.id}_${index}`,
+          capability,
+          reason: 'Repeated unsolicited gifting reports',
+          startsAt: user.lastActiveAt,
+          expiresAt: null,
+        }
+      }),
+    }),
+  ),
   /*
    * `GET /admin/users/export` — real CSV, honouring the SAME filters as the
    * list, exactly as the live endpoint does. Returning JSON here would leave
@@ -174,7 +199,11 @@ export const resourceHandlers = [
         columns
           .map((column) =>
             column === 'activeRestrictions'
-              ? escape(row.activeRestrictions.join('|'))
+              ? escape(
+                  row.activeRestrictions
+                    .map((entry) => restrictionOf(entry).capability)
+                    .join('|'),
+                )
               : escape((row as unknown as Record<string, unknown>)[column]),
           )
           .join(','),
@@ -434,6 +463,35 @@ export const resourceHandlers = [
       return errorResponse(400, 'FST_ERR_VALIDATION', 'body/reason Required')
     }
     return HttpResponse.json({ success: true, message: 'User banned.' })
+  }),
+
+  /*
+   * `POST /:id/status` — the Postman "Unified Status Mutation". The panel uses
+   * it only to activate. ⚠️ Its real enum and rules are unmeasured; the mock
+   * accepts the five account states and requires a status.
+   */
+  http.post(`${API_PREFIX}/admin/users/:id/status`, async ({ request }) => {
+    const scenario = await applyScenario()
+    if (scenario) return scenario
+    const body = (await request.json()) as { status?: string }
+    const STATUSES = [
+      'ACTIVE',
+      'INACTIVE',
+      'SUSPENDED',
+      'BANNED',
+      'PENDING_VERIFICATION',
+    ]
+    if (!body.status) {
+      return errorResponse(400, 'FST_ERR_VALIDATION', 'body/status Required')
+    }
+    if (!STATUSES.includes(body.status)) {
+      return errorResponse(
+        400,
+        'FST_ERR_VALIDATION',
+        `body/status Invalid enum value. Expected ${STATUSES.map((s) => `'${s}'`).join(' | ')}, received '${body.status}'`,
+      )
+    }
+    return HttpResponse.json({ success: true, message: 'User status updated.' })
   }),
 
   http.post(`${API_PREFIX}/admin/users/:id/restore`, async ({ request }) => {

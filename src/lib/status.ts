@@ -43,6 +43,7 @@ export type StatusDomain =
   | 'verification'
   | 'announcement'
   | 'announcementPriority'
+  | 'liveRoom'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -339,6 +340,20 @@ const ANNOUNCEMENT_PRIORITY: DomainMap = {
   URGENT: { label: 'Urgent', tone: 'danger' },
 }
 
+/**
+ * A live room — `/admin/live/rooms` (plan.md Live §5).
+ *
+ * `LIVE` is `success`: on air is the state the room is for. `PAUSED` is
+ * `warning` — the host has dropped and the room is waiting on them, which is
+ * the state a stale-stream sweep exists to clear. `ENDED` is `neutral`: a
+ * finished stream is not a problem.
+ */
+const LIVE_ROOM: DomainMap = {
+  LIVE: { label: 'Live', tone: 'success' },
+  PAUSED: { label: 'Paused', tone: 'warning' },
+  ENDED: { label: 'Ended', tone: 'neutral' },
+}
+
 const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   user: USER,
   restriction: RESTRICTION,
@@ -361,6 +376,7 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   verification: VERIFICATION,
   announcement: ANNOUNCEMENT,
   announcementPriority: ANNOUNCEMENT_PRIORITY,
+  liveRoom: LIVE_ROOM,
 }
 
 /** The three states the maintenance card and the global banner can be in. */

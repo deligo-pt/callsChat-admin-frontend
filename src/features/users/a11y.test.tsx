@@ -1,8 +1,10 @@
-import { describe, it } from 'vitest'
+import { beforeEach, describe, it } from 'vitest'
 
 import { DataList } from '@/components/data'
 import { expectNoA11yViolations } from '@tests/a11y'
-import { renderWithProviders, setViewport } from '@tests/render'
+import { renderWithSession, setViewport } from '@tests/render'
+import { setSession } from '@/auth/tokenStore'
+import { signInMockAdmin } from '@/mocks/handlers/auth'
 import type { UserSummary } from '@/types/identity'
 
 import { userColumns } from './userColumns'
@@ -37,10 +39,19 @@ function user(overrides: Partial<UserSummary> = {}): UserSummary {
 
 const rows = [user(), user({ id: 'usr_000002', status: 'SUSPENDED', isHost: false })]
 
+beforeEach(() => {
+  signInMockAdmin('SUPER_ADMIN')
+  setSession({
+    accessToken: 'test-token',
+    refreshToken: 'test-refresh',
+    expiresAt: Date.now() + 60_000,
+  })
+})
+
 describe('user directory accessibility', () => {
   it('has no violations as a table at lg and above', async () => {
     setViewport(1440)
-    const { container } = renderWithProviders(
+    const { container } = renderWithSession(
       <DataList<UserSummary>
         rows={rows}
         columns={userColumns}
@@ -55,7 +66,7 @@ describe('user directory accessibility', () => {
 
   it('has no violations as cards below lg', async () => {
     setViewport(390)
-    const { container } = renderWithProviders(
+    const { container } = renderWithSession(
       <DataList<UserSummary>
         rows={rows}
         columns={userColumns}
@@ -69,7 +80,7 @@ describe('user directory accessibility', () => {
 
   it('has no violations in the empty state', async () => {
     setViewport(1440)
-    const { container } = renderWithProviders(
+    const { container } = renderWithSession(
       <DataList<UserSummary>
         rows={[]}
         columns={userColumns}
@@ -83,7 +94,7 @@ describe('user directory accessibility', () => {
 
   it('has no violations in the error state', async () => {
     setViewport(1440)
-    const { container } = renderWithProviders(
+    const { container } = renderWithSession(
       <DataList<UserSummary>
         rows={[]}
         columns={userColumns}
@@ -97,7 +108,7 @@ describe('user directory accessibility', () => {
 
   it('has no violations in the loading state', async () => {
     setViewport(1440)
-    const { container } = renderWithProviders(
+    const { container } = renderWithSession(
       <DataList<UserSummary>
         rows={[]}
         columns={userColumns}

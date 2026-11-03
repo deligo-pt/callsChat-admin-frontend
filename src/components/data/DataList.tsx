@@ -23,6 +23,12 @@ export interface DataListProps<TRow> {
   onSortChange?: (sort: SortState) => void
   onRowClick?: (row: TRow) => void
   rowActions?: (row: TRow) => ReactNode
+  /**
+   * Keep each card's "View <name>" open control even with `rowActions`. Off
+   * by default — on most lists the actions replace it. On for a list whose
+   * actions are a menu of *other* places, so opening the row stays one tap.
+   */
+  keepCardOpenControl?: boolean
 
   emptyTitle?: string
   emptyDescription?: string
@@ -56,6 +62,7 @@ export function DataList<TRow>({
   onSortChange,
   onRowClick,
   rowActions,
+  keepCardOpenControl = false,
   emptyTitle,
   emptyDescription,
   emptyAction,
@@ -114,6 +121,7 @@ export function DataList<TRow>({
       {...(rowLabel ? { rowLabel } : {})}
       {...(onRowClick ? { onRowClick } : {})}
       {...(rowActions ? { rowActions } : {})}
+      keepOpenControl={keepCardOpenControl}
       {...(className ? { className } : {})}
     />
   )

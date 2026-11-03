@@ -1,0 +1,1228 @@
+{
+  "limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvtz8b007601pbca2at111",
+      "cmvphnfvq00lp01p6b7vt02m0",
+      "cmvphjspl00ll01p6y8e4o5dt",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphfdp600lh01p6mkvx9i5r",
+      "cmvphembu00lf01p6w8anwxy6",
+      "cmvpheix700ld01p6rw2n0kfn",
+      "cmvphecif00lb01p6j48mc1th",
+      "cmvphdo0y00l601p6mcvviucq",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvnzfmn100xh01pj5mwuqjwu",
+      "cmvnzfimq00xf01pjllft65xj",
+      "cmvnz41ra00wr01pj3g5t83n1",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "limit=100&sort=asc": {
+    "s": 200,
+    "ids": [
+      "cmvnso09g00a801pjnuejrdgs",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvnz41ra00wr01pj3g5t83n1",
+      "cmvnzfimq00xf01pjllft65xj",
+      "cmvnzfmn100xh01pj5mwuqjwu",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvphdo0y00l601p6mcvviucq",
+      "cmvphecif00lb01p6j48mc1th",
+      "cmvpheix700ld01p6rw2n0kfn",
+      "cmvphembu00lf01p6w8anwxy6",
+      "cmvphfdp600lh01p6mkvx9i5r",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphjspl00ll01p6y8e4o5dt",
+      "cmvphnfvq00lp01p6b7vt02m0",
+      "cmvqvtz8b007601pbca2at111",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvumww007901pblznxde6a",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1qbqo01i501ta3w4e0d1e"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "type=TOP_UP&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvqvumww007901pblznxde6a"
+    ],
+    "pagination": {
+      "total": 4,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 4,
+      "totalVolumeDiamonds": 7760,
+      "totalCreditDiamonds": 7760,
+      "totalDebitDiamonds": 0
+    }
+  },
+  "type=GIFT_SENT&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvphnfvq00lp01p6b7vt02m0",
+      "cmvphjspl00ll01p6y8e4o5dt",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphfdp600lh01p6mkvx9i5r",
+      "cmvphembu00lf01p6w8anwxy6",
+      "cmvpheix700ld01p6rw2n0kfn",
+      "cmvphecif00lb01p6j48mc1th",
+      "cmvphdo0y00l601p6mcvviucq",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvnzfmn100xh01pj5mwuqjwu",
+      "cmvnzfimq00xf01pjllft65xj",
+      "cmvnz41ra00wr01pj3g5t83n1",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 39,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 39,
+      "totalVolumeDiamonds": 4120,
+      "totalCreditDiamonds": 0,
+      "totalDebitDiamonds": 4120
+    }
+  },
+  "type=ADMIN_ADJUSTMENT&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvtz8b007601pbca2at111"
+    ],
+    "pagination": {
+      "total": 11,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 11,
+      "totalVolumeDiamonds": 5362,
+      "totalCreditDiamonds": 5361,
+      "totalDebitDiamonds": 1
+    }
+  },
+  "type=REFUND": {
+    "s": 200,
+    "ids": [],
+    "pagination": {
+      "total": 0,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 0,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 0,
+      "totalVolumeDiamonds": 0,
+      "totalCreditDiamonds": 0,
+      "totalDebitDiamonds": 0
+    }
+  },
+  "direction=CREDIT&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a",
+      "cmvqvtz8b007601pbca2at111"
+    ],
+    "pagination": {
+      "total": 19,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 19,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "direction=DEBIT&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvqvufef007701pbghw2pxse"
+    ],
+    "pagination": {
+      "total": 17,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 17,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "type=GIFT_SENT&direction=CREDIT&limit=100": {
+    "s": 200,
+    "ids": [],
+    "pagination": {
+      "total": 0,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 0,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 0,
+      "totalVolumeDiamonds": 4120,
+      "totalCreditDiamonds": 0,
+      "totalDebitDiamonds": 4120
+    }
+  },
+  "userId=cmv5jz04e000201o5mtu3alad&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi"
+    ],
+    "pagination": {
+      "total": 17,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 17,
+      "totalVolumeDiamonds": 6699,
+      "totalCreditDiamonds": 6649,
+      "totalDebitDiamonds": 50
+    }
+  },
+  "userId=nobody": {
+    "s": 200,
+    "ids": [],
+    "pagination": {
+      "total": 0,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 0,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 0,
+      "totalVolumeDiamonds": 0,
+      "totalCreditDiamonds": 0,
+      "totalDebitDiamonds": 0
+    }
+  },
+  "userId=&limit=5": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 1,
+      "limit": 5,
+      "totalPages": 12,
+      "hasMore": true
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "startDate=2026-10-29T09:40:39.786Z&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5"
+    ],
+    "pagination": {
+      "total": 29,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 29,
+      "totalVolumeDiamonds": 11489,
+      "totalCreditDiamonds": 7389,
+      "totalDebitDiamonds": 4100
+    }
+  },
+  "endDate=2026-10-29T09:40:39.786Z&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvtz8b007601pbca2at111",
+      "cmvphnfvq00lp01p6b7vt02m0",
+      "cmvphjspl00ll01p6y8e4o5dt",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphfdp600lh01p6mkvx9i5r",
+      "cmvphembu00lf01p6w8anwxy6",
+      "cmvpheix700ld01p6rw2n0kfn",
+      "cmvphecif00lb01p6j48mc1th",
+      "cmvphdo0y00l601p6mcvviucq",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvnzfmn100xh01pj5mwuqjwu",
+      "cmvnzfimq00xf01pjllft65xj",
+      "cmvnz41ra00wr01pj3g5t83n1",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 31,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 31,
+      "totalVolumeDiamonds": 6302,
+      "totalCreditDiamonds": 6281,
+      "totalDebitDiamonds": 21
+    }
+  },
+  "startDate=2026-11-01T00:00:00.000Z&endDate=2026-10-01T00:00:00.000Z": {
+    "s": 200,
+    "ids": [],
+    "pagination": {
+      "total": 0,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 0,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 0,
+      "totalVolumeDiamonds": 0,
+      "totalCreditDiamonds": 0,
+      "totalDebitDiamonds": 0
+    }
+  },
+  "startDate=2026-10-29T00:00:00Z&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5"
+    ],
+    "pagination": {
+      "total": 29,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 29,
+      "totalVolumeDiamonds": 11489,
+      "totalCreditDiamonds": 7389,
+      "totalDebitDiamonds": 4100
+    }
+  },
+  "minAmount=100&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a"
+    ],
+    "pagination": {
+      "total": 14,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 14,
+      "totalVolumeDiamonds": 17220,
+      "totalCreditDiamonds": 13260,
+      "totalDebitDiamonds": 3960
+    }
+  },
+  "minAmount=1&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvtz8b007601pbca2at111"
+    ],
+    "pagination": {
+      "total": 36,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 36,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "maxAmount=10&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvtz8b007601pbca2at111",
+      "cmvphnfvq00lp01p6b7vt02m0",
+      "cmvphjspl00ll01p6y8e4o5dt",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphfdp600lh01p6mkvx9i5r",
+      "cmvphembu00lf01p6w8anwxy6",
+      "cmvpheix700ld01p6rw2n0kfn",
+      "cmvphecif00lb01p6j48mc1th",
+      "cmvphdo0y00l601p6mcvviucq",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvnzfmn100xh01pj5mwuqjwu",
+      "cmvnzfimq00xf01pjllft65xj",
+      "cmvnz41ra00wr01pj3g5t83n1",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "search=developer&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi"
+    ],
+    "pagination": {
+      "total": 17,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 17,
+      "totalVolumeDiamonds": 6699,
+      "totalCreditDiamonds": 6649,
+      "totalDebitDiamonds": 50
+    }
+  },
+  "search=BKASH&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvsl453i00ml01phdnsg27lg"
+    ],
+    "pagination": {
+      "total": 3,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 3,
+      "totalVolumeDiamonds": 7660,
+      "totalCreditDiamonds": 7660,
+      "totalDebitDiamonds": 0
+    }
+  },
+  "search=gift-heart_icon&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 22,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 22,
+      "totalVolumeDiamonds": 4120,
+      "totalCreditDiamonds": 0,
+      "totalDebitDiamonds": 4120
+    }
+  },
+  "search=%25&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvtz8b007601pbca2at111",
+      "cmvphnfvq00lp01p6b7vt02m0",
+      "cmvphjspl00ll01p6y8e4o5dt",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphfdp600lh01p6mkvx9i5r",
+      "cmvphembu00lf01p6w8anwxy6",
+      "cmvpheix700ld01p6rw2n0kfn",
+      "cmvphecif00lb01p6j48mc1th",
+      "cmvphdo0y00l601p6mcvviucq",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvnzfmn100xh01pj5mwuqjwu",
+      "cmvnzfimq00xf01pjllft65xj",
+      "cmvnz41ra00wr01pj3g5t83n1",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "search=_&limit=100": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i",
+      "cmvx1bybx01h001tatrvr2vko",
+      "cmvx1bw7t01gx01tak1nmgu8a",
+      "cmvx1blmy01gu01ta7u1mfhkj",
+      "cmvx017pa01ge01tal8aqd82e",
+      "cmvwzsi0m01fv01tafr599gms",
+      "cmvwzsdmk01fs01tajg5lwgva",
+      "cmvwzs26901fp01taf42w5nln",
+      "cmvwzmkzm01fc01tavwotm7ua",
+      "cmvwzmeqv01f901taajd1bn7s",
+      "cmvwzli8001f501ta7dwd6scb",
+      "cmvw1fq40008q01mw0vnpi20n",
+      "cmvw07fyn008h01mw0d56qmet",
+      "cmvw00sx4006r01mwcueg4myx",
+      "cmvvzvwwr006q01mwrs9bpmpl",
+      "cmvvzuidq006p01mw29iedllu",
+      "cmvtpqtfh00we01ph7tuy41u2",
+      "cmvtpqhs200wb01phdf24bxz6",
+      "cmvtpq0lg00w801phs5y587t1",
+      "cmvtnufmj00vs01phivis13td",
+      "cmvtntfz900vp01phwm1wj3pb",
+      "cmvtctmtt00na01phbty261xo",
+      "cmvtctae400n901phu65z01n7",
+      "cmvtct06c00n801phvhd40ell",
+      "cmvtcrx7u00n601phdiyx1jp5",
+      "cmvsl6o9v00mz01phkda4i479",
+      "cmvsl6j0g00mw01phjvcijlra",
+      "cmvsl6bj900mu01phfv7wivkk",
+      "cmvsl453i00ml01phdnsg27lg",
+      "cmvskr5z800m901phirv2yjhi",
+      "cmvqvumww007901pblznxde6a",
+      "cmvqvufef007701pbghw2pxse",
+      "cmvqvtz8b007601pbca2at111",
+      "cmvphnfvq00lp01p6b7vt02m0",
+      "cmvphjspl00ll01p6y8e4o5dt",
+      "cmvphjbf800lj01p6v65fmd38",
+      "cmvphfdp600lh01p6mkvx9i5r",
+      "cmvphembu00lf01p6w8anwxy6",
+      "cmvpheix700ld01p6rw2n0kfn",
+      "cmvphecif00lb01p6j48mc1th",
+      "cmvphdo0y00l601p6mcvviucq",
+      "cmvphd1sx00l401p6wo6jdat5",
+      "cmvnzfmn100xh01pj5mwuqjwu",
+      "cmvnzfimq00xf01pjllft65xj",
+      "cmvnz41ra00wr01pj3g5t83n1",
+      "cmvnz3txl00wp01pj8awls6fh",
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 1,
+      "limit": 100,
+      "totalPages": 1,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "search=zzzz": {
+    "s": 200,
+    "ids": [],
+    "pagination": {
+      "total": 0,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 0,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 0,
+      "totalVolumeDiamonds": 0,
+      "totalCreditDiamonds": 0,
+      "totalDebitDiamonds": 0
+    }
+  },
+  "search=&limit=5": {
+    "s": 200,
+    "ids": [
+      "cmvx1qbqo01i501ta3w4e0d1e",
+      "cmvx1lwcz01hu01tafqkj6zfs",
+      "cmvx1fyga01hj01tay3mji105",
+      "cmvx1e9jl01hg01ta8opdxwl1",
+      "cmvx1c1ab01h301tau5vt7m4i"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 1,
+      "limit": 5,
+      "totalPages": 12,
+      "hasMore": true
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "limit=10&page=6": {
+    "s": 200,
+    "ids": [
+      "cmvntpn4400cq01pjjacdrk4h",
+      "cmvntpg2y00co01pjv2w5wy3t",
+      "cmvnsz6d100b501pj06119ck2",
+      "cmvnsyy4400b301pj702lzu87",
+      "cmvnsxkvj00aw01pjo20w8ddv",
+      "cmvnsotk900ae01pjbs14ksfm",
+      "cmvnsol4500ac01pjbf8zyaix",
+      "cmvnsoc3c00aa01pjbkadffu0",
+      "cmvnso09g00a801pjnuejrdgs"
+    ],
+    "pagination": {
+      "total": 59,
+      "page": 6,
+      "limit": 10,
+      "totalPages": 6,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "page=99": {
+    "s": 200,
+    "ids": [],
+    "pagination": {
+      "total": 59,
+      "page": 99,
+      "limit": 20,
+      "totalPages": 3,
+      "hasMore": false
+    },
+    "summary": {
+      "totalTransactions": 59,
+      "totalVolumeDiamonds": 17691,
+      "totalCreditDiamonds": 13570,
+      "totalDebitDiamonds": 4121
+    }
+  },
+  "type=top_up": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/type Invalid enum value. Expected 'TOP_UP' | 'TOP_UP_PURCHASE' | 'GIFT_SENT' | 'FRAME_PURCHASE' | 'ADMIN_ADJUSTMENT' | 'REFUND' | 'SIGNUP_BONUS' | 'CREATOR_EARNINGS_CONVERT', received 'top_up'"
+    }
+  },
+  "type=": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/type Invalid enum value. Expected 'TOP_UP' | 'TOP_UP_PURCHASE' | 'GIFT_SENT' | 'FRAME_PURCHASE' | 'ADMIN_ADJUSTMENT' | 'REFUND' | 'SIGNUP_BONUS' | 'CREATOR_EARNINGS_CONVERT', received ''"
+    }
+  },
+  "type=TOP_UP&type=GIFT_SENT": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/type Expected 'TOP_UP' | 'TOP_UP_PURCHASE' | 'GIFT_SENT' | 'FRAME_PURCHASE' | 'ADMIN_ADJUSTMENT' | 'REFUND' | 'SIGNUP_BONUS' | 'CREATOR_EARNINGS_CONVERT', received array"
+    }
+  },
+  "direction=credit": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/direction Invalid enum value. Expected 'CREDIT' | 'DEBIT', received 'credit'"
+    }
+  },
+  "sort=ASC": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/sort Invalid enum value. Expected 'desc' | 'asc', received 'ASC'"
+    }
+  },
+  "sort=": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/sort Invalid enum value. Expected 'desc' | 'asc', received ''"
+    }
+  },
+  "page=0": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/page Number must be greater than or equal to 1"
+    }
+  },
+  "page=abc": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/page Expected number, received nan"
+    }
+  },
+  "limit=101": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/limit Number must be less than or equal to 100"
+    }
+  },
+  "limit=1.5": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/limit Expected integer, received float"
+    }
+  },
+  "limit=": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/limit Number must be greater than or equal to 1"
+    }
+  },
+  "startDate=2026-10-29": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/startDate Invalid startDate ISO format"
+    }
+  },
+  "startDate=2026-10-31T00:00:00%2B06:00": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/startDate Invalid startDate ISO format"
+    }
+  },
+  "minAmount=-5": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/minAmount Number must be greater than or equal to 1"
+    }
+  },
+  "minAmount=1.5": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/minAmount Expected integer, received float"
+    }
+  },
+  "maxAmount=-1": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/maxAmount Number must be greater than or equal to 1"
+    }
+  },
+  "startDate=nonsense&endDate=nonsense": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/startDate Invalid startDate ISO format, querystring/endDate Invalid endDate ISO format"
+    }
+  },
+  "page=0&limit=101": {
+    "s": 400,
+    "err": {
+      "code": "FST_ERR_VALIDATION",
+      "message": "querystring/page Number must be greater than or equal to 1, querystring/limit Number must be less than or equal to 100"
+    }
+  }
+}
