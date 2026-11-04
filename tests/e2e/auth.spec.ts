@@ -153,7 +153,7 @@ test('a route with no backend falls through to not-found', async ({ page }) => {
   await signIn(page, ACCOUNTS.superAdmin)
 
   // Not a forbidden state — the module genuinely does not exist.
-  await page.goto('/withdrawals')
+  await page.goto('/payout-rates')
   await expect(page.getByText(/not found/i).first()).toBeVisible()
 })
 

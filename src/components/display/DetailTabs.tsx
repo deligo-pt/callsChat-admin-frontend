@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/cn'
@@ -35,6 +35,45 @@ export function DetailTabs({
 }: DetailTabsProps) {
   const firstTab = tabs[0]
   const initial = defaultValue ?? firstTab?.value
+  const scroller = useRef<HTMLDivElement>(null)
+  const [moreRight, setMoreRight] = useState(false)
+  const [moreLeft, setMoreLeft] = useState(false)
+  const layoutKey = tabs.map((tab) => `${tab.label}:${tab.count ?? ''}`).join('|')
+
+  /* Which edges hide tabs — they get a fade, so a cut-off label reads as "scroll". */
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    const measure = () => {
+      setMoreLeft(el.scrollLeft > 1)
+      setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    }
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    observer?.observe(el)
+    return () => {
+      el.removeEventListener('scroll', measure)
+      observer?.disconnect()
+    }
+  }, [layoutKey])
+
+  /*
+   * Keep the selected tab on screen. Scrolls the tab row only — never the page,
+   * which `scrollIntoView` would also do.
+   */
+  useEffect(() => {
+    const el = scroller.current
+    const active = el?.querySelector<HTMLElement>('[role="tab"][data-state="active"]')
+    if (!el || !active) return
+    const box = el.getBoundingClientRect()
+    const tab = active.getBoundingClientRect()
+    const pad = 24
+    if (tab.left < box.left + pad) el.scrollLeft -= box.left + pad - tab.left
+    else if (tab.right > box.right - pad) el.scrollLeft += tab.right - (box.right - pad)
+    // Re-run when labels or counts change: counts arrive later and widen tabs.
+  }, [value, layoutKey])
 
   return (
     <Tabs
@@ -43,7 +82,19 @@ export function DetailTabs({
       {...(onValueChange ? { onValueChange } : {})}
       className={cn('w-full gap-6', className)}
     >
-      <div className="-mx-1 scroll-x border-b border-border px-1 pb-px">
+      <div
+        ref={scroller}
+        className={cn(
+          '-mx-1 scroll-x border-b border-border px-1 pb-px',
+          moreLeft && moreRight
+            ? 'mask-[linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]'
+            : moreRight
+              ? 'mask-[linear-gradient(to_right,black_calc(100%-2rem),transparent)]'
+              : moreLeft
+                ? 'mask-[linear-gradient(to_right,transparent,black_2rem)]'
+                : undefined,
+        )}
+      >
         <TabsList className="h-auto w-max min-w-full justify-start gap-1 rounded-none bg-transparent p-0">
           {tabs.map((tab) => (
             <TabsTrigger

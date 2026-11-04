@@ -586,6 +586,7 @@ export function FinancePanel({ user }: { user: UserDetail }) {
   const auth = useAuth()
   const canAdjust = auth.can(PERMISSIONS.diamondsAdjust)
   const canOpenLedger = auth.can(PERMISSIONS.ledgerView)
+  const canOpenWithdrawals = auth.can(PERMISSIONS.withdrawalsView)
   const userId = user.identity.id
 
   /*
@@ -687,6 +688,18 @@ export function FinancePanel({ user }: { user: UserDetail }) {
               : ''}
           </span>
         </p>
+
+        {/* Host withdrawals (plan.md W5): earnings cashed out, by this account. */}
+        {canOpenWithdrawals && user.identity.isHost ? (
+          <p className="mt-4 text-body">
+            <Link
+              to={ROUTES.withdrawalsFor({ userId, status: 'ALL' })}
+              className="font-medium text-primary hover:underline"
+            >
+              See this host’s withdrawals
+            </Link>
+          </p>
+        ) : null}
       </Panel>
 
       {/* Phase T4. Gated here, so without `ledger.view` the request is never sent. */}

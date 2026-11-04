@@ -16,7 +16,6 @@ import {
   socialClubs,
   users,
   wallets,
-  withdrawals,
 } from '../seed'
 import { API_PREFIX, applyScenario, errorResponse, isEmptyScenario } from './shared'
 
@@ -666,16 +665,7 @@ export const resourceHandlers = [
   }),
   detailHandler('/admin/payments', payments, 'Payment'),
 
-  listHandler('/admin/withdrawals', withdrawals, {
-    searchFields: ['id', 'reference', 'hostName'],
-    sortFields: ['createdAt', 'requestedDiamonds', 'state'],
-    filters: {
-      state: (row, value) => row.state === value,
-      hostId: (row, value) => row.hostId === value,
-      currency: (row, value) => row.calculation.currency === value,
-    },
-  }),
-  detailHandler('/admin/withdrawals', withdrawals, 'Withdrawal'),
+  /* `/admin/withdrawals/*` lives in `./withdrawals` (plan.md W0), on the real shapes. */
 
   /* ---------------------------------------------------- Administration */
   listHandler('/admin/audit-logs', auditLogs, {

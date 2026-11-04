@@ -90,7 +90,12 @@ export const queryKeys = {
   payoutRates: domain('payout-rates'),
 
   payments: domain('payments'),
-  withdrawals: domain('withdrawals'),
+  /** Host withdrawals (plan.md W0). Stats and settings ignore the list filters. */
+  withdrawals: {
+    ...domain('withdrawals'),
+    stats: () => ['withdrawals', 'stats'] as const,
+    settings: () => ['withdrawals', 'settings'] as const,
+  },
 
   auditLogs: domain('audit-logs'),
 

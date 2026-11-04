@@ -109,7 +109,12 @@ export function RecordCardList<TRow>({
                   {title ? title.cell(row) : null}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                {/*
+                  `h-6`: one title line tall, so the badge and chevron centre on
+                  the record's name rather than floating between it and the
+                  line under it. The chevron's touch target overflows the box.
+                */}
+                <div className="flex h-6 shrink-0 items-center gap-2">
                   {status ? status.cell(row) : null}
                   {interactive && (!rowActions || keepOpenControl) && onRowClick ? (
                     <button

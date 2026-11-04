@@ -135,6 +135,21 @@ const LiveStreamsPage = lazy(() =>
     default: m.LiveStreamsPage,
   })),
 )
+const WithdrawalsPage = lazy(() =>
+  import('@/features/withdrawals/WithdrawalsPage').then((m) => ({
+    default: m.WithdrawalsPage,
+  })),
+)
+const WithdrawalPage = lazy(() =>
+  import('@/features/withdrawals/WithdrawalPage').then((m) => ({
+    default: m.WithdrawalPage,
+  })),
+)
+const WithdrawalSettingsPage = lazy(() =>
+  import('@/features/withdrawals/WithdrawalSettingsPage').then((m) => ({
+    default: m.WithdrawalSettingsPage,
+  })),
+)
 const LiveRoomPage = lazy(() =>
   import('@/features/liveStreams/LiveRoomPage').then((m) => ({
     default: m.LiveRoomPage,
@@ -507,6 +522,45 @@ const moduleRoutes: RouteObject[] = [
     element: (
       <RequirePermission permission={PERMISSIONS.liveView} resource="live streams">
         {suspended(<LiveRoomPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Host withdrawals (plan.md W0). `withdrawals.view` — ADMIN and SUPER_ADMIN.
+   * The actions and the settings form check their own, narrower keys.
+   * `/settings` is a static segment, so it ranks above `/:withdrawalId`.
+   */
+  {
+    path: ROUTES.withdrawals,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.withdrawalsView}
+        resource="withdrawals"
+      >
+        {suspended(<WithdrawalsPage />)}
+      </RequirePermission>
+    ),
+  },
+  {
+    path: ROUTES.withdrawalSettings,
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.withdrawalsView}
+        resource="withdrawals"
+      >
+        {suspended(<WithdrawalSettingsPage />)}
+      </RequirePermission>
+    ),
+  },
+  {
+    path: '/withdrawals/:withdrawalId',
+    element: (
+      <RequirePermission
+        permission={PERMISSIONS.withdrawalsView}
+        resource="withdrawals"
+      >
+        {suspended(<WithdrawalPage />)}
       </RequirePermission>
     ),
   },

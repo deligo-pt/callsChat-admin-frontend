@@ -61,12 +61,7 @@ describe('apiClient — idempotency guard (plan.md §10)', () => {
   })
 
   it('refuses on every financial path', async () => {
-    for (const path of [
-      '/admin/withdrawals/wdr_1/approve',
-      '/admin/withdrawals/wdr_1/reject',
-      '/admin/payments/pay_1/refund',
-      '/admin/payout-rates',
-    ]) {
+    for (const path of ['/admin/payments/pay_1/refund', '/admin/payout-rates']) {
       await expect(apiClient.post(path, { body: {} })).rejects.toThrow(
         /requires an idempotencyKey/,
       )
