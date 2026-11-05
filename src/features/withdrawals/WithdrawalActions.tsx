@@ -1,5 +1,5 @@
 import { Ban, Check, Wallet } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState, type MouseEvent } from 'react'
 
 import { isAppError, NotFoundError } from '@/api/errors'
 import { PERMISSIONS } from '@/auth/permissions'
@@ -51,29 +51,68 @@ function useWithdrawalPermissions(row: Withdrawal) {
 export function WithdrawalActions({ row }: { row: Withdrawal }) {
   const [open, setOpen] = useState<Open>(null)
   const can = useWithdrawalPermissions(row)
-  const close = () => setOpen(null)
+  const group = useRef<HTMLDivElement>(null)
+  const opener = useRef<HTMLButtonElement | null>(null)
+  const focusOwed = useRef(false)
+
+  const show = (kind: Exclude<Open, null>, event: MouseEvent<HTMLButtonElement>) => {
+    opener.current = event.currentTarget
+    setOpen(kind)
+  }
+  const close = () => {
+    focusOwed.current = true
+    setOpen(null)
+  }
+
+  /*
+   * Focus after a dialog (plan.md W5). The dialogs mount already open, so the
+   * dialog's own return-focus never saw the button that opened it — and after
+   * Approve that button is gone anyway, replaced by Mark as paid once the
+   * request refetches. So: back to the opener while it exists, else to the
+   * first action left, else to the page heading. Only when focus has fallen to
+   * <body>; anything the user focused themselves is left alone.
+   */
+  useEffect(() => {
+    if (open !== null || !focusOwed.current) return
+    const active = document.activeElement
+    if (active && active !== document.body && active.isConnected) return
+    const heading = document.querySelector<HTMLElement>('main h1')
+    const next =
+      (opener.current?.isConnected ? opener.current : null) ??
+      group.current?.querySelector<HTMLButtonElement>('button') ??
+      heading
+    if (next === heading && heading && !heading.hasAttribute('tabindex')) {
+      heading.tabIndex = -1
+    }
+    next?.focus()
+    const timer = window.setTimeout(() => {
+      focusOwed.current = false
+    }, 15_000)
+    return () => window.clearTimeout(timer)
+  }, [open, row.status])
 
   if (!can.approve && !can.reject && !can.markPaid) return null
 
   return (
     <>
       <div
+        ref={group}
         className="flex flex-wrap gap-2"
         role="group"
         aria-label="Withdrawal actions"
       >
         {can.approve ? (
-          <Button onClick={() => setOpen('approve')}>
+          <Button onClick={(event) => show('approve', event)}>
             <Check /> Approve
           </Button>
         ) : null}
         {can.markPaid ? (
-          <Button onClick={() => setOpen('markPaid')}>
+          <Button onClick={(event) => show('markPaid', event)}>
             <Wallet /> Mark as paid
           </Button>
         ) : null}
         {can.reject ? (
-          <Button variant="outline" onClick={() => setOpen('reject')}>
+          <Button variant="outline" onClick={(event) => show('reject', event)}>
             <Ban /> Reject
           </Button>
         ) : null}

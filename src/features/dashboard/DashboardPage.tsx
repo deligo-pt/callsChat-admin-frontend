@@ -1,5 +1,7 @@
 import { FlaskConical, TrendingDown, TrendingUp } from 'lucide-react'
 
+import { PERMISSIONS } from '@/auth/permissions'
+import { useCan } from '@/auth/useAuth'
 import { PageHeader } from '@/components/display'
 import {
   Card,
@@ -10,6 +12,8 @@ import {
 } from '@/components/ui/card'
 import { cn } from '@/lib/cn'
 import { TONE_CLASSES } from '@/lib/status'
+
+import { WithdrawalsDashboardCard } from '@/features/withdrawals/WithdrawalsDashboardCard'
 
 import { DEMO_ACTIVITY, DEMO_SIGNUPS, DEMO_STATS, type DemoStat } from './demoData'
 
@@ -146,6 +150,8 @@ function RecentActivity() {
 }
 
 export function DashboardPage() {
+  const canSeeWithdrawals = useCan(PERMISSIONS.withdrawalsView)
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -154,15 +160,18 @@ export function DashboardPage() {
         breadcrumbs={[{ label: 'Dashboard' }]}
       />
 
+      {/* Live, so above the sample notice: that notice must not cover it. */}
+      {canSeeWithdrawals ? <WithdrawalsDashboardCard /> : null}
+
       {/*
-       * Above everything, and worded as a fact rather than a warning. It is
+       * Above everything else, and worded as a fact rather than a warning. It is
        * the difference between a preview and a lie.
        */}
       <p className="flex items-start gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-caption text-foreground-muted">
         <FlaskConical className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>
           <span className="font-medium text-foreground">
-            Sample figures — none of these numbers are real.
+            Sample figures below — none of these numbers are real.
           </span>{' '}
           This is a preview of the layout. Live data appears here once the dashboard API
           is connected.

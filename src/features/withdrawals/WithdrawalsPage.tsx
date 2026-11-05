@@ -1,5 +1,7 @@
 import { Settings2 } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { toast } from 'sonner'
 
 import { isAppError } from '@/api/errors'
 import { ROUTES } from '@/app/routes'
@@ -7,6 +9,7 @@ import { PERMISSIONS } from '@/auth/permissions'
 import { useCan } from '@/auth/useAuth'
 import {
   DataList,
+  ExportButton,
   FilterBar,
   Pagination,
   type AdminColumn,
@@ -32,6 +35,12 @@ import {
   RequestedCell,
   StatusCell,
 } from './cells'
+import {
+  EXPORT_ROW_CAP,
+  fetchAllWithdrawals,
+  saveCsv,
+  withdrawalsCsv,
+} from './exportCsv'
 import { SORT_OPTIONS, STATUS_LABELS, WITHDRAWAL_TIME_ZONE } from './labels'
 import { WithdrawalFilters, WithdrawalSearch } from './WithdrawalFilters'
 import { WithdrawalKpiStrip } from './WithdrawalKpiStrip'
@@ -140,6 +149,8 @@ export function WithdrawalsPage() {
   const location = useLocation()
   const canReadUsers = useCan(PERMISSIONS.usersView)
   const canSeeSettings = useCan(PERMISSIONS.withdrawalsView)
+  const canExport = useCan(PERMISSIONS.exportData)
+  const [exporting, setExporting] = useState(false)
 
   const stats = useWithdrawalStats()
   const list = useWithdrawalsQuery(query)
@@ -187,6 +198,33 @@ export function WithdrawalsPage() {
 
   const noun =
     tab === 'ALL' ? 'requests' : `${STATUS_LABELS[tab].toLowerCase()} requests`
+
+  const exportScope = [
+    `Tab: ${STATUS_LABELS[tab]}`,
+    ...applied.map((chip) => `${chip.label}: ${chip.value}`),
+  ].join(' · ')
+
+  function runExport() {
+    setExporting(true)
+    fetchAllWithdrawals(query)
+      .then(({ rows: all, truncated }) => {
+        const day = new Date().toISOString().slice(0, 10)
+        saveCsv(withdrawalsCsv(all), `withdrawals-${tab.toLowerCase()}-${day}.csv`)
+        if (truncated) {
+          toast.warning(
+            `Exported the first ${formatCount(EXPORT_ROW_CAP)} requests. Narrow the dates to export the rest.`,
+          )
+        } else {
+          toast.success(`Exported ${formatCount(all.length)} ${noun}.`)
+        }
+      })
+      .catch((error: unknown) =>
+        toast.error(
+          isAppError(error) ? error.message : 'The export could not be generated.',
+        ),
+      )
+      .finally(() => setExporting(false))
+  }
 
   const body = (
     <div className="space-y-4">
@@ -307,17 +345,27 @@ export function WithdrawalsPage() {
       <PageHeader
         title="Withdrawals"
         description="Hosts asking to cash out their diamonds. Review, pay outside the panel, then record the TrxID. Times are Bangladesh time (GMT+6)."
-        {...(canSeeSettings
-          ? {
-              actions: (
-                <Button variant="outline" asChild>
-                  <Link to={ROUTES.withdrawalSettings}>
-                    <Settings2 /> Withdrawal settings
-                  </Link>
-                </Button>
-              ),
-            }
-          : {})}
+        actions={
+          <>
+            <ExportButton
+              canExport={canExport}
+              rowCount={pagination?.total ?? 0}
+              resource="withdrawal requests"
+              scopeDescription={exportScope}
+              loading={exporting}
+              reason="none"
+              effect="Every request in this view is downloaded as a CSV file to this device. It includes host names, emails, account holder names and TrxIDs; account numbers are cut to the last four digits. The file is built in your browser, so it is not recorded in the audit log."
+              onExport={runExport}
+            />
+            {canSeeSettings ? (
+              <Button variant="outline" asChild>
+                <Link to={ROUTES.withdrawalSettings}>
+                  <Settings2 /> Withdrawal settings
+                </Link>
+              </Button>
+            ) : null}
+          </>
+        }
       />
 
       <WithdrawalKpiStrip

@@ -1360,3 +1360,147 @@ test('the Listen confirmation and its error state are legible', async ({ page })
     ),
   ).toEqual([])
 })
+
+/*
+ * Host withdrawals (withdrawals plan W5/W6). The seed carries every status,
+ * the name-mismatch and changed-account warnings (DJ Tanvir), and a pending
+ * queue, so the urgent tile and the warning tone both paint.
+ */
+
+test('the withdrawals list, every status in view, has no contrast violations', async ({
+  page,
+}) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/withdrawals?status=ALL')
+  await expect(page.getByRole('main').getByText('7 requests found.')).toBeAttached()
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('a withdrawal with both payout warnings is legible', async ({ page }) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/withdrawals/cmwtanvirapproved000000001')
+  await expect(page.getByText(/does not look like the host’s name/)).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('the mark-as-paid and reject dialogs are legible, error states included', async ({
+  page,
+}) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/withdrawals/cmwtanvirapproved000000001')
+  const main = page.getByRole('main')
+
+  await main.getByRole('button', { name: 'Mark as paid' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('textbox', { name: /Transaction ID/ })).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+  await dialog.getByRole('button', { name: 'Mark as paid' }).click()
+  await expect(dialog).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+  await page.keyboard.press('Escape')
+
+  await main.getByRole('button', { name: 'Reject' }).click()
+  await dialog.getByRole('button', { name: 'Reject and refund' }).click()
+  await expect(dialog).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('withdrawal settings and the switch-off confirmation are legible', async ({
+  page,
+}) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/withdrawals/settings')
+  const main = page.getByRole('main')
+  await expect(main.getByRole('textbox', { name: 'Minimum withdrawal' })).toHaveValue(
+    '500',
+  )
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+
+  await main.getByRole('switch').click()
+  await main.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByRole('dialog')).toContainText('No host will be able')
+  await settled(page)
+  expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
+})
+
+test('the live withdrawals card on the dashboard is legible', async ({ page }) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/dashboard')
+  await expect(page.getByText('Waiting for review')).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
+})
+
+test('every withdrawal badge and tile is legible on its own background', async ({
+  page,
+}) => {
+  /* Measured per element, as the other tones are: axe misreads tinted fills. */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/withdrawals?status=ALL')
+  await expect(page.getByRole('main').getByText('7 requests found.')).toBeAttached()
+  await settled(page)
+
+  const ratios = await page.evaluate(() => {
+    function luminance(rgb: string): number {
+      const [r, g, b] = (rgb.match(/\d+/g) ?? ['0', '0', '0']).map(Number) as [
+        number,
+        number,
+        number,
+      ]
+      const channel = (value: number) => {
+        const c = value / 255
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+    }
+    function painted(el: Element): string {
+      let node: Element | null = el
+      while (node) {
+        const bg = getComputedStyle(node).backgroundColor
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg
+        node = node.parentElement
+      }
+      return 'rgb(255, 255, 255)'
+    }
+    const subtle = 'rgb(145, 148, 157)'
+    /* Every leaf text span inside a tinted badge or KPI tile. */
+    const fills = Array.from(
+      document.querySelectorAll(
+        'main [class*="-soft"], main [class*="bg-surface-muted"]',
+      ),
+    )
+    const leaves = fills.flatMap((fill) =>
+      Array.from(fill.querySelectorAll('span, p')).concat(
+        fill.children.length ? [] : [fill],
+      ),
+    )
+    return leaves
+      .filter((el) => {
+        const own = Array.from(el.childNodes).some(
+          (n) => n.nodeType === 3 && (n.textContent ?? '').trim().length > 0,
+        )
+        return own && getComputedStyle(el).color !== subtle
+      })
+      .map((el) => {
+        const fg = luminance(getComputedStyle(el).color)
+        const bg = luminance(painted(el))
+        return {
+          label: (el.textContent ?? '').trim().slice(0, 40),
+          ratio: (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05),
+        }
+      })
+  })
+
+  expect(ratios.length).toBeGreaterThan(0)
+  for (const item of ratios) {
+    expect(item.ratio, `${item.label} at ${item.ratio.toFixed(2)}:1`).toBeGreaterThan(
+      4.5,
+    )
+  }
+})

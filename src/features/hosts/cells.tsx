@@ -244,14 +244,13 @@ function diamonds(amount: number | null | undefined): string {
  * of the rule the backend enforces — so both figures are labelled, every time,
  * and they are never added.
  *
- * ⚠️ **`pendingWithdrawal` is readable and not actionable.** No admin payout
- * endpoint exists (plan.md O3): `/admin/wallet/withdrawals` and
- * `/admin/withdrawals` are both `ROUTE_NOT_FOUND`. An operator can see that
- * money is in flight and can do nothing about it from here, so the cell says
- * "in flight" rather than implying a queue they can work.
+ * `pendingWithdrawal` is diamonds held by requests not yet paid. The queue
+ * that works them is `/withdrawals` (withdrawals plan W5), linked here for
+ * anyone who may read it, filtered to this host across every status.
  */
 export function EarningsCell({ record }: { record: LiveHost }) {
   const pending = record.pendingWithdrawal
+  const canOpenWithdrawals = useCan(PERMISSIONS.withdrawalsView)
 
   return (
     <span className="flex min-w-[8rem] flex-col gap-0.5">
@@ -272,6 +271,15 @@ export function EarningsCell({ record }: { record: LiveHost }) {
         <span className="truncate tabular text-caption text-warning-foreground">
           {diamonds(pending)} in flight
         </span>
+      ) : null}
+
+      {canOpenWithdrawals && record.userId ? (
+        <Link
+          to={ROUTES.withdrawalsFor({ userId: record.userId, status: 'ALL' })}
+          className="w-fit text-caption font-medium text-primary hover:underline"
+        >
+          Withdrawals
+        </Link>
       ) : null}
     </span>
   )

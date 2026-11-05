@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-import { ACCOUNTS, expectNoSidewaysScroll, signIn } from './fixtures'
+import { ACCOUNTS, expectNoSidewaysScroll, seedHostFixtures, signIn } from './fixtures'
 
 /**
  * Host withdrawals, phase W6 (plan.md), in a real browser at every width.
@@ -220,5 +220,68 @@ test.describe('roles', () => {
     await signIn(page, ACCOUNTS.moderator)
     await page.goto('/withdrawals')
     await expect(page.getByText(/do not have access/i)).toBeVisible()
+  })
+})
+
+/* ------------------------------------------------------------------ */
+
+test.describe('cross-links and export (W5)', () => {
+  test('Export CSV downloads every request in the view, account cut to 4 digits', async ({
+    page,
+  }) => {
+    await open(page, '/withdrawals?status=ALL')
+    await main(page).getByRole('button', { name: 'Export CSV' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('not recorded in the audit log')
+    await expect(dialog).toContainText('Tab: All')
+    const download = page.waitForEvent('download')
+    await dialog.getByRole('button', { name: 'Generate export' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^withdrawals-all-\d{4}-\d{2}-\d{2}\.csv$/)
+    const chunks = (await (await file.createReadStream()).toArray()) as Uint8Array[]
+    const decoder = new TextDecoder('utf-8')
+    const csv =
+      chunks.map((chunk) => decoder.decode(chunk, { stream: true })).join('') +
+      decoder.decode()
+    const lines = csv.trim().split(/\r\n/)
+    expect(lines).toHaveLength(1 + 7)
+    expect(lines[0]).toContain('Net payout BDT')
+    // DJ Tanvir's bank account 1052101004589: only 4589 leaves the panel.
+    expect(csv).toContain('4589')
+    expect(csv).not.toContain('1052101004589')
+  })
+
+  test('the dashboard card counts the queue and opens it', async ({ page }) => {
+    await signIn(page, ACCOUNTS.superAdmin)
+    const card = main(page).getByRole('link', { name: /Waiting for review/ })
+    await expect(card).toContainText('2')
+    await card.click()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Withdrawals')
+    await expect(main(page).getByText('2 pending requests found.')).toBeAttached()
+  })
+
+  test('a host on the roster links to their withdrawals', async ({ page }) => {
+    await seedHostFixtures(page)
+    await signIn(page, ACCOUNTS.superAdmin)
+    await page.goto('/hosts')
+    await main(page)
+      .getByRole('link', { name: 'Withdrawals', exact: true })
+      .first()
+      .click()
+    await expect(page).toHaveURL(/\/withdrawals\?status=ALL&userId=/)
+  })
+
+  test('closing a dialog returns focus to its button; after approve, to the next action', async ({
+    page,
+  }) => {
+    await open(page, RAKIB_PENDING)
+    const approve = main(page).getByRole('button', { name: 'Approve' })
+    await approve.click()
+    await page.keyboard.press('Escape')
+    await expect(approve).toBeFocused()
+
+    await approve.click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Approve' }).click()
+    await expect(main(page).getByRole('button', { name: 'Mark as paid' })).toBeFocused()
   })
 })

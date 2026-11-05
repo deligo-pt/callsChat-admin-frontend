@@ -16,9 +16,14 @@ export interface DiamondAmountProps {
   className?: string
 }
 
+/*
+ * The `-foreground` shades, not the base hues: green-500 and violet-500 as text
+ * measure about 3:1 on white, legible only at `lg`. At `md` on the withdrawal
+ * page they failed the 4.5:1 floor (withdrawals plan W6 contrast pass).
+ */
 const VARIANT_CLASSES = {
-  available: 'text-success',
-  locked: 'text-locked',
+  available: 'text-success-foreground',
+  locked: 'text-locked-foreground',
   neutral: 'text-foreground',
 } as const
 
