@@ -22,6 +22,14 @@ export interface ExportButtonProps {
   /** Receives the mandatory reason — exports are audited events. */
   onExport: (reason: string) => void
   className?: string
+  /**
+   * Replaces the default effect line, which promises a server-side export
+   * recorded in the audit log. A page that builds the file in the browser
+   * records nothing and must not say it does.
+   */
+  effect?: string
+  /** `'none'` when nothing receives a reason (a browser-built file). */
+  reason?: 'required' | 'none'
 }
 
 /**
@@ -39,6 +47,8 @@ export function ExportButton({
   loading = false,
   onExport,
   className,
+  effect = 'A file is generated from the current filters and downloaded to this device. It may contain unmasked personal data. This export is recorded in the audit log.',
+  reason = 'required',
 }: ExportButtonProps) {
   const [open, setOpen] = useState(false)
 
@@ -68,7 +78,8 @@ export function ExportButton({
          * phone numbers and email addresses, so the copy warns instead of
          * reassuring.
          */
-        effect="A file is generated from the current filters and downloaded to this device. It may contain unmasked personal data. This export is recorded in the audit log."
+        effect={effect}
+        reason={reason}
         confirmLabel="Generate export"
         loading={loading}
         onConfirm={(reason) => {

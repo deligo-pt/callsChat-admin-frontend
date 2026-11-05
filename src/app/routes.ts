@@ -120,8 +120,17 @@ export const ROUTES = {
 
   payments: '/payments',
   payment: (id: string) => `/payments/${id}`,
+  /** Host withdrawals (plan.md W0). `settings` is matched before `:id`. */
   withdrawals: '/withdrawals',
-  withdrawal: (id: string) => `/withdrawals/${id}`,
+  withdrawal: (id: string) => `/withdrawals/${encodeURIComponent(id)}`,
+  withdrawalSettings: '/withdrawals/settings',
+  withdrawalsFor: (filter: { userId?: string; status?: string }) => {
+    const params = new URLSearchParams()
+    if (filter.status) params.set('status', filter.status)
+    if (filter.userId) params.set('userId', filter.userId)
+    const query = params.toString()
+    return query ? `/withdrawals?${query}` : '/withdrawals'
+  },
   payoutRates: '/payout-rates',
   reconciliation: '/reconciliation',
 

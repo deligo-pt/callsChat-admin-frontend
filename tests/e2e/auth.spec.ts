@@ -119,6 +119,14 @@ test('navigation lists only modules the backend actually serves', async ({ page 
   ).toBeVisible()
 
   /*
+   * `Withdrawals` left the absent list on 2026-11-04: `/admin/withdrawals/*`
+   * was verified live and the page shipped (withdrawals plan W0–W6).
+   */
+  await expect(
+    nav.getByRole('link', { name: 'Withdrawals', exact: true }),
+  ).toBeVisible()
+
+  /*
    * Every module below returns 404 server-side, so it must not appear even for
    * a Super Admin. A menu item leading to "not built yet" reads as a broken
    * product rather than an unfinished one.
@@ -127,7 +135,6 @@ test('navigation lists only modules the backend actually serves', async ({ page 
     'Social Clubs',
     'Moderation',
     'Payments',
-    'Withdrawals',
     'Reports',
     'Admin Users',
     'Audit Logs',
@@ -153,7 +160,7 @@ test('a route with no backend falls through to not-found', async ({ page }) => {
   await signIn(page, ACCOUNTS.superAdmin)
 
   // Not a forbidden state — the module genuinely does not exist.
-  await page.goto('/withdrawals')
+  await page.goto('/payout-rates')
   await expect(page.getByText(/not found/i).first()).toBeVisible()
 })
 

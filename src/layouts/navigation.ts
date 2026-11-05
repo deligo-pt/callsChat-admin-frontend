@@ -16,6 +16,7 @@ import {
   Smile,
   Users,
   Wallet,
+  Banknote,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
@@ -294,6 +295,17 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: ArrowLeftRight,
         permission: PERMISSIONS.ledgerView,
         matchPrefix: '/diamonds/transactions',
+      },
+      /*
+       * Host withdrawals (plan.md W0). `withdrawalsView` — ADMIN reads the
+       * queue; approving, paying and the settings are Super Admin keys.
+       */
+      {
+        label: 'Withdrawals',
+        to: ROUTES.withdrawals,
+        icon: Banknote,
+        permission: PERMISSIONS.withdrawalsView,
+        matchPrefix: '/withdrawals',
       },
       /*
        * ⚠️ **No "Adjust a wallet" entry, and that is a decision rather than an

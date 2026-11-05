@@ -26,11 +26,14 @@ describe('newCorrelationId', () => {
 describe('isFinancialMutation', () => {
   it('flags money-moving mutations', () => {
     expect(isFinancialMutation('POST', '/admin/adjustments')).toBe(true)
-    expect(isFinancialMutation('POST', '/admin/withdrawals/wdr_1/approve')).toBe(true)
-    expect(isFinancialMutation('POST', '/admin/withdrawals/wdr_1/reject')).toBe(true)
     expect(isFinancialMutation('POST', '/admin/payments/pay_1/refund')).toBe(true)
     expect(isFinancialMutation('POST', '/admin/payout-rates')).toBe(true)
     expect(isFinancialMutation('PATCH', '/admin/diamond-packages/dpk_1')).toBe(true)
+  })
+
+  it('leaves withdrawal reviews alone — CORS forbids the header there (plan.md W0)', () => {
+    expect(isFinancialMutation('PATCH', '/admin/withdrawals/wdr_1/approve')).toBe(false)
+    expect(isFinancialMutation('PATCH', '/admin/withdrawals/wdr_1/reject')).toBe(false)
   })
 
   it('does not flag reads, even of financial resources', () => {

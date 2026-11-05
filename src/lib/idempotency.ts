@@ -41,7 +41,12 @@ export function newCorrelationId(): string {
  */
 const FINANCIAL_PATH_PATTERNS: readonly RegExp[] = [
   /^\/admin\/adjustments/,
-  /^\/admin\/withdrawals\/[^/]+\/(approve|reject|processing|complete|fail)/,
+  /*
+   * ⚠️ `/admin/withdrawals/*` is NOT here (plan.md W0, measured 2026-11-04):
+   * the API's CORS policy does not allow an `Idempotency-Key` header, so the
+   * browser would block approve / reject outright. The server's state machine
+   * makes a repeat fail instead of paying twice.
+   */
   /^\/admin\/payments\/[^/]+\/refund/,
   /^\/admin\/diamond-packages/,
   /^\/admin\/payout-rates/,

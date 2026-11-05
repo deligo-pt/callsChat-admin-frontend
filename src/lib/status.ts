@@ -98,6 +98,9 @@ const WITHDRAWAL: DomainMap = {
   COMPLETED: { label: 'Completed', tone: 'success' },
   REJECTED: { label: 'Rejected', tone: 'danger' },
   FAILED: { label: 'Failed', tone: 'danger' },
+  /* The host-withdrawal states actually served (plan.md W0). */
+  PAID: { label: 'Paid', tone: 'success' },
+  CANCELLED: { label: 'Cancelled', tone: 'neutral' },
 }
 
 const PAYMENT: DomainMap = {

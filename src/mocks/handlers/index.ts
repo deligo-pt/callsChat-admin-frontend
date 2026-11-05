@@ -12,6 +12,7 @@ import { staffHandlers } from './staff'
 import { verificationHandlers } from './verifications'
 import { walletHandlers } from './wallet'
 import { walletTransactionHandlers } from './walletTransactions'
+import { withdrawalHandlers } from './withdrawals'
 
 export const handlers = [
   ...authHandlers,
@@ -45,5 +46,7 @@ export const handlers = [
   ...hostHandlers,
   /* Live rooms (plan.md L0) — also under `/admin/live/*`, also before the generic handlers. */
   ...liveRoomHandlers,
+  /* Host withdrawals (plan.md W0) — `/stats` and `/settings` before any `/:id`. */
+  ...withdrawalHandlers,
   ...resourceHandlers,
 ]

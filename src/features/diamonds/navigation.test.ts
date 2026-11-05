@@ -41,7 +41,7 @@ describe('the Diamonds section', () => {
     expect(section('diamonds')?.items[0]?.permission).toBe(PERMISSIONS.walletsView)
   })
 
-  it('holds four places and no actions', () => {
+  it('holds five places and no actions', () => {
     /*
      * ⚠️ **"Adjust a wallet" was here until 2026-10-27 and is deliberately
      * gone.** Adjusting a balance is an action *on a person*, not a place: the
@@ -58,6 +58,8 @@ describe('the Diamonds section', () => {
       PERMISSIONS.walletsView,
       PERMISSIONS.ledgerView,
       PERMISSIONS.ledgerView,
+      // Host withdrawals (plan.md W0): ADMIN reads, Super Admin acts.
+      PERMISSIONS.withdrawalsView,
     ])
   })
 
@@ -73,6 +75,7 @@ describe('the Diamonds section', () => {
       ROUTES.diamondPackages,
       ROUTES.walletTransactions,
       ROUTES.diamondTransactions,
+      ROUTES.withdrawals,
     ])
   })
 
@@ -90,6 +93,7 @@ describe('the Diamonds section', () => {
       '/diamonds/packages',
       '/diamonds/wallet-transactions',
       '/diamonds/transactions',
+      '/withdrawals',
     ])
   })
 })
