@@ -264,19 +264,24 @@ export function EarningsCell({ record }: { record: LiveHost }) {
         <span className="tabular font-medium">
           {diamonds(record.withdrawableDiamonds)}
         </span>
-        <span className="text-caption text-foreground-muted">withdrawable</span>
+        <span className="text-caption text-foreground-muted">
+          {typeof record.withdrawableDiamonds === 'number'
+            ? 'diamonds withdrawable'
+            : 'withdrawable not reported'}
+        </span>
       </span>
 
       {typeof pending === 'number' && pending > 0 ? (
-        <span className="truncate tabular text-caption text-warning-foreground">
-          {diamonds(pending)} in flight
+        <span className="tabular text-caption text-warning-foreground">
+          {diamonds(pending)} diamonds waiting for payout
         </span>
       ) : null}
 
       {canOpenWithdrawals && record.userId ? (
         <Link
+          /* `mt-1`: apart from the figure, so it is not read as its label. */
           to={ROUTES.withdrawalsFor({ userId: record.userId, status: 'ALL' })}
-          className="w-fit text-caption font-medium text-primary hover:underline"
+          className="mt-1 w-fit text-caption font-medium text-primary hover:underline"
         >
           Withdrawals
         </Link>
@@ -288,10 +293,11 @@ export function EarningsCell({ record }: { record: LiveHost }) {
 /**
  * Lifetime gift revenue and the split it was earned under.
  *
- * ⚠️ `totalDiamondsEarned` is gross, before the platform's share, and
- * `revenueSharePercent` is what the host keeps. Showing the percentage beside
- * the total is the only thing that stops the gross number reading as take-home
- * pay — and the split is per host, not a global setting (plan.md O9).
+ * `totalDiamondsEarned` is the host's take, **after** the platform's cut
+ * (confirmed by the backend team 2026-11-07, and staging agrees: a host who has
+ * never withdrawn shows the same figure as withdrawable). `revenueSharePercent`
+ * is the share that produced it, and it is per host, not a global setting
+ * (plan.md O9).
  */
 export function LifetimeEarningsCell({ record }: { record: LiveHost }) {
   const share = record.revenueSharePercent
@@ -299,12 +305,19 @@ export function LifetimeEarningsCell({ record }: { record: LiveHost }) {
 
   return (
     <span className="flex min-w-[8rem] flex-col gap-0.5">
-      <span className="tabular">{diamonds(record.totalDiamondsEarned)}</span>
+      <span className="flex flex-wrap items-baseline gap-1">
+        <span className="tabular">{diamonds(record.totalDiamondsEarned)}</span>
+        <span className="text-caption text-foreground-muted">
+          {typeof record.totalDiamondsEarned === 'number'
+            ? 'diamonds earned'
+            : 'earnings not reported'}
+        </span>
+      </span>
       <span className="truncate text-caption text-foreground-muted">
         {typeof record.totalGiftsReceived === 'number'
           ? `${formatCount(record.totalGiftsReceived)} gifts`
           : 'gifts unknown'}
-        {typeof share === 'number' ? ` · ${share}% share` : ''}
+        {typeof share === 'number' ? ` · host keeps ${share}%` : ''}
       </span>
       {/*
        * Phase G5 (plan.md §3.2). ⚠️ A link BESIDE the count, never the count

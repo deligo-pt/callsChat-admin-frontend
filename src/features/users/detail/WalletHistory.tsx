@@ -88,7 +88,7 @@ function HistoryRow({
         <EntryAmount amount={row.amount} />
         {typeof row.balanceAfter === 'number' ? (
           <p className="text-caption whitespace-nowrap text-foreground-muted">
-            Balance {formatDiamonds(row.balanceAfter)}
+            Balance {formatDiamonds(row.balanceAfter)} diamonds
           </p>
         ) : null}
       </div>
@@ -179,13 +179,13 @@ export function WalletHistory({
           <div className="flex gap-1">
             <dt>Credited</dt>
             <dd className="tabular font-medium text-success-foreground">
-              +{formatDiamonds(summary.totalCreditDiamonds)}
+              +{formatDiamonds(summary.totalCreditDiamonds)} diamonds
             </dd>
           </div>
           <div className="flex gap-1">
             <dt>Debited</dt>
             <dd className="tabular font-medium text-danger-foreground">
-              −{formatDiamonds(summary.totalDebitDiamonds)}
+              −{formatDiamonds(summary.totalDebitDiamonds)} diamonds
             </dd>
           </div>
         </dl>

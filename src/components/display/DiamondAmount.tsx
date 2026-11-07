@@ -13,6 +13,12 @@ export interface DiamondAmountProps {
   variant?: 'available' | 'locked' | 'neutral'
   size?: 'sm' | 'md' | 'lg'
   showIcon?: boolean
+  /**
+   * Write "diamonds" after the figure (default). The gem icon alone did not say
+   * what the number counts to anyone who had not learned the icon. Turn it off
+   * only where a label right beside the figure already names the unit.
+   */
+  showUnit?: boolean
   className?: string
 }
 
@@ -50,6 +56,7 @@ export function DiamondAmount({
   variant = 'neutral',
   size = 'md',
   showIcon = true,
+  showUnit = true,
   className,
 }: DiamondAmountProps) {
   const Icon = variant === 'locked' ? Lock : Gem
@@ -67,9 +74,13 @@ export function DiamondAmount({
         <Icon className={cn('shrink-0', ICON_SIZE[size])} aria-hidden="true" />
       ) : null}
       {formatDiamonds(amount)}
+      {showUnit ? (
+        <span className="font-normal text-foreground-muted">
+          {amount === 1 ? 'diamond' : 'diamonds'}
+        </span>
+      ) : null}
       <span className="sr-only">
-        {' '}
-        Diamonds
+        {showUnit ? '' : ' Diamonds'}
         {variant === 'locked'
           ? ', locked'
           : variant === 'available'

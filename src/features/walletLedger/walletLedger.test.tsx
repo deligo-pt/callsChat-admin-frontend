@@ -161,8 +161,8 @@ describe('the first view', () => {
   it('draws credits, debits and free gifts differently', async () => {
     renderAt(`${ROUTES.walletTransactions}?limit=100`)
     const rows = await table()
-    expect(rows.getAllByText('Diamonds credited').length).toBeGreaterThan(0)
-    expect(rows.getAllByText('Diamonds debited').length).toBeGreaterThan(0)
+    expect(rows.getAllByText('credited').length).toBeGreaterThan(0)
+    expect(rows.getAllByText('debited').length).toBeGreaterThan(0)
     /* ⚠️ B2: labelled CREDIT by the server, drawn as Free. */
     expect(rows.getAllByText('Free')).toHaveLength(23)
   })
@@ -237,8 +237,8 @@ describe('the sign decides, not the label', () => {
     )
     renderAt(ROUTES.walletTransactions)
     const rows = await table()
-    expect(rows.getByText('Diamonds debited')).toBeInTheDocument()
-    expect(rows.queryByText('Diamonds credited')).not.toBeInTheDocument()
+    expect(rows.getByText('debited')).toBeInTheDocument()
+    expect(rows.queryByText('credited')).not.toBeInTheDocument()
   })
 })
 

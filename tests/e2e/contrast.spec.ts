@@ -1029,7 +1029,7 @@ test('the creator earnings group on the roster is legible', async ({ page }) => 
   await signIn(page)
   await page.goto('/hosts')
   await expect(page.getByText('Alex Rivers')).toBeVisible()
-  await expect(page.getByText('4,000 in flight')).toBeVisible()
+  await expect(page.getByText('4,000 diamonds waiting for payout')).toBeVisible()
 
   await settled(page)
   expect((await contrastViolations(page)).filter(DEBT)).toEqual([])

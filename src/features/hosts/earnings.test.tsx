@@ -73,7 +73,7 @@ describe('the two balances are never one number', () => {
      * earnings is not the guarantee — a bare number on the row that does not
      * is exactly the failure being guarded against.
      */
-    expect(screen.getAllByText('withdrawable')).toHaveLength(2)
+    expect(screen.getAllByText('diamonds withdrawable')).toHaveLength(2)
   })
 
   it('keeps lifetime, withdrawable and in-flight as three separate figures', async () => {
@@ -87,7 +87,7 @@ describe('the two balances are never one number', () => {
 
     expect(screen.getByText('64,200')).toBeInTheDocument()
     expect(screen.getByText('12,189')).toBeInTheDocument()
-    expect(screen.getByText('4,000 in flight')).toBeInTheDocument()
+    expect(screen.getByText('4,000 diamonds waiting for payout')).toBeInTheDocument()
   })
 
   it('shows the revenue split beside the gross, so it cannot read as take-home', async () => {
@@ -98,7 +98,7 @@ describe('the two balances are never one number', () => {
     renderScreen()
     await screen.findByText('Alex Rivers')
 
-    expect(screen.getByText(/58 gifts · 70% share/)).toBeInTheDocument()
+    expect(screen.getByText(/58 gifts · host keeps 70%/)).toBeInTheDocument()
   })
 
   it('shows money in flight for a suspended host too', async () => {
@@ -110,7 +110,7 @@ describe('the two balances are never one number', () => {
     renderScreen('/hosts?status=SUSPENDED')
     await screen.findByText('No display name')
 
-    expect(screen.getByText('2,500 in flight')).toBeInTheDocument()
+    expect(screen.getByText('2,500 diamonds waiting for payout')).toBeInTheDocument()
   })
 
   it('renders an em-dash, not a zero, when a figure is absent', async () => {

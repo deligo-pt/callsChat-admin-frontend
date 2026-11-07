@@ -20,9 +20,7 @@ import { useWithdrawalStats } from './useWithdrawals'
  * The dashboard's withdrawal queue (plan.md W5): two live counts that open
  * their tab.
  *
- * ⚠️ **The only real figures on a page of sample ones.** The card says "Live"
- * in its title so the dashboard's "none of these numbers are real" notice is
- * not read as covering it — and it sits above that notice for the same reason.
+ * Marked "Live" because these are real counts, not a preview.
  */
 export function WithdrawalsDashboardCard() {
   const stats = useWithdrawalStats()

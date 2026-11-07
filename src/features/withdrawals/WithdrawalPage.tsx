@@ -125,7 +125,10 @@ function Summary({ detail }: { detail: WithdrawalDetail }) {
               </span>
             ),
           },
-          { label: 'Diamonds', value: <DiamondAmount amount={detail.amount} /> },
+          {
+            label: 'Diamonds',
+            value: <DiamondAmount amount={detail.amount} showUnit={false} />,
+          },
           {
             label: 'Gross',
             value: <span className="tabular">{formatBdt(detail.amountBdt)}</span>,

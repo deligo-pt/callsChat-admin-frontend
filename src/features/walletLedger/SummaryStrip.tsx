@@ -75,7 +75,9 @@ export function SummaryStrip({
                 <>
                   {tile.value}
                   {tile.label === 'Transactions' ? null : (
-                    <span className="sr-only"> Diamonds</span>
+                    <span className="block text-caption font-normal text-foreground-muted">
+                      diamonds
+                    </span>
                   )}
                 </>
               )}
