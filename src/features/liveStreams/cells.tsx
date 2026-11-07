@@ -153,7 +153,7 @@ export function ViewersCell({ row }: { row: LiveRoom }) {
     const current = row.currentViewers ?? null
     return (
       <span className="tabular whitespace-nowrap">
-        {current === null ? '—' : formatCount(current)}
+        {current === null ? '—' : `${formatCount(current)} now`}
         <span className="text-foreground-muted">
           {' '}
           · peak {peak === null ? '—' : formatCount(peak)}
@@ -174,7 +174,10 @@ export function ViewersCell({ row }: { row: LiveRoom }) {
   )
 }
 
-/** People on a seat. History rows carry no count — and an ended stage is empty. */
+/**
+ * People on a seat, **not counting the host** (confirmed by the backend team
+ * 2026-11-07). History rows carry no count — and an ended stage is empty.
+ */
 export function StageCell({ row }: { row: LiveRoom }) {
   const count = row.activeParticipantsCount
   if (!isOnAir(row) || typeof count !== 'number') {
@@ -184,7 +187,7 @@ export function StageCell({ row }: { row: LiveRoom }) {
   return (
     <span className="tabular whitespace-nowrap">
       {formatCount(count)}
-      <span className="text-foreground-muted"> of {formatCount(seats)}</span>
+      <span className="text-foreground-muted"> of {formatCount(seats)} seats</span>
     </span>
   )
 }
@@ -200,8 +203,7 @@ export function ModActionsCell({ row }: { row: LiveRoom }) {
         count > 0 ? 'font-medium text-warning-foreground' : 'text-foreground-muted',
       )}
     >
-      {formatCount(count)}
-      <span className="sr-only"> moderation {count === 1 ? 'action' : 'actions'}</span>
+      {formatCount(count)} {count === 1 ? 'action' : 'actions'}
     </span>
   )
 }

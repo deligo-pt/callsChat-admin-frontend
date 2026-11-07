@@ -104,9 +104,10 @@ export function DiamondsCell({ record }: { record: GiftTransaction }) {
       <DiamondAmount amount={record.totalPrice ?? 0} variant="neutral" />
       <span className="text-caption text-foreground-muted">
         {quantity !== 1 && typeof record.unitPrice === 'number'
-          ? `${formatCount(quantity)} × ${formatCount(record.unitPrice)} · `
+          ? `${formatCount(quantity)} gifts × ${formatCount(record.unitPrice)} diamonds · `
           : ''}
-        Receiver earned {formatCount(record.hostEarnings ?? 0)}
+        Receiver earned {formatCount(record.hostEarnings ?? 0)}{' '}
+        {(record.hostEarnings ?? 0) === 1 ? 'diamond' : 'diamonds'} after the cut
       </span>
     </span>
   )

@@ -14,7 +14,9 @@ export function EntryAmount({ amount }: { amount: number }) {
   if (direction === 'FREE') {
     return (
       <span className="flex flex-col gap-0.5 whitespace-nowrap">
-        <span className="tabular font-medium">{formatDiamonds(0)}</span>
+        <span className="tabular font-medium">
+          {formatDiamonds(0)} <span className="font-normal">diamonds</span>
+        </span>
         <span className="text-caption text-foreground-muted">Free</span>
       </span>
     )
@@ -28,10 +30,11 @@ export function EntryAmount({ amount }: { amount: number }) {
       )}
     >
       {credit ? '+' : '−'}
-      {formatDiamonds(Math.abs(amount))}
-      <span className="sr-only">
-        {credit ? ' Diamonds credited' : ' Diamonds debited'}
+      {formatDiamonds(Math.abs(amount))}{' '}
+      <span className="font-normal">
+        {Math.abs(amount) === 1 ? 'diamond' : 'diamonds'}
       </span>
+      <span className="sr-only">{credit ? ' credited' : ' debited'}</span>
     </span>
   )
 }

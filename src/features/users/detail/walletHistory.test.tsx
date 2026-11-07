@@ -190,7 +190,7 @@ describe('the history', () => {
     const credited = Array.from({ length: 12 }, (_, i) => 10 + i).reduce(
       (a, b) => a + b,
     )
-    expect(list.getByText(`+${credited}`)).toBeVisible()
+    expect(list.getByText(`+${credited} diamonds`)).toBeVisible()
   })
 
   it('opens an entry, carrying the way back to this tab', async () => {

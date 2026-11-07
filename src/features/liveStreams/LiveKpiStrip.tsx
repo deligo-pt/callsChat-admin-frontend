@@ -94,7 +94,11 @@ export function LiveKpiStrip({
               ) : (
                 <>
                   {tile.value}
-                  {tile.diamonds ? <span className="sr-only"> Diamonds</span> : null}
+                  {tile.diamonds ? (
+                    <span className="ml-1 text-caption font-normal text-foreground-muted">
+                      diamonds
+                    </span>
+                  ) : null}
                 </>
               )}
             </dd>

@@ -131,8 +131,9 @@ export function DocumentsCell({ record }: { record: Verification }) {
   return (
     <span className="flex items-center gap-1.5 whitespace-nowrap text-foreground-muted">
       <Files className="size-3.5 shrink-0" aria-hidden="true" />
-      <span className="tabular">{formatCount(count)}</span>
-      <span className="sr-only">{count === 1 ? 'document' : 'documents'}</span>
+      <span className="tabular">
+        {formatCount(count)} {count === 1 ? 'document' : 'documents'}
+      </span>
     </span>
   )
 }

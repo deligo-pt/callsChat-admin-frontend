@@ -157,7 +157,7 @@ describe('what a row shows', () => {
     const row = mockTransactions()[21]!
     Object.assign(row, { unitPrice: 50, totalPrice: 50, hostEarnings: 35 })
     renderAt(ROUTES.diamondTransactions)
-    expect(await screen.findByText('Receiver earned 35')).toBeInTheDocument()
+    expect(await screen.findByText(/Receiver earned 35 diamonds/)).toBeInTheDocument()
     expect(screen.queryByText(/sent at a price of 0 Diamonds/)).toBeNull()
   })
 })

@@ -80,7 +80,8 @@ export function BalanceCell({ row }: { row: WalletTransaction }) {
   }
   return (
     <span className="tabular whitespace-nowrap">
-      {formatDiamonds(row.balanceAfter)}
+      {formatDiamonds(row.balanceAfter)}{' '}
+      <span className="text-foreground-muted">diamonds</span>
     </span>
   )
 }

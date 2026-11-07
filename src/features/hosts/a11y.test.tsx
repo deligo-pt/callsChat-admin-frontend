@@ -151,7 +151,7 @@ describe('the creator earnings group', () => {
     setViewport(360)
     const { container } = mount(<HostsPage />, '/hosts', '/hosts')
     await screen.findByText('Alex Rivers')
-    await screen.findAllByText('withdrawable')
+    await screen.findAllByText('diamonds withdrawable')
 
     await expectNoA11yViolations(container, BODY_SCAN)
   })

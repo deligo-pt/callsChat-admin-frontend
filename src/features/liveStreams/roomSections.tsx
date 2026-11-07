@@ -463,8 +463,8 @@ export function MoneyCard({ detail }: { detail: LiveRoomDetail }) {
                   <PersonById userId={gifter.senderId} />
                 </span>
                 <span className="shrink-0 tabular text-body">
-                  {formatDiamonds(gifter._sum?.totalPrice ?? 0)}
-                  <span className="sr-only"> Diamonds</span>
+                  {formatDiamonds(gifter._sum?.totalPrice ?? 0)}{' '}
+                  <span className="text-caption text-foreground-muted">diamonds</span>
                 </span>
               </li>
             ))}
