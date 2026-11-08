@@ -42,10 +42,12 @@ describe('where the entry sits', () => {
     expect(announcements).toBeDefined()
     /*
      * Emoji packs joined Platform in phase G4 — no price, so not Diamonds —
-     * and the gift catalog followed in T0.
+     * and the gift catalog followed in T0. Legal & policies (LG1) sits right
+     * after Announcements — both are platform content.
      */
     expect(platform?.items.map((item) => item.label)).toEqual([
       'Announcements',
+      'Legal & policies',
       'Emoji packs',
       'Gift catalog',
       'System Settings',

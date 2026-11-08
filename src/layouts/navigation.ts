@@ -11,6 +11,7 @@ import {
   Mic,
   Package,
   Radio,
+  Scale,
   Settings2,
   ShieldCheck,
   Smile,
@@ -367,6 +368,17 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Megaphone,
         permission: PERMISSIONS.notificationsBroadcast,
         matchPrefix: '/announcements',
+      },
+      /*
+       * Legal & policies (plan.md D6, LG1). Platform content like
+       * Announcements; `legal.view` — ADMIN and SUPER_ADMIN, no Moderator.
+       */
+      {
+        label: 'Legal & policies',
+        to: ROUTES.legal,
+        icon: Scale,
+        permission: PERMISSIONS.legalView,
+        matchPrefix: '/legal',
       },
       /*
        * Phase G4. Beside Announcements because both are platform content

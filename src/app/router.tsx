@@ -135,6 +135,22 @@ const LiveStreamsPage = lazy(() =>
     default: m.LiveStreamsPage,
   })),
 )
+const LegalPage = lazy(() =>
+  import('@/features/legal/LegalPage').then((m) => ({ default: m.LegalPage })),
+)
+const LegalDocumentPage = lazy(() =>
+  import('@/features/legal/LegalDocumentPage').then((m) => ({
+    default: m.LegalDocumentPage,
+  })),
+)
+const LegalNewPage = lazy(() =>
+  import('@/features/legal/LegalEditorPage').then((m) => ({ default: m.LegalNewPage })),
+)
+const LegalEditPage = lazy(() =>
+  import('@/features/legal/LegalEditorPage').then((m) => ({
+    default: m.LegalEditPage,
+  })),
+)
 const WithdrawalsPage = lazy(() =>
   import('@/features/withdrawals/WithdrawalsPage').then((m) => ({
     default: m.WithdrawalsPage,
@@ -522,6 +538,45 @@ const moduleRoutes: RouteObject[] = [
     element: (
       <RequirePermission permission={PERMISSIONS.liveView} resource="live streams">
         {suspended(<LiveRoomPage />)}
+      </RequirePermission>
+    ),
+  },
+
+  /*
+   * Legal & policies (plan.md LG1). `legal.view` — ADMIN and SUPER_ADMIN.
+   * Editing and publishing check their own, narrower keys.
+   */
+  {
+    path: ROUTES.legal,
+    element: (
+      <RequirePermission permission={PERMISSIONS.legalView} resource="legal documents">
+        {suspended(<LegalPage />)}
+      </RequirePermission>
+    ),
+  },
+  /* LG3: drafts. `legal.edit` — ADMIN and SUPER_ADMIN. `new` ranks above `:legalId`. */
+  {
+    path: '/legal/new',
+    element: (
+      <RequirePermission permission={PERMISSIONS.legalEdit} resource="legal drafts">
+        {suspended(<LegalNewPage />)}
+      </RequirePermission>
+    ),
+  },
+  /* LG5: any version, read-only. `legal.view`. */
+  {
+    path: '/legal/:legalId',
+    element: (
+      <RequirePermission permission={PERMISSIONS.legalView} resource="legal documents">
+        {suspended(<LegalDocumentPage />)}
+      </RequirePermission>
+    ),
+  },
+  {
+    path: '/legal/:legalId/edit',
+    element: (
+      <RequirePermission permission={PERMISSIONS.legalEdit} resource="legal drafts">
+        {suspended(<LegalEditPage />)}
       </RequirePermission>
     ),
   },

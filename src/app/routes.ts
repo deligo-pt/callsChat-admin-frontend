@@ -203,6 +203,27 @@ export const ROUTES = {
    */
   announcements: '/announcements',
   /**
+   * Legal & policies (plan.md §3, LG0). `new` is matched before `:id`.
+   * `legalFor` keeps the overview's tab and type filter in the query string.
+   */
+  legal: '/legal',
+  legalFor: (filter: { tab?: string; type?: string }) => {
+    const query = new URLSearchParams()
+    if (filter.tab) query.set('tab', filter.tab)
+    if (filter.type) query.set('type', filter.type)
+    const text = query.toString()
+    return text ? `/legal?${text}` : '/legal'
+  },
+  legalNew: (type?: string, fromId?: string) => {
+    const query = new URLSearchParams()
+    if (type) query.set('type', type)
+    if (fromId) query.set('from', fromId)
+    const text = query.toString()
+    return text ? `/legal/new?${text}` : '/legal/new'
+  },
+  legalDoc: (id: string) => `/legal/${encodeURIComponent(id)}`,
+  legalEdit: (id: string) => `/legal/${encodeURIComponent(id)}/edit`,
+  /**
    * Emoji packs (plan.md §3.4, phase G4). **In Platform, not under
    * `/diamonds`** — a pack has no price, and the Diamonds section is about
    * money.

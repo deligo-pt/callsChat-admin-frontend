@@ -1504,3 +1504,93 @@ test('every withdrawal badge and tile is legible on its own background', async (
     )
   }
 })
+
+/* ------------------------------------------------------------------ *
+ * Legal & policies (LG6)
+ *
+ * New on these screens: the `legal` status tones (DRAFT neutral, PUBLISHED as
+ * "Active" in success, ARCHIVED locked), the amber "Upcoming" chip on a policy
+ * card, the "things to check" chip, the Split / Write / Preview switch, and the
+ * preview's own header band, with a primary-soft "Legal" chip on a muted
+ * ground. Muted prose is everywhere, so the subtle-token debt is tolerated
+ * exactly as above, and nothing else.
+ * ------------------------------------------------------------------ */
+
+const LEGAL_DRAFT_EDIT = '/legal/cmwlegalprivacy110000000001/edit'
+
+test('the legal list has no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/legal')
+  await expect(page.getByText('Upcoming')).toBeVisible()
+  await settled(page)
+  const drafts = (await contrastViolations(page, 'main')).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(drafts).toEqual([])
+
+  await page.getByRole('tab', { name: /^History/ }).click()
+  await expect(page.getByText('Archived').first()).toBeVisible()
+  await settled(page)
+  const history = (await contrastViolations(page, 'main')).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(history).toEqual([])
+})
+
+test('the legal editor and its preview have no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto(LEGAL_DRAFT_EDIT)
+  const text = page.getByRole('textbox', { name: /Policy text/ })
+  /* A duplicate heading, so the amber "things to check" chip is painted. */
+  await text.fill('Intro.\n\n## Same\nOne.\n\n## Same\nTwo.')
+  await expect(page.getByRole('button', { name: /thing to check/ })).toBeVisible()
+  if ((page.viewportSize()?.width ?? 0) < 1280)
+    await page.getByRole('button', { name: 'Preview', exact: true }).click()
+  await expect(page.getByRole('article', { name: /^Preview of/ })).toBeVisible()
+  await settled(page)
+  const unexpected = (await contrastViolations(page, 'main')).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the legal publish confirmation has no contrast violations', async ({ page }) => {
+  /* The last thing read before an irreversible publish. */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto(LEGAL_DRAFT_EDIT)
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /Publish/ })
+    .click()
+  await expect(page.getByRole('dialog')).toContainText('v1.1.0 (new)')
+  await settled(page)
+  const unexpected = (
+    await contrastViolations(page, '[data-slot="dialog-content"]')
+  ).filter((node) => node.color !== KNOWN_SUBTLE_TOKEN)
+  expect(unexpected).toEqual([])
+})
+
+test('the legal new-version setup and a published version have no contrast violations beyond known token debt', async ({
+  page,
+}) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/legal/new?type=PRIVACY_POLICY&from=cmwlegalprivacy100000000001')
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible()
+  await settled(page)
+  const setup = (await contrastViolations(page, 'main')).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(setup).toEqual([])
+
+  await page.goto('/legal/cmwlegalprivacy100000000001')
+  await expect(page.getByText('Changes since v0.9.0')).toBeVisible()
+  await settled(page)
+  const published = (await contrastViolations(page, 'main')).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(published).toEqual([])
+})
