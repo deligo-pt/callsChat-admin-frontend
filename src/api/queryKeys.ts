@@ -97,6 +97,12 @@ export const queryKeys = {
     settings: () => ['withdrawals', 'settings'] as const,
   },
 
+  /**
+   * Legal & policy documents (plan.md LG0). Every write invalidates `all`:
+   * publishing archives another row, so no single detail can be patched alone.
+   */
+  legal: domain('legal'),
+
   auditLogs: domain('audit-logs'),
 
   /**

@@ -109,6 +109,21 @@ export const PERMISSIONS = {
    */
   verificationsReview: 'verifications.review',
 
+  /**
+   * Legal & policy CMS — `/admin/legal/documents/*` (plan.md D1, LG0).
+   *
+   * The backend guard is `verifyAdmin`, which per the guide also admits
+   * MODERATOR — for every route, publish included (plan.md O7). The panel is
+   * deliberately narrower, by the user's decision D1 (2026-11-08):
+   * - `legal.view` + `legal.edit` (create, edit, delete drafts): ADMIN and up;
+   * - `legal.publish`: SUPER_ADMIN only, because a publish is permanent and
+   *   public, with no unpublish or delete afterwards;
+   * - MODERATOR: none.
+   */
+  legalView: 'legal.view',
+  legalEdit: 'legal.edit',
+  legalPublish: 'legal.publish',
+
   auditLogsView: 'audit_logs.view',
 
   configurationView: 'configuration.view',
@@ -242,6 +257,9 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
    * named recipients, which this API cannot do at all, and nothing consumes it.
    */
   PERMISSIONS.notificationsBroadcast,
+  /* Drafts only; `legalPublish` stays Super Admin (plan.md D1). */
+  PERMISSIONS.legalView,
+  PERMISSIONS.legalEdit,
   PERMISSIONS.auditLogsView,
   PERMISSIONS.configurationView,
   /*

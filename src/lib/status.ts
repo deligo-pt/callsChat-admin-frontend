@@ -44,6 +44,7 @@ export type StatusDomain =
   | 'announcement'
   | 'announcementPriority'
   | 'liveRoom'
+  | 'legal'
 
 type DomainMap = Readonly<Record<string, StatusDescriptor>>
 
@@ -315,6 +316,13 @@ const VERIFICATION: DomainMap = {
  * recoverable by setting the status back, which is exactly what `locked` means
  * everywhere else in this file. `danger` would claim something went wrong.
  */
+/** Legal & policy documents (plan.md LG1). Only one PUBLISHED per type. */
+const LEGAL: DomainMap = {
+  DRAFT: { label: 'Draft', tone: 'neutral' },
+  PUBLISHED: { label: 'Active', tone: 'success' },
+  ARCHIVED: { label: 'Archived', tone: 'locked' },
+}
+
 const ANNOUNCEMENT: DomainMap = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
   PUBLISHED: { label: 'Published', tone: 'success' },
@@ -380,6 +388,7 @@ const DOMAINS: Readonly<Record<StatusDomain, DomainMap>> = {
   announcement: ANNOUNCEMENT,
   announcementPriority: ANNOUNCEMENT_PRIORITY,
   liveRoom: LIVE_ROOM,
+  legal: LEGAL,
 }
 
 /** The three states the maintenance card and the global banner can be in. */
