@@ -4,6 +4,7 @@ import { bootstrapHandlers } from './bootstrap'
 import { catalogHandlers } from './catalog'
 import { feedbackHandlers } from './feedback'
 import { hostHandlers } from './hosts'
+import { dashboardHandlers } from './dashboard'
 import { legalHandlers } from './legal'
 import { liveRoomHandlers } from './liveRooms'
 import { resourceHandlers } from './resources'
@@ -51,5 +52,7 @@ export const handlers = [
   ...withdrawalHandlers,
   /* Legal CMS (plan.md LG0) — real routes in front of anything generic. */
   ...legalHandlers,
+  /* Before `resourceHandlers` too: its catch-all would answer `/admin/analytics`. */
+  ...dashboardHandlers,
   ...resourceHandlers,
 ]

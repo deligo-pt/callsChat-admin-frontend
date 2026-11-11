@@ -194,3 +194,15 @@ export async function seedLiveFixtures(page: Page): Promise<void> {
     sessionStorage.setItem('callschat.mocks.live.seeded', '1')
   })
 }
+
+/**
+ * Switch the dashboard mock from staging's quiet numbers to a busy platform
+ * (plan.md DB0), before the app boots. Same contract as
+ * {@link seedLiveFixtures}: the flag is read once when the mock worker starts
+ * and survives `page.goto` and `page.reload`.
+ */
+export async function seedDashboardFixtures(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('callschat.mocks.dashboard.seeded', '1')
+  })
+}
