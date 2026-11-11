@@ -103,6 +103,14 @@ export const queryKeys = {
    */
   legal: domain('legal'),
 
+  /** Admin dashboard (plan.md DB0). Read-only, so no list/detail split. */
+  dashboard: {
+    all: ['dashboard'] as const,
+    snapshot: () => ['dashboard', 'snapshot'] as const,
+    trends: (timeframe: string) => ['dashboard', 'trends', timeframe] as const,
+    economyRates: () => ['dashboard', 'economy-rates'] as const,
+  },
+
   auditLogs: domain('audit-logs'),
 
   /**

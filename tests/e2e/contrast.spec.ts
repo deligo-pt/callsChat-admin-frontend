@@ -416,8 +416,18 @@ async function settled(page: Page, gatedControl?: Locator): Promise<void> {
    */
   if (gatedControl) await expect(gatedControl).toBeVisible()
 
+  /*
+   * A looping animation never finishes — the dashboard's "Live" pulse runs for
+   * as long as the page is open — so only animations that end are waited for.
+   */
   await page.waitForFunction(() =>
-    document.getAnimations().every((animation) => animation.playState !== 'running'),
+    document
+      .getAnimations()
+      .every(
+        (animation) =>
+          animation.playState !== 'running' ||
+          animation.effect?.getTiming().iterations === Infinity,
+      ),
   )
 }
 
@@ -1429,24 +1439,16 @@ test('withdrawal settings and the switch-off confirmation are legible', async ({
   expect((await contrastViolations(page, '[role="dialog"]')).filter(DEBT)).toEqual([])
 })
 
-test('the live withdrawals card on the dashboard is legible', async ({ page }) => {
-  await signIn(page, ACCOUNTS.superAdmin)
-  await page.goto('/dashboard')
-  await expect(page.getByText('Waiting for review')).toBeVisible()
-  await settled(page)
-  expect((await contrastViolations(page)).filter(DEBT)).toEqual([])
-})
-
-test('every withdrawal badge and tile is legible on its own background', async ({
-  page,
-}) => {
-  /* Measured per element, as the other tones are: axe misreads tinted fills. */
-  await signIn(page, ACCOUNTS.superAdmin)
-  await page.goto('/withdrawals?status=ALL')
-  await expect(page.getByRole('main').getByText('7 requests found.')).toBeAttached()
-  await settled(page)
-
-  const ratios = await page.evaluate(() => {
+/**
+ * Contrast of every text leaf inside a tinted fill (`*-soft`, the muted
+ * surface), measured per element against the colour actually painted behind
+ * it. axe misreads tinted fills, so badges, chips and tiles are checked this
+ * way. Text in the known subtle token is left to the token-debt allowance.
+ */
+async function tintedTextRatios(
+  page: Page,
+): Promise<{ label: string; ratio: number }[]> {
+  return page.evaluate(() => {
     function luminance(rgb: string): number {
       const [r, g, b] = (rgb.match(/\d+/g) ?? ['0', '0', '0']).map(Number) as [
         number,
@@ -1496,8 +1498,97 @@ test('every withdrawal badge and tile is legible on its own background', async (
         }
       })
   })
+}
+
+test('every withdrawal badge and tile is legible on its own background', async ({
+  page,
+}) => {
+  /* Measured per element, as the other tones are: axe misreads tinted fills. */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/withdrawals?status=ALL')
+  await expect(page.getByRole('main').getByText('7 requests found.')).toBeAttached()
+  await settled(page)
+
+  const ratios = await tintedTextRatios(page)
 
   expect(ratios.length).toBeGreaterThan(0)
+  for (const item of ratios) {
+    expect(item.ratio, `${item.label} at ${item.ratio.toFixed(2)}:1`).toBeGreaterThan(
+      4.5,
+    )
+  }
+})
+
+/* ------------------------------------------------------------------ *
+ * Dashboard (DB6)
+ *
+ * New here: KPI cards with soft icon badges and change chips (success,
+ * danger, neutral), the queue's count badges (warning-soft, neutral-soft), the
+ * muted "no access" note, the economy and live split bars, and the chart's
+ * axis labels. Replaces the old withdrawals-card check, whose card is gone.
+ * ------------------------------------------------------------------ */
+
+async function openDashboard(page: Page, busy: boolean): Promise<void> {
+  if (busy) {
+    await page.addInitScript(() => {
+      sessionStorage.setItem('callschat.mocks.dashboard.seeded', '1')
+      sessionStorage.setItem('callschat.mocks.live.seeded', '1')
+    })
+  }
+  await signIn(page, ACCOUNTS.superAdmin)
+  await expect(page.getByRole('region', { name: 'All time' })).toContainText(
+    'Messages sent',
+  )
+  await expect(page.getByText('Waiting for review')).toBeVisible()
+  await settled(page)
+}
+
+for (const busy of [false, true]) {
+  const label = busy ? 'busy' : 'quiet'
+
+  test(`the dashboard has no contrast violations beyond known token debt (${label})`, async ({
+    page,
+  }) => {
+    await openDashboard(page, busy)
+    expect((await contrastViolations(page, 'main')).filter(DEBT)).toEqual([])
+  })
+
+  test(`every dashboard chip, badge and tile is legible on its own fill (${label})`, async ({
+    page,
+  }) => {
+    await openDashboard(page, busy)
+    const ratios = await tintedTextRatios(page)
+    expect(ratios.length).toBeGreaterThan(0)
+    for (const item of ratios) {
+      expect(item.ratio, `${item.label} at ${item.ratio.toFixed(2)}:1`).toBeGreaterThan(
+        4.5,
+      )
+    }
+  })
+}
+
+test('the dashboard’s “no access” and error notes are legible', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem(
+      'callschat.mocks.dashboard.failing',
+      JSON.stringify([
+        ['rates', 403],
+        ['trends', 500],
+      ]),
+    )
+  })
+  await signIn(page, ACCOUNTS.superAdmin)
+  await expect(
+    page.getByRole('region', { name: 'Activity' }).getByRole('alert'),
+  ).toBeVisible({
+    timeout: 15_000,
+  })
+  await expect(
+    page.getByRole('region', { name: 'Economy' }).getByRole('status'),
+  ).toBeVisible()
+  await settled(page)
+  expect((await contrastViolations(page, 'main')).filter(DEBT)).toEqual([])
+  const ratios = await tintedTextRatios(page)
   for (const item of ratios) {
     expect(item.ratio, `${item.label} at ${item.ratio.toFixed(2)}:1`).toBeGreaterThan(
       4.5,

@@ -1,6 +1,7 @@
 import { setupWorker } from 'msw/browser'
 
 import { handlers } from './handlers'
+import { exposeDashboardFixtureControls } from './handlers/dashboard'
 import { exposeHostFixtureControls } from './handlers/hosts'
 import { exposeLiveFixtureControls } from './handlers/liveRooms'
 import { exposeWalletFixtureControls } from './handlers/wallet'
@@ -21,6 +22,7 @@ export async function startMockBackend(): Promise<void> {
   exposeWalletFixtureControls()
   exposeLedgerFixtureControls()
   exposeLiveFixtureControls()
+  exposeDashboardFixtureControls()
 
   await worker.start({
     onUnhandledRequest: 'bypass',
@@ -35,6 +37,8 @@ export async function startMockBackend(): Promise<void> {
       'The host queue and roster start empty, as production does — ' +
       'populate them with __mockHosts.seed(). The diamond wallet queue and ' +
       'packages do the same: __mockWallet.seed(). Live streams start with ' +
-      'every room ended, as staging is — add live rooms with __mockLive.seed().',
+      'every room ended, as staging is — add live rooms with __mockLive.seed(). ' +
+      'The dashboard shows staging’s quiet numbers; __mockDashboard.seed() makes it busy, and ' +
+      "__mockDashboard.fail('snapshot' | 'trends' | 'rates', 403 | 429 | 500) breaks one source.",
   )
 }
