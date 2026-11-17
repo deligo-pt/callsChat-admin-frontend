@@ -66,7 +66,10 @@ export function diffVersions(
   }
 }
 
-/** The version of the same type just below this one, in any status but DRAFT. */
+/**
+ * The version of the same type and app just below this one, in any status but
+ * DRAFT. Personal and Business number their versions separately.
+ */
 export function previousVersion(
   doc: LegalDocument,
   docs: readonly LegalDocument[],
@@ -75,6 +78,7 @@ export function previousVersion(
     .filter(
       (row) =>
         row.documentType === doc.documentType &&
+        row.appType === doc.appType &&
         row.id !== doc.id &&
         row.status !== 'DRAFT' &&
         compareVersions(row.version, doc.version) < 0,

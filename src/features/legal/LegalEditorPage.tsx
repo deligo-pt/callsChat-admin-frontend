@@ -58,12 +58,14 @@ import { cn } from '@/lib/cn'
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery'
 import { useUnsavedChangesGuard } from '@/lib/hooks/useUnsavedChangesGuard'
 import {
+  isLegalAppType,
   isLegalDocumentType,
+  type LegalAppType,
   type LegalDocument,
   type LegalDocumentType,
 } from '@/types/legal'
 
-import { activeByType, TYPE_LABELS } from './labels'
+import { activeByType, APP_LABELS, seriesLabel } from './labels'
 import {
   emptyFormValues,
   formValuesFrom,
@@ -119,6 +121,7 @@ export function LegalNewPage() {
 
   const fromId = params.get('from') ?? undefined
   const rawType = params.get('type')?.toUpperCase()
+  const rawApp = params.get('app')?.toUpperCase()
 
   if (docs.isPending) return <LoadingState variant="form" />
   if (docs.isError) {
@@ -134,6 +137,13 @@ export function LegalNewPage() {
   const source = fromId ? all.find((doc) => doc.id === fromId) : undefined
   const type: LegalDocumentType =
     source?.documentType ?? (isLegalDocumentType(rawType) ? rawType : 'PRIVACY_POLICY')
+  /*
+   * `?app=business` wins over the source's app, so a Business draft can start
+   * from Personal text (LB3). Without it, the source's app; else Personal.
+   */
+  const app: LegalAppType = isLegalAppType(rawApp)
+    ? rawApp
+    : (source?.appType ?? 'PERSONAL')
 
   if (!choice || changing) {
     return (
@@ -143,7 +153,8 @@ export function LegalNewPage() {
         initial={
           choice ?? {
             documentType: type,
-            version: nextFreeVersion(all, type),
+            appType: app,
+            version: nextFreeVersion(all, type, app),
             effectiveDate: today(),
           }
         }
@@ -156,22 +167,32 @@ export function LegalNewPage() {
     )
   }
 
+  const { fromId: copyId, ...picked } = choice
+  /* The other app's live text, when the setup chose it (plan.md LB3). */
+  const copyFrom = (copyId ? all.find((doc) => doc.id === copyId) : undefined) ?? source
   const base: LegalFormValues =
-    kept && kept.documentType === choice.documentType
+    kept && kept.documentType === choice.documentType && kept.appType === choice.appType
       ? kept
-      : source
-        ? formValuesFrom(source, { changelog: '', requiresReconsent: false })
-        : emptyFormValues(choice.documentType, choice.version)
-  const initial: LegalFormValues = { ...base, ...choice }
+      : copyFrom
+        ? formValuesFrom(copyFrom, {
+            changelog: '',
+            requiresReconsent: false,
+            /* Personal text for Business keeps its body, not its name. */
+            ...(copyFrom.appType !== choice.appType
+              ? { title: seriesLabel(choice.documentType, choice.appType) }
+              : {}),
+          })
+        : emptyFormValues(choice.documentType, choice.version, choice.appType)
+  const initial: LegalFormValues = { ...base, ...picked }
 
   return (
     <LegalEditor
-      key={`${choice.documentType}:${choice.version}:${choice.effectiveDate}`}
+      key={`${choice.appType}:${choice.documentType}:${choice.version}:${choice.effectiveDate}:${copyId ?? ''}`}
       mode="create"
       initial={initial}
       startDirty={kept !== null}
       docs={all}
-      source={source}
+      source={copyFrom}
       onChangeVersion={(values) => {
         setKept(values)
         setChanging(true)
@@ -214,14 +235,16 @@ export function LegalEditPage() {
             { label: 'Legal & policies', to: ROUTES.legal },
             { label: 'Edit' },
           ]}
-          title={`${TYPE_LABELS[record.documentType]} v${record.version}`}
+          title={`${seriesLabel(record.documentType, record.appType)} v${record.version}`}
         />
         <NotFoundState
           title="This version can't be edited"
           description={`It is ${record.status === 'PUBLISHED' ? 'the published version' : 'archived'}. Published and archived versions are permanent. To change the text, start a new version from it.`}
           action={
             <Button asChild>
-              <Link to={ROUTES.legalNew(record.documentType, record.id)}>
+              <Link
+                to={ROUTES.legalNew(record.documentType, record.id, record.appType)}
+              >
                 New version from this
               </Link>
             </Button>
@@ -358,7 +381,7 @@ function LegalEditor({
         if (mode === 'create') {
           const created = await create.mutateAsync(toCreatePayload(formValues))
           toast.success(
-            `Draft v${created.version} of the ${TYPE_LABELS[created.documentType]} saved.`,
+            `Draft v${created.version} of the ${seriesLabel(created.documentType, created.appType)} saved.`,
           )
           flushSync(() => setLeaving(true))
           void navigate(ROUTES.legalEdit(created.id), { replace: true })
@@ -393,7 +416,7 @@ function LegalEditor({
       onSuccess: () => {
         setConfirmDelete(false)
         toast.success(`Draft v${doc.version} deleted.`)
-        leave(ROUTES.legalFor({ tab: 'drafts' }))
+        leave(ROUTES.legalFor({ tab: 'drafts', app: doc.appType }))
       },
       onError: (error) =>
         toast.error(
@@ -442,7 +465,13 @@ function LegalEditor({
     mode === 'create' ? 'New draft, not saved yet' : 'Draft',
     `Effective ${formatDay(values.effectiveDate)}`,
     values.requiresReconsent ? 'Users must accept again' : 'Re-consent not required',
-    ...(source ? [`Copied from v${source.version}`] : []),
+    ...(source
+      ? [
+          source.appType === values.appType
+            ? `Copied from v${source.version}`
+            : `Copied from ${APP_LABELS[source.appType]} v${source.version}`,
+        ]
+      : []),
   ].join(' · ')
 
   const saveState =
@@ -901,10 +930,13 @@ function LegalEditor({
       <PageHeader
         breadcrumbs={[
           { label: 'Legal & policies', to: ROUTES.legal },
-          { label: 'Drafts', to: ROUTES.legalFor({ tab: 'drafts' }) },
+          {
+            label: 'Drafts',
+            to: ROUTES.legalFor({ tab: 'drafts', app: values.appType }),
+          },
           { label: mode === 'create' ? 'New draft' : `v${doc?.version ?? ''}` },
         ]}
-        title={`${TYPE_LABELS[type]} v${values.version}`}
+        title={`${seriesLabel(type, values.appType)} v${values.version}`}
         description={facts}
         actions={actions}
       />
@@ -977,9 +1009,15 @@ function LegalEditor({
           open={publishing}
           onOpenChange={setPublishing}
           draft={doc}
-          active={activeByType(docs)[doc.documentType]}
+          active={activeByType(docs, doc.appType)[doc.documentType]}
           onPublished={() =>
-            leave(ROUTES.legalFor({ tab: 'history', type: doc.documentType }))
+            leave(
+              ROUTES.legalFor({
+                tab: 'history',
+                type: doc.documentType,
+                app: doc.appType,
+              }),
+            )
           }
         />
       ) : null}
@@ -989,7 +1027,7 @@ function LegalEditor({
           open={confirmDelete}
           onOpenChange={setConfirmDelete}
           title="Delete this draft?"
-          target={`${TYPE_LABELS[doc.documentType]} v${doc.version}`}
+          target={`${seriesLabel(doc.documentType, doc.appType)} v${doc.version}`}
           effect="The draft is removed for good. Published versions are not affected."
           severity="warning"
           reason="none"

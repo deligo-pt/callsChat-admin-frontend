@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { LegalDocument } from '@/types/legal'
+import { cn } from '@/lib/cn'
+import { LEGAL_APP_TYPES, type LegalAppType, type LegalDocument } from '@/types/legal'
 
 import {
   EditedCell,
@@ -27,17 +28,25 @@ import {
   TitleCell,
   VersionCell,
 } from './cells'
-import { activeByType, byRecent, TYPE_LABELS, TYPE_ORDER, typeLabel } from './labels'
+import {
+  activeByType,
+  APP_LABELS,
+  byRecent,
+  seriesLabel,
+  TYPE_LABELS,
+  TYPE_ORDER,
+} from './labels'
 import { PolicyCard } from './PolicyCard'
 import { useLegalDocuments } from './useLegal'
 import { useLegalParams, type LegalTab } from './useLegalParams'
 
 /**
- * Legal & policies — `/legal` (plan.md §3.1, LG1).
+ * Legal & policies — `/legal` (plan.md §3.1, LG1, LB2).
  *
- * Four cards say what is live per policy; the tabs hold the drafts being
- * written and the read-only record of everything published. One query feeds
- * all of it (see `useLegalDocuments`). Read-only in LG1.
+ * Each policy exists once per app. The app switch scopes the whole page; for
+ * that app, four cards say what is live per policy, and the tabs hold the
+ * drafts being written and the read-only record of everything published. One
+ * query feeds all of it (see `useLegalDocuments`).
  */
 
 const DRAFT_COLUMNS: readonly AdminColumn<LegalDocument>[] = [
@@ -77,14 +86,87 @@ const HISTORY_COLUMNS: readonly AdminColumn<LegalDocument>[] = [
 
 const ALL = 'ALL'
 
+/**
+ * Personal | Business (plan.md LB2, decision 1). The same control as the
+ * bootstrap settings' app switch, so the panel has one way to pick an app.
+ * Each segment says how many of the four policies are live for that app —
+ * the number that matters while the Business set is being written.
+ */
+function AppSwitch({
+  app,
+  live,
+  onSelect,
+}: {
+  app: LegalAppType
+  /** Live policies per app; `undefined` while loading or after a failure. */
+  live: Readonly<Record<LegalAppType, number>> | undefined
+  onSelect: (next: LegalAppType) => void
+}) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+      <span className="text-overline text-foreground-muted">App</span>
+      <div
+        role="group"
+        aria-label="App"
+        className="inline-flex rounded-md border border-border bg-surface-muted p-0.5"
+      >
+        {LEGAL_APP_TYPES.map((value) => {
+          const selected = value === app
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={selected}
+              aria-label={
+                live
+                  ? `${APP_LABELS[value]}, ${live[value]} of ${TYPE_ORDER.length} policies live`
+                  : undefined
+              }
+              onClick={() => onSelect(value)}
+              className={cn(
+                'inline-flex touch-target items-center gap-2 rounded-sm px-4 text-body font-medium transition-colors',
+                'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                selected
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-foreground-muted hover:text-foreground',
+              )}
+            >
+              {APP_LABELS[value]}
+              {live ? (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'font-mono text-caption tabular-nums',
+                    selected ? 'text-primary-foreground' : 'text-foreground-muted',
+                  )}
+                >
+                  {live[value]}/{TYPE_ORDER.length}
+                </span>
+              ) : null}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function LegalPage() {
-  const { tab, type, setTab, setType, showHistory } = useLegalParams()
+  const { app, tab, type, setApp, setTab, setType, showHistory } = useLegalParams()
   const canEdit = useCan(PERMISSIONS.legalEdit)
   const navigate = useNavigate()
   const query = useLegalDocuments()
-  const docs = query.data ?? []
+  /* Everything below is one app's: a Business draft never passes for a Personal one. */
+  const docs = (query.data ?? []).filter((doc) => doc.appType === app)
+  const live = query.data
+    ? {
+        PERSONAL: Object.keys(activeByType(query.data, 'PERSONAL')).length,
+        BUSINESS: Object.keys(activeByType(query.data, 'BUSINESS')).length,
+      }
+    : undefined
+  const business = app === 'BUSINESS'
   const loading = query.isPending
-  const active = activeByType(docs)
+  const active = activeByType(docs, app)
 
   const ofType = (doc: LegalDocument) => !type || doc.documentType === type
   const drafts = docs.filter((doc) => doc.status === 'DRAFT').sort(byRecent)
@@ -142,20 +224,28 @@ export function LegalPage() {
         rows={shownDrafts}
         columns={DRAFT_COLUMNS}
         rowKey={(doc) => doc.id}
-        rowLabel={(doc) => `Edit ${typeLabel(doc.documentType)} v${doc.version}`}
+        rowLabel={(doc) =>
+          `Edit ${seriesLabel(doc.documentType, doc.appType)} v${doc.version}`
+        }
         onRowClick={(doc) =>
           void navigate(canEdit ? ROUTES.legalEdit(doc.id) : ROUTES.legalDoc(doc.id))
         }
         loading={loading}
         error={error}
         onRetry={() => void query.refetch()}
-        emptyTitle={type ? `No ${TYPE_LABELS[type]} drafts` : 'No drafts in progress'}
+        emptyTitle={
+          type
+            ? `No ${seriesLabel(type, app)} drafts`
+            : business
+              ? 'No Business drafts in progress'
+              : 'No drafts in progress'
+        }
         emptyDescription="A draft is a new version being written. It stays private until it is published."
         emptyAction={
           clearType ??
           (canEdit ? (
             <Button variant="outline" asChild>
-              <Link to={ROUTES.legalNew()}>
+              <Link to={ROUTES.legalNew(undefined, undefined, app)}>
                 <FilePlus2 /> New draft
               </Link>
             </Button>
@@ -172,15 +262,19 @@ export function LegalPage() {
         rows={shownHistory}
         columns={HISTORY_COLUMNS}
         rowKey={(doc) => doc.id}
-        rowLabel={(doc) => `Open ${typeLabel(doc.documentType)} v${doc.version}`}
+        rowLabel={(doc) =>
+          `Open ${seriesLabel(doc.documentType, doc.appType)} v${doc.version}`
+        }
         onRowClick={(doc) => void navigate(ROUTES.legalDoc(doc.id))}
         loading={loading}
         error={error}
         onRetry={() => void query.refetch()}
         emptyTitle={
           type
-            ? `${TYPE_LABELS[type]} has never been published`
-            : 'Nothing published yet'
+            ? `${seriesLabel(type, app)} has never been published`
+            : business
+              ? 'Nothing published for Business yet'
+              : 'Nothing published yet'
         }
         emptyDescription="Published versions are kept here permanently, including the ones a newer version replaced. They can't be edited or deleted."
         emptyAction={clearType}
@@ -196,7 +290,7 @@ export function LegalPage() {
         actions={
           canEdit ? (
             <Button asChild>
-              <Link to={ROUTES.legalNew(type)}>
+              <Link to={ROUTES.legalNew(type, undefined, app)}>
                 <FilePlus2 /> New draft
               </Link>
             </Button>
@@ -213,15 +307,19 @@ export function LegalPage() {
         </AlertDescription>
       </Alert>
 
-      <section aria-label="Active policies">
+      <AppSwitch app={app} live={live} onSelect={setApp} />
+
+      <section aria-label={`Active ${APP_LABELS[app]} policies`}>
         <ul className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
           {TYPE_ORDER.map((value) => (
             <li key={value} className="flex min-w-0">
               <PolicyCard
                 type={value}
+                app={app}
                 active={active[value]}
                 drafts={drafts.filter((doc) => doc.documentType === value)}
                 loading={loading}
+                unavailable={query.isError && !query.data}
                 onShowHistory={() => showHistory(value)}
                 canEdit={canEdit}
               />

@@ -10,14 +10,15 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { LegalDocument } from '@/types/legal'
 
-import { TYPE_LABELS } from './labels'
+import { APP_LABELS, seriesLabel } from './labels'
 import { toIsoDay } from './legalForm'
 import { usePublishLegalDocument } from './useLegal'
 
 /**
  * Publish a draft (plan.md §3.4, LG4). `legal.publish` — Super Admin only.
  *
- * ⚠️ **Irreversible.** The server archives the type's active version, makes
+ * ⚠️ **Irreversible.** The server archives the type's active version **in the
+ * same app** (Personal and Business never touch each other, LB3), makes
  * this one public, and from then on neither can be edited, unpublished or
  * deleted. So: the version change is spelled out, the effect is stated
  * plainly, and the operator types the version number to confirm.
@@ -71,7 +72,9 @@ function PublishDialogBody({
     }
   }
 
-  const label = TYPE_LABELS[draft.documentType]
+  const label = seriesLabel(draft.documentType, draft.appType)
+  const appName = APP_LABELS[draft.appType]
+  const otherName = APP_LABELS[draft.appType === 'PERSONAL' ? 'BUSINESS' : 'PERSONAL']
   const validDay = DAY.test(day)
   const today = new Date().toISOString().slice(0, 10)
 
@@ -111,8 +114,8 @@ function PublishDialogBody({
       target={`${label} v${draft.version}`}
       effect={
         active
-          ? `v${active.version} is archived and this version becomes the one the apps show. Neither can be edited, unpublished or deleted afterwards.`
-          : 'This becomes the first published version of this policy. It can’t be edited, unpublished or deleted afterwards.'
+          ? `v${active.version} is archived and this version becomes the one the ${appName} app shows. ${otherName} is not affected. Neither version can be edited, unpublished or deleted afterwards.`
+          : `This becomes the first published version of this policy for the ${appName} app. ${otherName} is not affected. It can’t be edited, unpublished or deleted afterwards.`
       }
       severity="critical"
       reason="none"
@@ -134,7 +137,7 @@ function PublishDialogBody({
           </p>
           <p className="text-caption text-foreground-muted">
             The website still shows its built-in text until it is switched to the API,
-            so this changes what the apps show first.
+            so this changes what the {appName} app shows first.
           </p>
         </div>
       }
