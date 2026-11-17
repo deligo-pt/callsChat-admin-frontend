@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCopyToClipboard } from '@/lib/hooks/useCopyToClipboard'
-import type { LegalDocument, LegalDocumentType } from '@/types/legal'
+import type { LegalAppType, LegalDocument, LegalDocumentType } from '@/types/legal'
 
 import { AdminName } from './cells'
 import { isUpcoming, publicUrl, TYPE_DESCRIPTIONS, TYPE_LABELS } from './labels'
@@ -26,9 +26,17 @@ import { isUpcoming, publicUrl, TYPE_DESCRIPTIONS, TYPE_LABELS } from './labels'
 
 export interface PolicyCardProps {
   readonly type: LegalDocumentType
+  /** The app the card speaks for; `active` and `drafts` must belong to it. */
+  readonly app: LegalAppType
   readonly active: LegalDocument | undefined
   readonly drafts: readonly LegalDocument[]
   readonly loading: boolean
+  /**
+   * The list failed with nothing to show (plan.md LB0). The card must not
+   * claim "Not published yet" or offer a first version: a policy may well be
+   * live. The page's error, with Retry, sits in the tabs below.
+   */
+  readonly unavailable?: boolean
   readonly onShowHistory: () => void
   /** Shows "New version" and links drafts to the editor (`legal.edit`). */
   readonly canEdit: boolean
@@ -45,13 +53,15 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export function PolicyCard({
   type,
+  app,
   active,
   drafts,
   loading,
+  unavailable = false,
   onShowHistory,
   canEdit,
 }: PolicyCardProps) {
-  const url = publicUrl(type)
+  const url = publicUrl(type, app)
   const { copy, copied } = useCopyToClipboard()
   const upcoming = active ? isUpcoming(active) : false
   const titleId = `policy-${type.toLowerCase()}`
@@ -83,6 +93,10 @@ export function PolicyCard({
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-2/3" />
           </div>
+        ) : unavailable ? (
+          <p className="text-body text-foreground-muted">
+            Couldn’t check what is published. Try again below.
+          </p>
         ) : active ? (
           <dl className="space-y-2">
             <Row label={upcoming ? 'Takes effect' : 'In effect since'}>
@@ -100,8 +114,9 @@ export function PolicyCard({
           </dl>
         ) : (
           <p className="text-body text-foreground-muted">
-            Not published yet. The apps and website have no version of this policy from
-            the API.
+            {app === 'BUSINESS'
+              ? 'Not written for Business yet. The Business app has no version of this policy from the API.'
+              : 'Not published yet. The apps and website have no version of this policy from the API.'}
           </p>
         )}
 
@@ -124,21 +139,28 @@ export function PolicyCard({
       </CardContent>
 
       <CardFooter className="flex flex-wrap items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => void copy(url)}
-          className="min-w-0 truncate text-left text-caption text-primary hover:underline"
-          title={`Copy ${url}`}
-        >
-          {copied ? 'Link copied' : url.replace('https://', '')}
-        </button>
+        {url ? (
+          <button
+            type="button"
+            onClick={() => void copy(url)}
+            className="min-w-0 truncate text-left text-caption text-primary hover:underline"
+            title={`Copy ${url}`}
+          >
+            {copied ? 'Link copied' : url.replace('https://', '')}
+          </button>
+        ) : (
+          /* No website address given for this Business policy yet (plan.md B4). */
+          <span className="text-caption text-foreground-muted">
+            No website address yet
+          </span>
+        )}
         <span className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={onShowHistory}>
             <History /> History
           </Button>
-          {canEdit ? (
+          {canEdit && !unavailable ? (
             <Button variant="outline" size="sm" asChild>
-              <Link to={ROUTES.legalNew(type, active?.id)}>
+              <Link to={ROUTES.legalNew(type, active?.id, app)}>
                 <FilePlus2 /> {active ? 'New version' : 'Write first version'}
               </Link>
             </Button>

@@ -1,16 +1,18 @@
 import { z } from 'zod'
 
 import {
+  LEGAL_APP_TYPES,
   LEGAL_CONTENT_MIN,
   LEGAL_DOCUMENT_TYPES,
   SEMVER_PATTERN,
+  type LegalAppType,
   type LegalDocument,
   type LegalDocumentCreate,
   type LegalDocumentType,
   type LegalDocumentUpdate,
 } from '@/types/legal'
 
-import { TYPE_LABELS } from './labels'
+import { seriesLabel, TYPE_LABELS } from './labels'
 
 /**
  * The draft editor's form (plan.md §3.2, LG3).
@@ -31,6 +33,8 @@ const emailSchema = z.object({
 export const legalFormSchema = z
   .object({
     documentType: z.enum(LEGAL_DOCUMENT_TYPES),
+    /** Fixed once the draft exists: sent on create, never on update. */
+    appType: z.enum(LEGAL_APP_TYPES),
     version: z
       .string()
       .trim()
@@ -76,6 +80,7 @@ export type LegalFormValues = z.infer<typeof legalFormSchema>
 /** Fields a server `body/<field>` message can be pinned to. */
 export const LEGAL_FORM_FIELDS = [
   'documentType',
+  'appType',
   'version',
   'title',
   'subtitle',
@@ -114,11 +119,13 @@ function today(): string {
 export function emptyFormValues(
   type: LegalDocumentType,
   version: string,
+  app: LegalAppType,
 ): LegalFormValues {
   return {
     documentType: type,
+    appType: app,
     version,
-    title: TYPE_LABELS[type],
+    title: seriesLabel(type, app),
     subtitle: 'CallsChat LLC • United States',
     effectiveDate: today(),
     contentMarkdown: templateMarkdown(type),
@@ -137,6 +144,7 @@ export function formValuesFrom(
 ): LegalFormValues {
   return {
     documentType: doc.documentType,
+    appType: doc.appType,
     version: doc.version,
     title: doc.title,
     subtitle: doc.subtitle ?? '',
@@ -181,6 +189,7 @@ export function toCreatePayload(values: LegalFormValues): LegalDocumentCreate {
   const changelog = values.changelog.trim()
   return {
     documentType: values.documentType,
+    appType: values.appType,
     version: values.version.trim(),
     title: values.title.trim(),
     ...(subtitle ? { subtitle } : {}),
@@ -195,7 +204,8 @@ export function toCreatePayload(values: LegalFormValues): LegalDocumentCreate {
 
 /**
  * `PUT` body. `version` and `documentType` are never sent (the server ignores
- * them). ⚠️ `subtitle` and `contact` cannot be cleared — `null` is a 400 — so
+ * them), nor `appType` (the server would move the draft but keep its slug,
+ * plan.md B1). ⚠️ `subtitle` and `contact` cannot be cleared — `null` is a 400 — so
  * an emptied subtitle or a removed contact is simply not sent; the form
  * prevents both and says why (plan.md O4). `consent` and `changelog` clear
  * with `""`, which the server accepts.
@@ -247,13 +257,14 @@ export function bumpVersion(version: string | undefined, bump: Bump): string {
   return `${major}.${minor}.${patch + 1}`
 }
 
-/** The highest version already used for a type, in any status. */
+/** The highest version already used for a type in one app, in any status. */
 export function latestVersion(
   docs: readonly LegalDocument[],
   type: LegalDocumentType,
+  app: LegalAppType,
 ): string | undefined {
   return docs
-    .filter((doc) => doc.documentType === type)
+    .filter((doc) => doc.documentType === type && doc.appType === app)
     .map((doc) => doc.version)
     .sort(compareVersions)
     .at(-1)
@@ -263,13 +274,16 @@ export function latestVersion(
 export function nextFreeVersion(
   docs: readonly LegalDocument[],
   type: LegalDocumentType,
+  app: LegalAppType,
   bump: Bump = 'minor',
 ): string {
   const taken = new Set(
-    docs.filter((doc) => doc.documentType === type).map((doc) => doc.version),
+    docs
+      .filter((doc) => doc.documentType === type && doc.appType === app)
+      .map((doc) => doc.version),
   )
-  let candidate = bumpVersion(latestVersion(docs, type), bump)
-  if (!latestVersion(docs, type)) candidate = '1.0.0'
+  const latest = latestVersion(docs, type, app)
+  let candidate = latest ? bumpVersion(latest, bump) : '1.0.0'
   while (taken.has(candidate)) candidate = bumpVersion(candidate, 'patch')
   return candidate
 }

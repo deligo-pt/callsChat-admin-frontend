@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 
 import {
+  LEGAL_APP_TYPES,
   LEGAL_DOCUMENT_TYPES,
   LEGAL_SLUGS,
   LEGAL_STATUSES,
@@ -73,22 +74,57 @@ test('the real list, each status and a detail parse with the panel’s schemas',
   expect(doc.error?.issues ?? []).toEqual([])
 })
 
+test('every row says which app it belongs to, and the app filter holds', async ({
+  request,
+}) => {
+  /*
+   * plan.md LB1. The schema defaults a missing `appType` to PERSONAL, so a
+   * parse alone would not notice the server dropping it: the raw rows are
+   * checked too.
+   */
+  const raw = (await get(request, '/admin/legal/documents?limit=50')).body as {
+    data?: { appType?: unknown }[]
+  }
+  for (const row of raw.data ?? []) expect(LEGAL_APP_TYPES).toContain(row.appType)
+
+  for (const app of LEGAL_APP_TYPES) {
+    const page = await get(request, `/admin/legal/documents?appType=${app}&limit=50`)
+    expect(page.status, app).toBe(200)
+    const parsed = legalListSchema.safeParse(page.body)
+    expect(parsed.error?.issues ?? [], app).toEqual([])
+    for (const row of parsed.data?.data ?? []) expect(row.appType, app).toBe(app)
+  }
+  /* The panel only ever sends the two values; anything else is refused. */
+  expect((await get(request, '/admin/legal/documents?appType=ALL')).status).toBe(400)
+})
+
 test('the public page of each policy matches what the panel says is published', async ({
   request,
 }) => {
   const all = legalListSchema.parse(
     (await get(request, '/admin/legal/documents?status=PUBLISHED&limit=50')).body,
   )
-  for (const type of LEGAL_DOCUMENT_TYPES) {
-    const published = all.data.find((doc) => doc.documentType === type)
-    const page = await get(request, `/legal/${LEGAL_SLUGS[type]}`, false)
-    if (!published) {
-      expect(page.status, `${type} has no published version`).toBe(404)
-      continue
+  for (const app of LEGAL_APP_TYPES) {
+    for (const type of LEGAL_DOCUMENT_TYPES) {
+      const label = `${app} ${type}`
+      const published = all.data.find(
+        (doc) => doc.documentType === type && doc.appType === app,
+      )
+      /*
+       * Asked the way the apps ask: the Personal slug, plus `?appType=` for
+       * Business (guide §5). That form stays unambiguous even where the two
+       * apps share a slug (plan.md B2).
+       */
+      const query = app === 'BUSINESS' ? '?appType=BUSINESS' : ''
+      const page = await get(request, `/legal/${LEGAL_SLUGS[type]}${query}`, false)
+      if (!published) {
+        expect(page.status, `${label} has no published version`).toBe(404)
+        continue
+      }
+      expect(page.status, label).toBe(200)
+      const body = page.body as { data?: { id?: string; version?: string } }
+      expect(body.data?.id, label).toBe(published.id)
+      expect(body.data?.version, label).toBe(published.version)
     }
-    expect(page.status, type).toBe(200)
-    const body = page.body as { data?: { id?: string; version?: string } }
-    expect(body.data?.id, type).toBe(published.id)
-    expect(body.data?.version, type).toBe(published.version)
   }
 })

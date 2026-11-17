@@ -44,6 +44,28 @@ async function open(page: Page, path: string, account: string = ACCOUNTS.superAd
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 }
 
+/** axe on `main`, contrast excluded: it has its own pass in contrast.spec.ts. */
+async function axeViolations(page: Page): Promise<string[]> {
+  await page.addScriptTag({ content: axe.source })
+  return page.evaluate(async () => {
+    const run = (
+      window as unknown as {
+        axe: {
+          run: (
+            context: Element,
+            options: unknown,
+          ) => Promise<{ violations: Array<{ id: string; nodes: unknown[] }> }>
+        }
+      }
+    ).axe.run
+    const result = await run(document.querySelector('main') ?? document.body, {
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    })
+    return result.violations.map((v) => `${v.id} (${v.nodes.length})`)
+  })
+}
+
 async function openEditor(page: Page, account: string = ACCOUNTS.superAdmin) {
   await open(page, EDIT_DRAFT, account)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
@@ -110,12 +132,81 @@ test.describe('list', () => {
     ).toBeVisible()
     await expectNoSidewaysScroll(page)
 
+    /*
+     * plan.md LB1: the seed's Business Privacy draft (v1.0.0) belongs to the
+     * other app, so the Personal drafts show only v1.1.0.
+     */
+    const drafts = main(page).getByRole('tabpanel')
+    await expect(drafts).toContainText('1.1.0')
+    await expect(drafts).not.toContainText('1.0.0')
+
     await main(page)
       .getByRole('tab', { name: /^History/ })
       .click()
     await expect(page).toHaveURL(/tab=history/)
     await expect(main(page).getByText('Archived').first()).toBeVisible()
     await expectNoSidewaysScroll(page)
+  })
+
+  test('the app switch scopes the cards and the tabs, and survives a reload', async ({
+    page,
+  }) => {
+    /* plan.md LB2. The seed: Personal has 3 of 4 live; Business none, one draft. */
+    await open(page, '/legal')
+    const apps = main(page).getByRole('group', { name: 'App' })
+    const personal = apps.getByRole('button', { name: /^Personal/ })
+    const business = apps.getByRole('button', { name: /^Business/ })
+    await expect(personal).toHaveAttribute('aria-pressed', 'true')
+    await expect(personal).toHaveAccessibleName('Personal, 3 of 4 policies live')
+    await expect(business).toHaveAccessibleName('Business, 0 of 4 policies live')
+
+    await business.click()
+    await expect(page).toHaveURL(/[?&]app=business/)
+    await expect(business).toHaveAttribute('aria-pressed', 'true')
+    await expect(card(page, 'PRIVACY_POLICY')).toContainText('Draft v1.0.0 in progress')
+    await expect(card(page, 'PRIVACY_POLICY')).not.toContainText('v1.1.0')
+    await expect(card(page, 'TERMS_OF_SERVICE')).toContainText(
+      'Not written for Business yet',
+    )
+    const drafts = main(page).getByRole('tabpanel')
+    await expect(drafts).toContainText('1.0.0')
+    await expect(drafts).not.toContainText('1.1.0')
+    await expectNoSidewaysScroll(page)
+
+    /* Nothing of Business is published, and the empty state says whose. */
+    await main(page)
+      .getByRole('tab', { name: /^History/ })
+      .click()
+    await expect(
+      main(page).getByText('Nothing published for Business yet'),
+    ).toBeVisible()
+
+    await page.reload()
+    await expect(page).toHaveURL(/[?&]app=business/)
+    await expect(business).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      main(page).getByText('Nothing published for Business yet'),
+    ).toBeVisible()
+
+    /* Back to Personal: the default, so the parameter goes. */
+    await personal.click()
+    await expect(page).not.toHaveURL(/app=/)
+    await expect(card(page, 'PRIVACY_POLICY')).toContainText('v1.0.0')
+    await expect(card(page, 'PRIVACY_POLICY')).toContainText('Draft v1.1.0 in progress')
+  })
+
+  test('a Business card starts a Business draft, numbered on its own', async ({
+    page,
+  }) => {
+    /* Personal Terms is at 1.0.0, so a Personal draft would be offered 1.1.0. */
+    await open(page, '/legal?app=business')
+    await card(page, 'TERMS_OF_SERVICE')
+      .getByRole('link', { name: 'Write first version' })
+      .click()
+    await expect(page).toHaveURL(/\/legal\/new\?app=business&type=TERMS_OF_SERVICE$/)
+    await expect(main(page).getByRole('textbox', { name: /^Version/ })).toHaveValue(
+      '1.0.0',
+    )
   })
 
   test('a card’s History button filters the history to that policy', async ({
@@ -129,6 +220,36 @@ test.describe('list', () => {
     const panel = main(page).getByRole('tabpanel')
     await expect(panel.getByText('Terms of Service').first()).toBeVisible()
     await expect(panel.getByText('Privacy Policy')).toHaveCount(0)
+  })
+
+  test('when the list fails, no card claims a policy is unpublished', async ({
+    page,
+  }) => {
+    /*
+     * plan.md LB0. The failure starts before the page's first load: a reload
+     * would reset the mock, so the scenario is set on another page and /legal
+     * is reached by client-side navigation.
+     */
+    await open(page, '/users')
+    await page.evaluate(() => {
+      ;(
+        window as unknown as { __mockScenario: { set: (s: string) => void } }
+      ).__mockScenario.set('error')
+      window.history.pushState({}, '', '/legal')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    /* A 500 is retried twice with backoff before the error shows. */
+    await expect(main(page).getByText('Something went wrong')).toBeVisible({
+      timeout: 20_000,
+    })
+    for (const type of ['PRIVACY_POLICY', 'COMMUNITY_GUIDELINES']) {
+      await expect(card(page, type)).toContainText('Couldn’t check what is published')
+      await expect(card(page, type)).not.toContainText('Not published yet')
+      await expect(card(page, type).getByRole('link', { name: /version/ })).toHaveCount(
+        0,
+      )
+    }
+    await expectNoSidewaysScroll(page)
   })
 
   test('a draft opens in the editor', async ({ page }) => {
@@ -329,27 +450,8 @@ test.describe('editor', () => {
   })
 
   test('has no accessibility violations other than contrast', async ({ page }) => {
-    /* Contrast has its own pass in contrast.spec.ts, with the known token debt. */
     await openEditor(page)
-    await page.addScriptTag({ content: axe.source })
-    const violations = await page.evaluate(async () => {
-      const run = (
-        window as unknown as {
-          axe: {
-            run: (
-              context: Element,
-              options: unknown,
-            ) => Promise<{ violations: Array<{ id: string; nodes: unknown[] }> }>
-          }
-        }
-      ).axe.run
-      const result = await run(document.querySelector('main') ?? document.body, {
-        rules: { 'color-contrast': { enabled: false } },
-        resultTypes: ['violations'],
-      })
-      return result.violations.map((v) => `${v.id} (${v.nodes.length})`)
-    })
-    expect(violations).toEqual([])
+    expect(await axeViolations(page)).toEqual([])
   })
 })
 
@@ -418,6 +520,128 @@ test.describe('new draft', () => {
     await expect(editor(page)).toHaveValue('Be kind.\n\n## 1. Respect\nNo harassment.')
   })
 
+  test('the first Business version can start from the live Personal text', async ({
+    page,
+  }) => {
+    /* plan.md LB3, decision 3. Personal Terms 1.0.0 is live; Business has none. */
+    await open(page, '/legal?app=business')
+    await card(page, 'TERMS_OF_SERVICE')
+      .getByRole('link', { name: 'Write first version' })
+      .click()
+    await expect(main(page).getByRole('combobox', { name: /^App/ })).toHaveText(
+      'Business',
+    )
+    const startFrom = main(page).getByRole('radiogroup', { name: 'Start from' })
+    await expect(
+      startFrom.getByRole('radio', { name: 'A blank template' }),
+    ).toBeChecked()
+    await startFrom
+      .getByRole('radio', { name: /^Personal v1\.0\.0 \(active\)/ })
+      .check()
+    await expect(main(page).getByLabel('Version')).toHaveValue('1.0.0')
+    await expectNoSidewaysScroll(page)
+    await main(page).getByRole('button', { name: 'Continue' }).click()
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Business Terms of Service v1.0.0',
+    )
+    await expect(editor(page)).toHaveValue(/Diamonds have no cash value/)
+    await expect(main(page).getByText(/Copied from Personal v1\.0\.0/)).toBeVisible()
+
+    /* The same number as the live Personal Terms: each app numbers its own. */
+    await main(page).getByRole('button', { name: 'Create draft' }).click()
+    await expect(
+      page.getByText('Draft v1.0.0 of the Business Terms of Service saved.'),
+    ).toBeVisible()
+    await main(page)
+      .getByRole('navigation', { name: /breadcrumb/i })
+      .getByRole('link', { name: 'Drafts' })
+      .click()
+    await expect(page).toHaveURL(/\/legal\?app=business&tab=drafts$/)
+    await expect(card(page, 'TERMS_OF_SERVICE')).toContainText(
+      'Draft v1.0.0 in progress',
+    )
+  })
+
+  test('the Business overview and its setup card have no accessibility violations', async ({
+    page,
+  }) => {
+    await open(page, '/legal?app=business')
+    await expect(card(page, 'TERMS_OF_SERVICE')).toContainText(
+      'Not written for Business',
+    )
+    expect(await axeViolations(page)).toEqual([])
+    await open(page, '/legal/new?app=business&type=TERMS_OF_SERVICE')
+    await expect(
+      main(page).getByRole('radiogroup', { name: 'Start from' }),
+    ).toBeVisible()
+    expect(await axeViolations(page)).toEqual([])
+  })
+
+  test('a version taken in the same app is refused; no copy once one exists', async ({
+    page,
+  }) => {
+    await open(page, '/legal/new?app=business&type=PRIVACY_POLICY')
+    /* Business Privacy already has a 1.0.0 draft, so no "Start from" offer. */
+    await expect(
+      main(page).getByRole('radiogroup', { name: 'Start from' }),
+    ).toHaveCount(0)
+    const version = main(page).getByLabel('Version')
+    await expect(version).toHaveValue('1.1.0')
+    await version.fill('1.0.0')
+    await main(page).getByRole('button', { name: 'Continue' }).click()
+    await expect(
+      main(page).getByText(/v1\.0\.0 of the Business Privacy Policy already exists/),
+    ).toBeVisible()
+  })
+
+  test('the setup has a way back at the top, to the app it came from', async ({
+    page,
+  }) => {
+    await open(page, '/legal/new?app=business&type=PRIVACY_POLICY')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('New legal draft')
+    const back = main(page).getByRole('link', { name: 'Legal & policies' })
+    await expect(back).toBeInViewport()
+    await back.click()
+    await expect(page).toHaveURL(/\/legal\?app=business&tab=drafts$/)
+    await expect(
+      main(page).getByRole('button', { name: /^Business/, pressed: true }),
+    ).toBeVisible()
+  })
+
+  test('on a desktop the whole setup fits the screen, Continue included', async ({
+    page,
+  }) => {
+    /* User report 2026-11-17: two columns from lg, no scrolling to Continue. */
+    test.skip(width(page) < 1024, 'Phones and tablets scroll a single column.')
+    /* The tallest case: "Start from" is offered. */
+    await open(page, '/legal/new?app=business&type=TERMS_OF_SERVICE')
+    await expect(
+      main(page).getByRole('radiogroup', { name: 'Start from' }),
+    ).toBeVisible()
+    await expect(main(page).getByRole('button', { name: 'Continue' })).toBeInViewport({
+      ratio: 1,
+    })
+    await expect(main(page).getByRole('link', { name: 'Cancel' })).toBeInViewport({
+      ratio: 1,
+    })
+    await expectNoSidewaysScroll(page)
+  })
+
+  test('changing the version offers a way back to the text at the top', async ({
+    page,
+  }) => {
+    await open(page, '/legal/new?type=COMMUNITY_GUIDELINES')
+    await main(page).getByRole('button', { name: 'Continue' }).click()
+    await main(page).getByRole('button', { name: 'Change version' }).click()
+    const back = main(page).getByRole('button', { name: 'Back to the text' }).first()
+    await expect(back).toBeInViewport()
+    await back.click()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Community Guidelines v1.0.0',
+    )
+  })
+
   test('the setup fields keep their whole focus ring', async ({ page }) => {
     await open(page, '/legal/new?type=TERMS_OF_SERVICE')
     await main(page).getByLabel('Version').focus()
@@ -448,6 +672,43 @@ test.describe('publish', () => {
     await expect(page).toHaveURL(/\/legal\?tab=history&type=PRIVACY_POLICY/)
     await expect(main(page).getByText("This version can't be edited")).toHaveCount(0)
     await expect(card(page, 'PRIVACY_POLICY')).toContainText('v1.1.0')
+  })
+
+  test('publishing for Business leaves Personal untouched', async ({ page }) => {
+    /* plan.md LB3. Business Privacy 1.0.0 is a draft; Personal Privacy 1.0.0 is live. */
+    await open(page, '/legal/cmwlegalbizprivacy10000001/edit')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Business Privacy Policy v1.0.0',
+    )
+    await main(page)
+      .getByRole('button', { name: /Publish/ })
+      .click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('Nothing published')
+    await expect(dialog).toContainText(
+      'for the Business app. Personal is not affected.',
+    )
+    await dialog.getByLabel('Type this to confirm').fill('1.0.0')
+    await dialog.getByRole('button', { name: 'Publish', exact: true }).click()
+
+    await expect(
+      page.getByText('Business Privacy Policy v1.0.0 is now published.'),
+    ).toBeVisible()
+    await expect(page).toHaveURL(
+      /\/legal\?app=business&tab=history&type=PRIVACY_POLICY/,
+    )
+    await expect(card(page, 'PRIVACY_POLICY')).toContainText('v1.0.0')
+
+    const apps = main(page).getByRole('group', { name: 'App' })
+    await expect(apps.getByRole('button', { name: /^Business/ })).toHaveAccessibleName(
+      'Business, 1 of 4 policies live',
+    )
+    await apps.getByRole('button', { name: /^Personal/ }).click()
+    await expect(card(page, 'PRIVACY_POLICY')).toContainText('v1.0.0')
+    await expect(card(page, 'PRIVACY_POLICY')).toContainText('Draft v1.1.0 in progress')
+    await expect(apps.getByRole('button', { name: /^Personal/ })).toHaveAccessibleName(
+      'Personal, 3 of 4 policies live',
+    )
   })
 
   test('closing the dialog returns focus to Publish', async ({ page }) => {
@@ -489,6 +750,42 @@ test.describe('read-only version', () => {
       .first()
       .click()
     await expectFrameInPlace(page)
+  })
+
+  test('a Business version: its own website address and API slug, fitting', async ({
+    page,
+  }) => {
+    /* plan.md LB4, decision 5: links follow the app; the slug is the server's. */
+    await open(page, '/legal/cmwlegalbizprivacy10000001')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Business Privacy Policy v1.0.0',
+    )
+    await expect(main(page)).toContainText('callschat.com/privacy-policy/business')
+    await expect(main(page)).toContainText('business-privacy-policy')
+    await expectNoSidewaysScroll(page)
+    expect(await axeViolations(page)).toEqual([])
+
+    await open(page, '/legal/cmwlegalbizprivacy10000001/edit')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Business Privacy Policy v1.0.0',
+    )
+    await expectNoSidewaysScroll(page)
+  })
+
+  test('Business cards and rows say Business; an unknown address is not guessed', async ({
+    page,
+  }) => {
+    await open(page, '/legal?app=business')
+    await expect(card(page, 'PRIVACY_POLICY')).toContainText(
+      'callschat.com/privacy-policy/business',
+    )
+    /* Only Business Privacy's address is given (plan.md B4). */
+    await expect(card(page, 'TERMS_OF_SERVICE')).toContainText('No website address yet')
+    await expect(card(page, 'TERMS_OF_SERVICE')).not.toContainText('callschat.com/')
+    /* The draft row names the app too. */
+    await expect(main(page).getByRole('tabpanel')).toContainText(
+      'Business Privacy Policy',
+    )
   })
 
   test('the edit URL of a published version says why not', async ({ page }) => {

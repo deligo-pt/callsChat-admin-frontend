@@ -26,7 +26,7 @@ import type { LegalDocument } from '@/types/legal'
 
 import { AdminName } from './cells'
 import { diffVersions, previousVersion } from './compareVersions'
-import { activeByType, isUpcoming, publicUrl, TYPE_LABELS } from './labels'
+import { activeByType, APP_LABELS, isUpcoming, publicUrl, seriesLabel } from './labels'
 import { LegalPreview } from './LegalPreview'
 import { PublishDialog } from './PublishDialog'
 import { useLegalDocument, useLegalDocuments } from './useLegal'
@@ -73,8 +73,8 @@ export function LegalDocumentPage() {
 
   const doc = query.data
   const docs = all.data ?? []
-  const label = TYPE_LABELS[doc.documentType]
-  const active = activeByType(docs)[doc.documentType]
+  const label = seriesLabel(doc.documentType, doc.appType)
+  const active = activeByType(docs, doc.appType)[doc.documentType]
   const previous = previousVersion(doc, docs)
 
   return (
@@ -87,6 +87,7 @@ export function LegalDocumentPage() {
             to: ROUTES.legalFor({
               tab: doc.status === 'DRAFT' ? 'drafts' : 'history',
               type: doc.documentType,
+              app: doc.appType,
             }),
           },
           { label: `v${doc.version}` },
@@ -111,7 +112,7 @@ export function LegalDocumentPage() {
             </>
           ) : canEdit ? (
             <Button variant="outline" asChild>
-              <Link to={ROUTES.legalNew(doc.documentType, doc.id)}>
+              <Link to={ROUTES.legalNew(doc.documentType, doc.id, doc.appType)}>
                 <FilePlus2 /> New version from this
               </Link>
             </Button>
@@ -187,6 +188,15 @@ export function LegalDocumentPage() {
                     label: 'Public page',
                     value: <PublicLink doc={doc} />,
                   },
+                  {
+                    /*
+                     * The name the apps ask the API for, as the server set it
+                     * (plan.md LB4). Business Cookie and Community share
+                     * Personal's (B2), which this makes visible.
+                     */
+                    label: 'API slug',
+                    value: <span className="font-mono wrap-anywhere">{doc.slug}</span>,
+                  },
                 ]}
               />
             </CardContent>
@@ -232,13 +242,20 @@ function statusLine(doc: LegalDocument): string {
   if (doc.status === 'DRAFT')
     return 'A draft. Private until it is published; it can still be edited or deleted.'
   if (doc.status === 'PUBLISHED')
-    return 'The version the apps show now. It is permanent and can’t be edited.'
+    return `The version the ${APP_LABELS[doc.appType]} app shows now. It is permanent and can’t be edited.`
   return 'Replaced by a newer version. Kept permanently as a record of what users were shown.'
 }
 
 function PublicLink({ doc }: { doc: LegalDocument }) {
   const { copy, copied } = useCopyToClipboard()
-  const url = publicUrl(doc.documentType)
+  const url = publicUrl(doc.documentType, doc.appType)
+  if (!url) {
+    return (
+      <span className="text-foreground-muted">
+        No website address yet for this Business policy.
+      </span>
+    )
+  }
   return (
     <span className="flex flex-wrap items-center gap-2">
       <span className="wrap-anywhere">{url.replace('https://', '')}</span>

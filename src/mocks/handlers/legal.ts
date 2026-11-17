@@ -19,6 +19,14 @@ import { API_PREFIX, applyScenario, errorResponse, isEmptyScenario } from './sha
  *
  * ⚠️ Not measured (irreversible on staging): publish's response and the
  * wrong-state 400s, whose wording is the guide's (plan.md O1).
+ *
+ * The Personal / Business split (plan.md LB1), measured 2026-11-17:
+ * - `appType` on every row; left out on create, it is `PERSONAL`;
+ * - a 409 `CONFLICT` only within the same type **and** app, naming the app;
+ * - `PUT { appType }` moves the draft but keeps its slug (B1);
+ * - Business slugs: `business-` for Privacy and Terms only (B2);
+ * - public `?appType=BUSINESS` looks up the Business slug of that type.
+ * Publishing archives within the same app: the guide's word, not measured.
  */
 
 const BASE = `${API_PREFIX}/admin/legal/documents`
@@ -32,11 +40,21 @@ const TYPES = [
   'COMMUNITY_GUIDELINES',
 ] as const
 const STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const
-const SLUGS: Record<DocType, string> = {
-  PRIVACY_POLICY: 'privacy-policy',
-  TERMS_OF_SERVICE: 'terms-of-service',
-  COOKIE_POLICY: 'cookie-policy',
-  COMMUNITY_GUIDELINES: 'community-guidelines',
+const APPS = ['PERSONAL', 'BUSINESS'] as const
+const SLUGS: Record<App, Record<DocType, string>> = {
+  PERSONAL: {
+    PRIVACY_POLICY: 'privacy-policy',
+    TERMS_OF_SERVICE: 'terms-of-service',
+    COOKIE_POLICY: 'cookie-policy',
+    COMMUNITY_GUIDELINES: 'community-guidelines',
+  },
+  /* ⚠️ As staging derives them (plan.md B2): only two get the prefix. */
+  BUSINESS: {
+    PRIVACY_POLICY: 'business-privacy-policy',
+    TERMS_OF_SERVICE: 'business-terms-of-service',
+    COOKIE_POLICY: 'cookie-policy',
+    COMMUNITY_GUIDELINES: 'community-guidelines',
+  },
 }
 const SEMVER =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
@@ -44,6 +62,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 type DocType = (typeof TYPES)[number]
 type Status = (typeof STATUSES)[number]
+type App = (typeof APPS)[number]
 
 interface MockContact {
   org: string
@@ -61,6 +80,7 @@ interface MockSection {
 interface MockDoc {
   id: string
   documentType: DocType
+  appType: App
   slug: string
   version: string
   title: string
@@ -152,6 +172,7 @@ const CONTACT: MockContact = {
 function seedDoc(input: {
   id: string
   documentType: DocType
+  appType?: App
   version: string
   title: string
   subtitle?: string
@@ -165,10 +186,12 @@ function seedDoc(input: {
 }): MockDoc {
   const content = sanitize(input.markdown)
   const parsed = parse(content)
+  const app = input.appType ?? 'PERSONAL'
   return {
     id: input.id,
     documentType: input.documentType,
-    slug: SLUGS[input.documentType],
+    appType: app,
+    slug: SLUGS[app][input.documentType],
     version: input.version,
     title: input.title,
     subtitle: input.subtitle ?? null,
@@ -286,6 +309,32 @@ Only with your consent.`,
       status: 'PUBLISHED',
       publishedAt: '2026-11-01T12:00:00.000Z',
       createdAt: '2026-10-30T12:00:00.000Z',
+    }),
+    /*
+     * Business (plan.md LB1): nothing published yet, as on staging, and one
+     * draft — numbered 1.0.0 even though Personal Privacy is past it,
+     * because each app numbers its own versions.
+     */
+    seedDoc({
+      id: 'cmwlegalbizprivacy10000001',
+      documentType: 'PRIVACY_POLICY',
+      appType: 'BUSINESS',
+      version: '1.0.0',
+      title: 'Business Privacy Policy',
+      subtitle: 'CallsChat LLC • Business & Corporate Solutions • United States',
+      effectiveDate: '2027-01-01T00:00:00.000Z',
+      markdown: `# Business Privacy Policy
+
+CallsChat Business provides workspaces for organisations. This sample text stands in for the real policy.
+
+## 1. About CallsChat Business
+Organisations use CallsChat Business to talk with their customers and teams.
+
+## 2. Data Processor Obligations
+CallsChat processes workspace data only on the Workspace Owner's instructions.`,
+      status: 'DRAFT',
+      changelog: 'First Business version.',
+      createdAt: '2026-11-16T09:00:00.000Z',
     }),
   ]
 }
@@ -460,10 +509,14 @@ export const legalHandlers = [
 
     const url = new URL(request.url)
     const type = url.searchParams.get('documentType')
+    const app = url.searchParams.get('appType')
     const status = url.searchParams.get('status')
     const issues = [
       type !== null && !(TYPES as readonly string[]).includes(type)
         ? enumMessage('querystring', 'documentType', TYPES, type)
+        : null,
+      app !== null && !(APPS as readonly string[]).includes(app)
+        ? enumMessage('querystring', 'appType', APPS, app)
         : null,
       status !== null && !(STATUSES as readonly string[]).includes(status)
         ? enumMessage('querystring', 'status', STATUSES, status)
@@ -480,6 +533,7 @@ export const legalHandlers = [
       ? []
       : docs
           .filter((doc) => !type || doc.documentType === type)
+          .filter((doc) => !app || doc.appType === app)
           .filter((doc) => !status || doc.status === status)
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     const total = rows.length
@@ -513,6 +567,9 @@ export const legalHandlers = [
     if (type === undefined) issues.push('body/documentType Required')
     else if (!(TYPES as readonly unknown[]).includes(type))
       issues.push(enumMessage('body', 'documentType', TYPES, type))
+    const appType = body['appType']
+    if (appType !== undefined && !(APPS as readonly unknown[]).includes(appType))
+      issues.push(enumMessage('body', 'appType', APPS, appType))
     const version = body['version']
     if (version === undefined) issues.push('body/version Required')
     else if (typeof version !== 'string' || !SEMVER.test(version))
@@ -543,11 +600,19 @@ export const legalHandlers = [
     if (issues.length) return errorResponse(400, VALIDATION, issues.join(', '))
 
     const docType = type as DocType
-    if (docs.some((doc) => doc.documentType === docType && doc.version === version)) {
+    const docApp: App = appType === undefined ? 'PERSONAL' : (appType as App)
+    if (
+      docs.some(
+        (doc) =>
+          doc.documentType === docType &&
+          doc.appType === docApp &&
+          doc.version === version,
+      )
+    ) {
       return errorResponse(
         409,
         'CONFLICT',
-        `A document for "${docType}" with version "${String(version)}" already exists.`,
+        `A document for "${docType}" (${docApp}) with version "${String(version)}" already exists.`,
       )
     }
 
@@ -558,7 +623,8 @@ export const legalHandlers = [
     const doc: MockDoc = {
       id: newId(),
       documentType: docType,
-      slug: SLUGS[docType],
+      appType: docApp,
+      slug: SLUGS[docApp][docType],
       version: version as string,
       title: title as string,
       subtitle,
@@ -603,6 +669,9 @@ export const legalHandlers = [
         issues.push('body/title Document title is required')
     }
     optionalString(body, 'subtitle', issues)
+    const moveTo = body['appType']
+    if (moveTo !== undefined && !(APPS as readonly unknown[]).includes(moveTo))
+      issues.push(enumMessage('body', 'appType', APPS, moveTo))
     if (body['effectiveDate'] !== undefined && !isIso(body['effectiveDate']))
       issues.push('body/effectiveDate Invalid datetime')
     const content = body['contentMarkdown']
@@ -625,6 +694,8 @@ export const legalHandlers = [
     if (doc.status !== 'DRAFT') return locked(doc, 'edit')
 
     /* `version` and `documentType` are silently ignored, as on staging. */
+    /* ⚠️ `appType` moves the draft and leaves the slug behind (plan.md B1). */
+    if (moveTo !== undefined) doc.appType = moveTo as App
     if (typeof body['title'] === 'string') doc.title = body['title']
     if (typeof body['subtitle'] === 'string') doc.subtitle = body['subtitle']
     if (typeof body['effectiveDate'] === 'string')
@@ -673,7 +744,11 @@ export const legalHandlers = [
 
     const now = new Date().toISOString()
     for (const other of docs) {
-      if (other.documentType === doc.documentType && other.status === 'PUBLISHED') {
+      if (
+        other.documentType === doc.documentType &&
+        other.appType === doc.appType &&
+        other.status === 'PUBLISHED'
+      ) {
         other.status = 'ARCHIVED'
         other.updatedAt = now
       }
@@ -714,11 +789,36 @@ export const legalHandlers = [
   }),
 
   /* Public, no auth. Registered after the admin routes; `consent` is not mocked. */
-  http.get(`${PUBLIC}/:slug`, async ({ params }) => {
+  http.get(`${PUBLIC}/:slug`, async ({ params, request }) => {
     const scenario = await applyScenario()
     if (scenario) return scenario
-    const slug = String(params['slug'])
-    const doc = docs.find((row) => row.slug === slug && row.status === 'PUBLISHED')
+    const asked = String(params['slug'])
+    const app = new URL(request.url).searchParams.get('appType')
+    if (app !== null && !(APPS as readonly string[]).includes(app)) {
+      return errorResponse(
+        400,
+        VALIDATION,
+        enumMessage('querystring', 'appType', APPS, app),
+      )
+    }
+    /*
+     * `?appType=BUSINESS` swaps a Personal slug for the Business one of the
+     * same type, as staging does (`privacy-policy` → `business-privacy-policy`).
+     */
+    const type = TYPES.find((value) => SLUGS.PERSONAL[value] === asked)
+    const slug = app === 'BUSINESS' && type ? SLUGS.BUSINESS[type] : asked
+    /*
+     * ⚠️ Business Cookie and Community share Personal's slug (B2); which one a
+     * bare slug returns on the server is unknown. Here the app decides, and
+     * Personal wins without one.
+     */
+    const doc = docs.find(
+      (row) =>
+        row.slug === slug &&
+        row.status === 'PUBLISHED' &&
+        row.appType ===
+          (app ?? (row.slug.startsWith('business-') ? 'BUSINESS' : 'PERSONAL')),
+    )
     if (!doc) {
       return errorResponse(
         404,

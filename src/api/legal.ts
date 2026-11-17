@@ -3,6 +3,7 @@ import type { z } from 'zod'
 import { apiClient } from '@/api/client'
 import type { Pagination } from '@/types/common'
 import {
+  isLegalAppType,
   isLegalDocumentType,
   isLegalStatus,
   legalDeleteEnvelopeSchema,
@@ -29,6 +30,8 @@ const one = (id: string) => `${BASE}/${encodeURIComponent(id)}`
 
 export interface LegalQuery {
   readonly documentType?: string | undefined
+  /** `PERSONAL` or `BUSINESS`; anything else is a 400, so it is left out. */
+  readonly appType?: string | undefined
   /** Anything that is not a real status (including "ALL") is left out. */
   readonly status?: string | undefined
   readonly page?: number | undefined
@@ -39,6 +42,7 @@ export function legalParams(query: LegalQuery): Record<string, string | number> 
   const params: Record<string, string | number> = {}
   if (isLegalDocumentType(query.documentType))
     params['documentType'] = query.documentType
+  if (isLegalAppType(query.appType)) params['appType'] = query.appType
   if (isLegalStatus(query.status)) params['status'] = query.status
   if (query.page && Number.isInteger(query.page) && query.page > 1)
     params['page'] = query.page

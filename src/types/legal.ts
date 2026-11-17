@@ -29,7 +29,19 @@ export type LegalDocumentType = (typeof LEGAL_DOCUMENT_TYPES)[number]
 export const LEGAL_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const
 export type LegalStatus = (typeof LEGAL_STATUSES)[number]
 
-/** Canonical public slug per type (the backend derives it; mirrored for links). */
+/**
+ * Which app a document belongs to (plan.md LB1). Each policy exists once per
+ * app, and versions, drafts and publishing are separate per (type, app).
+ * Documents created before the split are `PERSONAL` (measured 2026-11-17).
+ */
+export const LEGAL_APP_TYPES = ['PERSONAL', 'BUSINESS'] as const
+export type LegalAppType = (typeof LEGAL_APP_TYPES)[number]
+
+/**
+ * Public slug per type for the **Personal** app. Business slugs are the
+ * server's to choose and are read from `doc.slug` (plan.md B2: Business
+ * Privacy and Terms get a `business-` prefix, Cookie and Community don't).
+ */
 export const LEGAL_SLUGS: Readonly<Record<LegalDocumentType, string>> = {
   PRIVACY_POLICY: 'privacy-policy',
   TERMS_OF_SERVICE: 'terms-of-service',
@@ -54,6 +66,12 @@ export function isLegalDocumentType(value: unknown): value is LegalDocumentType 
   return (
     typeof value === 'string' &&
     (LEGAL_DOCUMENT_TYPES as readonly string[]).includes(value)
+  )
+}
+
+export function isLegalAppType(value: unknown): value is LegalAppType {
+  return (
+    typeof value === 'string' && (LEGAL_APP_TYPES as readonly string[]).includes(value)
   )
 }
 
@@ -95,6 +113,12 @@ export type LegalContact = z.infer<typeof legalContactSchema>
 export const legalDocumentSchema = z.object({
   id: idSchema,
   documentType: z.enum(LEGAL_DOCUMENT_TYPES),
+  /** Always sent since the split; the default keeps a stray old row readable. */
+  appType: z.enum(LEGAL_APP_TYPES).default('PERSONAL'),
+  /**
+   * ⚠️ Fixed at creation: moving a draft to the other app with `PUT` keeps
+   * the old slug (plan.md B1), which is why the panel never does that.
+   */
   slug: z.string(),
   version: z.string(),
   title: z.string(),
@@ -170,6 +194,8 @@ export interface LegalContactInput {
 
 export interface LegalDocumentCreate {
   readonly documentType: LegalDocumentType
+  /** Left out, the server creates a `PERSONAL` document. */
+  readonly appType?: LegalAppType
   readonly version: string
   readonly title: string
   readonly subtitle?: string
@@ -185,13 +211,15 @@ export interface LegalDocumentCreate {
 /**
  * `PUT` body. `version` and `documentType` are deliberately absent: the
  * server ignores them with a 200 (measured), so sending them would only
- * pretend to change something.
+ * pretend to change something. `appType` is absent too, for the opposite
+ * reason: the server *does* move the draft, but leaves its slug behind
+ * (plan.md B1). The app is chosen once, at creation.
  *
  * ⚠️ `subtitle` and `contact` cannot be `null` (400). `consent` and
  * `changelog` clear with `""`.
  */
 export type LegalDocumentUpdate = Partial<
-  Omit<LegalDocumentCreate, 'documentType' | 'version'>
+  Omit<LegalDocumentCreate, 'documentType' | 'version' | 'appType'>
 >
 
 /** Optional overrides applied at publish time. */

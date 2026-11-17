@@ -204,18 +204,23 @@ export const ROUTES = {
   announcements: '/announcements',
   /**
    * Legal & policies (plan.md §3, LG0). `new` is matched before `:id`.
-   * `legalFor` keeps the overview's tab and type filter in the query string.
+   * `legalFor` keeps the overview's tab, type filter and app in the query
+   * string. The app is written only for Business (`?app=business`): Personal
+   * is the default, so every link from before the split still means Personal.
    */
   legal: '/legal',
-  legalFor: (filter: { tab?: string; type?: string }) => {
+  legalFor: (filter: { tab?: string; type?: string; app?: string }) => {
     const query = new URLSearchParams()
+    if (filter.app === 'BUSINESS') query.set('app', 'business')
     if (filter.tab) query.set('tab', filter.tab)
     if (filter.type) query.set('type', filter.type)
     const text = query.toString()
     return text ? `/legal?${text}` : '/legal'
   },
-  legalNew: (type?: string, fromId?: string) => {
+  /** `app` wins over the source's own app: a Business draft may start from Personal text. */
+  legalNew: (type?: string, fromId?: string, app?: string) => {
     const query = new URLSearchParams()
+    if (app === 'BUSINESS') query.set('app', 'business')
     if (type) query.set('type', type)
     if (fromId) query.set('from', fromId)
     const text = query.toString()

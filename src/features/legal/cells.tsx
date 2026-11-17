@@ -4,7 +4,7 @@ import { DateTime, StatusBadge } from '@/components/display'
 import { useUserName } from '@/components/wallet'
 import type { LegalDocument } from '@/types/legal'
 
-import { isUpcoming, typeLabel } from './labels'
+import { isUpcoming, seriesLabel } from './labels'
 
 /**
  * How a legal document is drawn in lists and cards (plan.md LG1).
@@ -14,12 +14,12 @@ import { isUpcoming, typeLabel } from './labels'
  */
 
 export function TitleCell({ doc }: { doc: LegalDocument }) {
+  /* "Business Privacy Policy" for Business; the bare name for Personal. */
+  const name = seriesLabel(doc.documentType, doc.appType)
   return (
     <span className="flex min-w-0 flex-col gap-0.5 lg:min-w-[12rem]">
-      <span className="font-medium wrap-anywhere text-foreground">
-        {typeLabel(doc.documentType)}
-      </span>
-      {doc.title !== typeLabel(doc.documentType) ? (
+      <span className="font-medium wrap-anywhere text-foreground">{name}</span>
+      {doc.title !== name ? (
         <span className="text-caption wrap-anywhere text-foreground-muted">
           {doc.title}
         </span>
