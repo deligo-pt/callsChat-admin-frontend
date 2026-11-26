@@ -93,6 +93,23 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
       'The signup bonus and the floor on a creator moving earnings into their spending wallet.',
     shipped: true,
   },
+  /*
+   * Added 2026-11-25 in RL0 with `shipped: false`, flipped in RL1 when the
+   * two cards could save.
+   */
+  {
+    value: 'rate-limiting',
+    label: 'Rate limiting & OTP',
+    to: ROUTES.settingsRateLimiting,
+    description:
+      'How hard the backend throttles one-time codes, sign-in attempts and API traffic.',
+    shipped: true,
+    /*
+     * Full width so the two cards can sit side by side from `lg` — the page
+     * fits a desktop screen with little or no scrolling.
+     */
+    wide: true,
+  },
   {
     value: 'bootstrap',
     label: 'Mobile bootstrap',

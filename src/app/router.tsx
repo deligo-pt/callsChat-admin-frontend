@@ -64,6 +64,11 @@ const MaintenanceTab = lazy(() =>
 const ChatTab = lazy(() =>
   import('@/features/settings/chat/ChatTab').then((m) => ({ default: m.ChatTab })),
 )
+const RateLimitTab = lazy(() =>
+  import('@/features/settings/rateLimit/RateLimitTab').then((m) => ({
+    default: m.RateLimitTab,
+  })),
+)
 const EconomyTab = lazy(() =>
   import('@/features/settings/economy/EconomyTab').then((m) => ({
     default: m.EconomyTab,
@@ -309,6 +314,7 @@ const moduleRoutes: RouteObject[] = [
       { path: 'chat', element: suspended(<ChatTab />) },
       { path: 'platform', element: suspended(<PlatformTab />) },
       { path: 'economy', element: suspended(<EconomyTab />) },
+      { path: 'rate-limiting', element: suspended(<RateLimitTab />) },
       /*
        * Bootstrap — what mobile clients actually read at cold start
        * (plan.md §4.1). Same guard as every other section; the API's own

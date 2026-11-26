@@ -8,6 +8,7 @@ import {
   backupTriggerResponseSchema,
   logoUploadResponseSchema,
   publicConfigSchema,
+  rateLimitMutationResponseSchema,
   settingsMutationResponseSchema,
   smsMutationResponseSchema,
   smsSettingsResponseSchema,
@@ -15,6 +16,7 @@ import {
   systemSettingsSchema,
   type BackupList,
   type PublicConfig,
+  type RateLimitSettings,
   type SmsSettings,
   type SystemSettings,
 } from '@/types/settings'
@@ -96,6 +98,29 @@ export function updateEconomySettings(
   payload: Record<string, unknown>,
 ): Promise<SystemSettings> {
   return patchSettings('economy', payload)
+}
+
+/**
+ * `PATCH /admin/settings/rate-limiting` (plan.md RL0).
+ *
+ * Its own function rather than `patchSettings`, because it answers with
+ * **only the eight rate-limit fields**, not the whole record.
+ *
+ * ⚠️ `{}` and a body of unknown keys both answer `200` "updated successfully"
+ * and change nothing — the tab works out whether anything changed and never
+ * sends an empty save. An empty body with a JSON content type is a `400`.
+ */
+export async function updateRateLimitSettings(
+  payload: Partial<RateLimitSettings>,
+): Promise<RateLimitSettings> {
+  const response = await apiClient.patch<
+    z.infer<typeof rateLimitMutationResponseSchema>
+  >('/admin/settings/rate-limiting', {
+    body: payload,
+    schema: rateLimitMutationResponseSchema,
+    resource: 'system-settings-rate-limiting',
+  })
+  return response.data
 }
 
 /**

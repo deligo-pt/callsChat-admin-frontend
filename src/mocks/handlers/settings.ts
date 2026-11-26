@@ -115,6 +115,14 @@ interface MockSettings {
   subscriptionPlansEnabled: boolean
   newUserDiamondBonus: number
   minCreatorTransferLimit: number
+  otpCooldownSeconds: number
+  otpQuotaPerWindow: number
+  otpQuotaWindowMinutes: number
+  otpMaxAttempts: number
+  globalRateLimitMax: number
+  globalRateLimitWindowSeconds: number
+  authRateLimitMax: number
+  authRateLimitWindowSeconds: number
   updatedAt: string
   updatedBy: string | null
 }
@@ -161,11 +169,31 @@ const DEFAULT_SETTINGS: MockSettings = {
   /* ⚠️ The live values on `test-api`, read 2026-10-27. */
   newUserDiamondBonus: 0,
   minCreatorTransferLimit: 50,
+  /*
+   * ⚠️ The guide's **defaults**, not staging's values: staging was left at a
+   * 9 s cooldown and a global limit of 150 by the verification collection
+   * (plan.md O5). Seeding those would teach every mock test the wrong normal.
+   */
+  otpCooldownSeconds: 60,
+  otpQuotaPerWindow: 3,
+  otpQuotaWindowMinutes: 15,
+  otpMaxAttempts: 5,
+  globalRateLimitMax: 120,
+  globalRateLimitWindowSeconds: 60,
+  authRateLimitMax: 10,
+  authRateLimitWindowSeconds: 60,
   updatedAt: new Date().toISOString(),
   updatedBy: null,
 }
 
-let settings: MockSettings = loadState('settings', DEFAULT_SETTINGS)
+/*
+ * Spread over the defaults so a record persisted before a field existed (the
+ * rate-limit eight arrived in RL0) still comes back with every key.
+ */
+let settings: MockSettings = {
+  ...DEFAULT_SETTINGS,
+  ...loadState('settings', DEFAULT_SETTINGS),
+}
 
 interface MockPolicy {
   id: string
@@ -380,6 +408,93 @@ function isUrl(value: string): boolean {
   }
 }
 
+/**
+ * Server wording per field, measured 2026-11-25 where probed (the cooldown,
+ * quota, attempts, global/auth minimums and window maximums). The unprobed
+ * sides follow the same pattern.
+ */
+const RATE_LIMIT_RULES: readonly {
+  key:
+    | 'otpCooldownSeconds'
+    | 'otpQuotaPerWindow'
+    | 'otpQuotaWindowMinutes'
+    | 'otpMaxAttempts'
+    | 'globalRateLimitMax'
+    | 'globalRateLimitWindowSeconds'
+    | 'authRateLimitMax'
+    | 'authRateLimitWindowSeconds'
+  min: number
+  max: number
+  minText: string
+  maxText: string
+  integer: string
+}[] = [
+  {
+    key: 'otpCooldownSeconds',
+    min: 5,
+    max: 600,
+    minText: 'Minimum OTP cooldown is 5 seconds',
+    maxText: 'Maximum OTP cooldown is 600 seconds (10 minutes)',
+    integer: 'OTP cooldown must be an integer',
+  },
+  {
+    key: 'otpQuotaPerWindow',
+    min: 1,
+    max: 20,
+    minText: 'Minimum OTP quota is 1',
+    maxText: 'Maximum OTP quota is 20',
+    integer: 'OTP quota must be an integer',
+  },
+  {
+    key: 'otpQuotaWindowMinutes',
+    min: 1,
+    max: 1440,
+    minText: 'Minimum OTP window is 1 minute',
+    maxText: 'Maximum OTP window is 1440 minutes (24 hours)',
+    integer: 'OTP window must be an integer',
+  },
+  {
+    key: 'otpMaxAttempts',
+    min: 1,
+    max: 10,
+    minText: 'Minimum attempts is 1',
+    maxText: 'Maximum attempts is 10',
+    integer: 'Max attempts must be an integer',
+  },
+  {
+    key: 'globalRateLimitMax',
+    min: 10,
+    max: 1000,
+    minText: 'Minimum global rate limit is 10',
+    maxText: 'Maximum global rate limit is 1000',
+    integer: 'Global rate limit must be an integer',
+  },
+  {
+    key: 'globalRateLimitWindowSeconds',
+    min: 10,
+    max: 3600,
+    minText: 'Minimum window is 10 seconds',
+    maxText: 'Maximum window is 3600 seconds (1 hour)',
+    integer: 'Window must be an integer',
+  },
+  {
+    key: 'authRateLimitMax',
+    min: 3,
+    max: 100,
+    minText: 'Minimum auth rate limit is 3',
+    maxText: 'Maximum auth rate limit is 100',
+    integer: 'Auth rate limit must be an integer',
+  },
+  {
+    key: 'authRateLimitWindowSeconds',
+    min: 10,
+    max: 3600,
+    minText: 'Minimum window is 10 seconds',
+    maxText: 'Maximum window is 3600 seconds (1 hour)',
+    integer: 'Window must be an integer',
+  },
+]
+
 function touch(): void {
   settings.updatedAt = new Date().toISOString()
   settings.updatedBy = ADMIN_ID
@@ -393,6 +508,25 @@ function settingsOk(message: string): Response {
 /* ------------------------------------------------------------------ *
  * Handlers
  * ------------------------------------------------------------------ */
+
+/*
+ * Test switch for the rate-limit PATCH (plan.md RL1).
+ *
+ * The client refuses every value the server would, so the server's field
+ * messages are unreachable through the UI. `rejectNext(message)` makes the
+ * next save answer `400 FST_ERR_VALIDATION` with that exact text, once.
+ */
+let rateLimitRejection: string | null = null
+
+declare global {
+  var __mockRateLimit: { readonly rejectNext: (message: string) => void } | undefined
+}
+
+globalThis.__mockRateLimit = {
+  rejectNext: (message) => {
+    rateLimitRejection = message
+  },
+}
 
 export const settingsHandlers = [
   /** `GET /system/config` — public, unauthenticated, reshaped. */
@@ -506,6 +640,80 @@ export const settingsHandlers = [
 
     touch()
     return settingsOk('Diamond economy settings updated successfully.')
+  }),
+
+  /**
+   * `PATCH /admin/settings/rate-limiting` (plan.md RL0), copied from the
+   * 2026-11-25 probes:
+   *
+   * - an empty body with a JSON content type is `FST_ERR_CTP_EMPTY_JSON_BODY`;
+   * - `{}` and unknown-only bodies answer `200` and change nothing but
+   *   `updatedAt`;
+   * - every failure is `body/<field> <text>`, comma-joined, with the live
+   *   wording;
+   * - the response carries **only the eight fields**, not the whole record.
+   */
+  http.patch(`${API_PREFIX}/admin/settings/rate-limiting`, async ({ request }) => {
+    const scenario = await applyScenario()
+    if (scenario) return scenario
+
+    if (rateLimitRejection !== null) {
+      const message = rateLimitRejection
+      rateLimitRejection = null
+      return validationFailure([message])
+    }
+
+    const raw = await request.text()
+    if (raw.trim() === '') {
+      return errorResponse(
+        400,
+        'FST_ERR_CTP_EMPTY_JSON_BODY' as never,
+        "Body cannot be empty when content-type is set to 'application/json'",
+      )
+    }
+    let body: Record<string, unknown>
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return NULL_BODY()
+      }
+      body = parsed as Record<string, unknown>
+    } catch {
+      return NULL_BODY()
+    }
+
+    const issues: string[] = []
+    for (const rule of RATE_LIMIT_RULES) {
+      if (!(rule.key in body)) continue
+      const value = body[rule.key]
+      const at = `body/${rule.key}`
+      if (typeof value !== 'number') {
+        issues.push(
+          `${at} Expected number, received ${value === null ? 'null' : typeof value}`,
+        )
+      } else if (!Number.isInteger(value)) {
+        issues.push(`${at} ${rule.integer}`)
+      } else if (value < rule.min) {
+        issues.push(`${at} ${rule.minText}`)
+      } else if (value > rule.max) {
+        issues.push(`${at} ${rule.maxText}`)
+      }
+    }
+    if (issues.length > 0) return validationFailure(issues)
+
+    for (const rule of RATE_LIMIT_RULES) {
+      const value = body[rule.key]
+      if (typeof value === 'number') settings[rule.key] = value
+    }
+    touch()
+
+    return HttpResponse.json({
+      success: true,
+      message: 'Rate limiting and security settings updated successfully.',
+      data: Object.fromEntries(
+        RATE_LIMIT_RULES.map((rule) => [rule.key, settings[rule.key]]),
+      ),
+    })
   }),
 
   http.patch(`${API_PREFIX}/admin/settings/general`, async ({ request }) => {

@@ -272,6 +272,8 @@ export const ROUTES = {
    * bootstrap work spent a phase removing.
    */
   settingsEconomy: '/settings/economy',
+  /** Rate limiting & OTP security (plan.md RL0). Same singleton record. */
+  settingsRateLimiting: '/settings/rate-limiting',
   /**
    * Bootstrap Configuration (plan.md §4.1).
    *
