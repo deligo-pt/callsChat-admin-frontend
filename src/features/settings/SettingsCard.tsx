@@ -44,6 +44,11 @@ export interface SettingsCardProps {
   isDirty?: boolean
   isSaving?: boolean
   saveLabel?: string
+  /**
+   * `false` keeps Save disabled while the card is dirty — for a card that
+   * validates as the operator types. Defaults to `true`.
+   */
+  canSave?: boolean
 
   /** Rejection from the last save attempt, rendered above the fields. */
   error?: unknown
@@ -69,6 +74,7 @@ export function SettingsCard({
   isDirty = false,
   isSaving = false,
   saveLabel = 'Save changes',
+  canSave = true,
   error,
   successMessage,
   updatedAt,
@@ -151,14 +157,19 @@ export function SettingsCard({
         {isReadOnly ? (
           footerExtra
         ) : (
-          <div className="flex shrink-0 items-center gap-2">
+          /*
+           * `flex-wrap`: with an extra action in `footerExtra` plus Discard
+           * and Save, the cluster is wider than a 360px card and pushed the
+           * page sideways (rate limiting, RL2).
+           */
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {footerExtra}
             {isDirty && onDiscard ? (
               <Button type="button" variant="ghost" onClick={onDiscard}>
                 Discard
               </Button>
             ) : null}
-            <Button type="submit" loading={isSaving} disabled={!isDirty}>
+            <Button type="submit" loading={isSaving} disabled={!isDirty || !canSave}>
               {saveLabel}
             </Button>
           </div>

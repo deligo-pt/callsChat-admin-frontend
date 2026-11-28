@@ -78,6 +78,25 @@ export const systemSettingsSchema = z.object({
    * invent a global default for it.
    */
 
+  /* ----------------------------------------------------------------- *
+   * Rate limiting & OTP security — measured on test-api 2026-11-25 (RL0).
+   * ----------------------------------------------------------------- */
+
+  /**
+   * ⚠️ **Optional for the same reason as the economy pair**: an older backend
+   * that does not return them must not blank every settings page. They are
+   * written by `PATCH /admin/settings/rate-limiting`; ranges are in
+   * `RATE_LIMIT_FIELDS` below.
+   */
+  otpCooldownSeconds: z.number().int().optional(),
+  otpQuotaPerWindow: z.number().int().optional(),
+  otpQuotaWindowMinutes: z.number().int().optional(),
+  otpMaxAttempts: z.number().int().optional(),
+  globalRateLimitMax: z.number().int().optional(),
+  globalRateLimitWindowSeconds: z.number().int().optional(),
+  authRateLimitMax: z.number().int().optional(),
+  authRateLimitWindowSeconds: z.number().int().optional(),
+
   updatedAt: isoDateTime,
   /** Bare admin ID with no name or email attached — see §8 O2. */
   updatedBy: idSchema.nullable(),
@@ -136,6 +155,70 @@ export const settingsMutationResponseSchema = z.object({
   success: z.literal(true),
   message: z.string(),
   data: systemSettingsSchema,
+})
+
+/* ------------------------------------------------------------------ *
+ * Rate limiting & OTP security — PATCH /admin/settings/rate-limiting
+ * ------------------------------------------------------------------ */
+
+export const RATE_LIMIT_KEYS = [
+  'otpCooldownSeconds',
+  'otpQuotaPerWindow',
+  'otpQuotaWindowMinutes',
+  'otpMaxAttempts',
+  'globalRateLimitMax',
+  'globalRateLimitWindowSeconds',
+  'authRateLimitMax',
+  'authRateLimitWindowSeconds',
+] as const
+
+export type RateLimitKey = (typeof RATE_LIMIT_KEYS)[number]
+
+export interface RateLimitField {
+  readonly min: number
+  readonly max: number
+  /** The guide's recommended value, used by "Use recommended defaults". */
+  readonly default: number
+}
+
+/**
+ * Server-enforced ranges, **measured** 2026-11-25: every bound below was
+ * probed on both sides and matches `rate_limit.md`. Integers only — `9.5`,
+ * `"9"` and `null` are all refused.
+ */
+export const RATE_LIMIT_FIELDS: Readonly<Record<RateLimitKey, RateLimitField>> = {
+  otpCooldownSeconds: { min: 5, max: 600, default: 60 },
+  otpQuotaPerWindow: { min: 1, max: 20, default: 3 },
+  otpQuotaWindowMinutes: { min: 1, max: 1440, default: 15 },
+  otpMaxAttempts: { min: 1, max: 10, default: 5 },
+  globalRateLimitMax: { min: 10, max: 1000, default: 120 },
+  globalRateLimitWindowSeconds: { min: 10, max: 3600, default: 60 },
+  authRateLimitMax: { min: 3, max: 100, default: 10 },
+  authRateLimitWindowSeconds: { min: 10, max: 3600, default: 60 },
+}
+
+export const rateLimitSettingsSchema = z.object({
+  otpCooldownSeconds: z.number().int(),
+  otpQuotaPerWindow: z.number().int(),
+  otpQuotaWindowMinutes: z.number().int(),
+  otpMaxAttempts: z.number().int(),
+  globalRateLimitMax: z.number().int(),
+  globalRateLimitWindowSeconds: z.number().int(),
+  authRateLimitMax: z.number().int(),
+  authRateLimitWindowSeconds: z.number().int(),
+})
+
+export type RateLimitSettings = z.infer<typeof rateLimitSettingsSchema>
+
+/**
+ * ⚠️ **Only the eight fields**, unlike the other settings PATCHes, which return
+ * the whole record (plan.md O2). The caller merges them into the cached
+ * record rather than replacing it.
+ */
+export const rateLimitMutationResponseSchema = z.object({
+  success: z.literal(true),
+  message: z.string(),
+  data: rateLimitSettingsSchema,
 })
 
 export const logoUploadResponseSchema = z.object({

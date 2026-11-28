@@ -3,7 +3,10 @@ import { useCallback } from 'react'
 
 import { queryKeys } from '@/api/queryKeys'
 
-import { fetchSettings } from './api'
+import type { SettingsBundle } from '@/api/systemSettings'
+import type { RateLimitSettings } from '@/types/settings'
+
+import { fetchSettings, updateRateLimitSettings } from './api'
 
 /**
  * The settings singleton, shared by every tab.
@@ -62,6 +65,31 @@ export function useSettingsMutation<TInput, TResult>(
     retry: false,
     onSuccess: async (result) => {
       onSuccess?.(result)
+      await invalidate()
+    },
+  })
+}
+
+/**
+ * `PATCH /admin/settings/rate-limiting` with the cache kept whole.
+ *
+ * ⚠️ The route answers with only the eight rate-limit fields (plan.md O2), so
+ * they are **merged** into the cached record before the invalidation refetch —
+ * replacing it would blank every other section until the refetch landed.
+ */
+export function useRateLimitMutation(onSuccess?: (saved: RateLimitSettings) => void) {
+  const queryClient = useQueryClient()
+  const invalidate = useInvalidateSettings()
+
+  return useMutation({
+    mutationFn: updateRateLimitSettings,
+    retry: false,
+    onSuccess: async (saved) => {
+      queryClient.setQueryData<SettingsBundle>(
+        queryKeys.configuration.settings,
+        (old) => (old ? { ...old, settings: { ...old.settings, ...saved } } : old),
+      )
+      onSuccess?.(saved)
       await invalidate()
     },
   })

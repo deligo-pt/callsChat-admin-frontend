@@ -1685,3 +1685,53 @@ test('the legal new-version setup and a published version have no contrast viola
   )
   expect(published).toEqual([])
 })
+
+/* ------------------------------------------------------------------ *
+ * Rate limiting & OTP (plan.md RL3)
+ * ------------------------------------------------------------------ */
+
+test('the rate-limit page, with every warning painted, has no contrast violations', async ({
+  page,
+}) => {
+  /*
+   * The warnings are `warning-foreground` on `warning-soft`, the shape the F5
+   * pass caught at 2.9:1 elsewhere — so they are painted, then measured.
+   */
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/settings/rate-limiting')
+  await page.getByLabel('Resend cooldown').fill('600')
+  await page.getByLabel('Codes per phone').fill('11')
+  await page.getByLabel('General API limit').fill('30')
+  await page.getByLabel('Sign-in limit', { exact: true }).fill('3')
+  await expect(page.getByText(/can never be reached/)).toBeVisible()
+  await expect(page.getByText(/raises SMS cost exposure/)).toBeVisible()
+  await settled(page)
+
+  const unexpected = (await contrastViolations(page)).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
+
+test('the lockout confirmation is legible, since it can lock admins out', async ({
+  page,
+}) => {
+  await signIn(page, ACCOUNTS.superAdmin)
+  await page.goto('/settings/rate-limiting')
+  await page.getByLabel('General API limit').fill('30')
+  await page
+    .locator('form')
+    .filter({ has: page.getByRole('heading', { name: 'API traffic limits' }) })
+    .getByRole('button', { name: 'Save changes' })
+    .click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByText('Tighten API traffic limits')).toBeVisible()
+  /* Measured once the fade-in ends, or axe blends it with the page behind. */
+  await expect(dialog).toHaveCSS('opacity', '1')
+  await settled(page)
+
+  const unexpected = (await contrastViolations(page, '[role="dialog"]')).filter(
+    (node) => node.color !== KNOWN_SUBTLE_TOKEN,
+  )
+  expect(unexpected).toEqual([])
+})
